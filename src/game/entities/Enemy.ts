@@ -86,15 +86,19 @@ export class Enemy {
         const dx = target.x - this.container.x;
         const dy = target.y - this.container.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
+        const moveStep = this.speed * delta;
 
-        if (dist < (this.speed * delta)) {
+        if (dist <= moveStep) {
+            this.container.x = target.x;
+            this.container.y = target.y;
             this.currentPointIndex++;
         } else {
-            this.container.x += (dx / dist) * this.speed * delta;
-            this.container.y += (dy / dist) * this.speed * delta;
-            this.totalProgress += this.speed * delta;
+            const ratio = moveStep / dist;
+            this.container.x += dx * ratio;
+            this.container.y += dy * ratio;
         }
-
+        
+        this.totalProgress += moveStep;
         this.visual.rotation += 0.05 * delta;
         this.updateHealthBar();
     }

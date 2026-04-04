@@ -61,13 +61,13 @@ export class WaveManager {
                 this.spawnEnemy();
                 this.enemiesToSpawn--;
 
-                // DYNAMIC PATTERN SPACING
+                // OPTIMIZED SWARM FLOW: Dynamic Spacing
                 if (this.currentPattern === 'bulk_breach') {
-                    this.spawnTimer = 5; // Very fast cluster
+                    this.spawnTimer = 15 + Math.random() * 10; // Forced separation for bulk
                 } else if (this.currentPattern === 'staggered_burst') {
-                    this.spawnTimer = (this.enemiesToSpawn % 5 === 0) ? 120 : 15; // Waves of 5
+                    this.spawnTimer = (this.enemiesToSpawn % 5 === 0) ? 150 : 25; // Clean group breaks
                 } else {
-                    this.spawnTimer = Math.max(15, 45 - (this.waveNumber * 1.5)); // Regular stream
+                    this.spawnTimer = Math.max(30, 60 - (this.waveNumber * 1.2)); // Smooth sustained stream
                 }
             }
         }
