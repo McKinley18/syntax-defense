@@ -26,6 +26,7 @@ export class GameContainer {
     public mapManager!: MapManager;
     public inputHandler!: InputHandler;
     public kernel!: Kernel;
+    public isPaused: boolean = false; // GLOBAL PAUSE STATE
 
     public static instance: GameContainer;
 
@@ -76,19 +77,13 @@ export class GameContainer {
         this.waveManager = new WaveManager(this);
         this.inputHandler = new InputHandler(this);
 
-        // SYNC INITIAL PATH
         this.mapManager.setPathFromCells(this.pathManager.pathCells);
-        
-        // SYNC KERNEL
         this.kernel = new Kernel(this.pathManager.endNodePos.x, this.pathManager.endNodePos.y);
         
-        // ADD DYNAMIC RESIZE LISTENER
         window.addEventListener('resize', () => {
             if (this.app.renderer) {
                 this.app.renderer.resize(window.innerWidth, window.innerHeight);
-                if (this.mapManager) {
-                    this.mapManager.render();
-                }
+                if (this.mapManager) this.mapManager.render();
             }
         });
         
@@ -96,6 +91,8 @@ export class GameContainer {
     }
 
     public update(ticker: PIXI.Ticker) {
+        if (this.isPaused) return; // FREEZE ENGINE
+        
         const delta = ticker.deltaTime;
         this.waveManager.update(delta);
         this.towerManager.update(delta);

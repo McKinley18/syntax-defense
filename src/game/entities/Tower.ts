@@ -41,6 +41,7 @@ export class Tower {
     private recoilOffset: number = 0;
     private muzzleFlash: PIXI.Graphics;
     private energyCore: PIXI.Graphics;
+    private deploymentTimer: number = 30; // 0.5s deployment delay
 
     private effectiveRange: number;
     private effectiveRate: number;
@@ -51,6 +52,7 @@ export class Tower {
         this.container = new PIXI.Container();
         this.container.x = x;
         this.container.y = y;
+        this.container.alpha = 0.3; // Start dimmed for deployment
 
         const glitch = GameStateManager.getInstance().activeGlitch;
         this.effectiveRange = this.config.range;
@@ -59,7 +61,6 @@ export class Tower {
         if (glitch === 'SYSTEM_DRAIN') this.effectiveRange = Math.max(1, this.effectiveRange - 2);
         else if (glitch === 'OVERCLOCK') this.effectiveRate = Math.max(5, this.effectiveRate * 0.5);
 
-        // 1. OCTAGONAL REINFORCED BASE
         const base = new PIXI.Graphics();
         const s = TILE_SIZE / 2 - 2;
         base.poly([-s, -s/2, -s/2, -s, s/2, -s, s, -s/2, s, s/2, s/2, s, -s/2, s, -s, s/2]);
@@ -67,7 +68,6 @@ export class Tower {
         base.stroke({ width: 2, color: 0x333333 });
         this.container.addChild(base);
 
-        // 2. ROTATIONAL GEAR
         const gear = new PIXI.Graphics();
         gear.circle(0, 0, 7);
         gear.fill(0x222222);
@@ -76,7 +76,6 @@ export class Tower {
         this.turretHead = new PIXI.Container();
         this.container.addChild(this.turretHead);
 
-        // 3. ENERGY CORE (Animated)
         this.energyCore = new PIXI.Graphics();
         this.energyCore.circle(0, 0, 4);
         this.energyCore.fill({ color: this.config.color, alpha: 0.6 });
@@ -92,45 +91,32 @@ export class Tower {
     private createWeaponVisuals() {
         const g = new PIXI.Graphics();
         const c = this.config.color;
-        
         if (this.type === TowerType.PULSE_MG) {
-            // DUAL BARRELS WITH GREEN HIGHLIGHTS
-            g.rect(-5, -16, 3, 14).fill(0x333333);
-            g.rect(2, -16, 3, 14).fill(0x333333);
-            // Color accents on tips
-            g.rect(-5, -18, 3, 3).fill(c);
-            g.rect(2, -18, 3, 3).fill(c);
-        } 
-        else if (this.type === TowerType.FROST_RAY) {
-            // TRIANGULAR CRYOGENIC DISH
+            g.rect(-5, -16, 3, 14).fill(0x333333); g.rect(2, -16, 3, 14).fill(0x333333);
+            g.rect(-5, -18, 3, 3).fill(c); g.rect(2, -18, 3, 3).fill(c);
+        } else if (this.type === TowerType.FROST_RAY) {
             g.poly([-8, 0, 0, -22, 8, 0]).fill(0x2c3e50).stroke({width:1, color:c});
-            // Focal crystal
             g.poly([-2, -10, 0, -24, 2, -10]).fill(c);
-        } 
-        else if (this.type === TowerType.BLAST_NOVA) {
-            // HEAVY SQUARE MORTAR
+        } else if (this.type === TowerType.BLAST_NOVA) {
             g.rect(-8, -8, 16, 16).fill(0x2c3e50).stroke({width:2, color:0x111111});
-            // Color band
             g.rect(-9, -4, 18, 4).fill(c);
-            // Heavy muzzle
             g.circle(0, -6, 6).fill(0x111111).stroke({width:1, color:c});
-        } 
-        else if (this.type === TowerType.RAILGUN) {
-            // MAGNETIC RAILS (TRAPEZOIDAL ACCELERATOR)
-            g.rect(-6, -28, 2, 26).fill(0x333333);
-            g.rect(4, -28, 2, 26).fill(0x333333);
-            // Energy coils between rails
-            for(let i=0; i<4; i++) {
-                g.rect(-4, -24 + (i*6), 8, 2).fill(c);
-            }
-            // Heavy breach
+        } else if (this.type === TowerType.RAILGUN) {
+            g.rect(-6, -28, 2, 26).fill(0x333333); g.rect(4, -28, 2, 26).fill(0x333333);
+            for(let i=0; i<4; i++) { g.rect(-4, -24 + (i*6), 8, 2).fill(c); }
             g.rect(-8, -4, 16, 12).fill(0x2c3e50);
         }
-        
         this.turretHead.addChild(g);
     }
 
     public update(delta: number, enemies: Enemy[]) {
+        if (this.deploymentTimer > 0) {
+            this.deploymentTimer -= delta;
+            this.container.alpha = 0.3 + (1 - this.deploymentTimer / 30) * 0.7;
+            return; // DON'T FIRE WHILE DEPLOYING
+        }
+        this.container.alpha = 1;
+
         this.fireTimer -= delta;
         if (this.recoilOffset > 0) {
             this.recoilOffset -= 0.2 * delta;
@@ -138,7 +124,6 @@ export class Tower {
         }
         if (this.muzzleFlash.alpha > 0) this.muzzleFlash.alpha -= 0.1 * delta;
 
-        // Core animation
         this.energyCore.alpha = 0.4 + Math.sin(Date.now() * 0.01) * 0.3;
 
         const target = this.findTarget(enemies);
@@ -178,7 +163,6 @@ export class Tower {
         this.recoilOffset = 3;
         this.showMuzzleFlash();
 
-        // CALCULATE TIP OF BARREL IN WORLD SPACE
         const muzzleDist = this.type === TowerType.RAILGUN ? 30 : 20;
         const angle = this.turretHead.rotation - Math.PI/2;
         const muzzleX = this.container.x + Math.cos(angle) * muzzleDist;

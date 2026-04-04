@@ -2,6 +2,8 @@ import { Enemy, EnemyType } from '../entities/Enemy';
 import { GameContainer } from '../GameContainer';
 import { GameStateManager } from './GameStateManager';
 
+type SwarmPattern = 'sustained_stream' | 'bulk_breach' | 'staggered_burst';
+
 export class WaveManager {
     public enemies: Enemy[] = [];
     public waveNumber: number = 1;
@@ -9,13 +11,13 @@ export class WaveManager {
     
     private spawnTimer: number = 0;
     private enemiesToSpawn: number = 0;
+    private currentPattern: SwarmPattern = 'sustained_stream';
     private game: GameContainer;
 
     constructor(game: GameContainer) {
         this.game = game;
     }
 
-    // PHASE 1: Generate path and show intel
     public prepareWave() {
         if (this.enemies.length > 0 || this.enemiesToSpawn > 0 || this.isWaveActive) return;
 
@@ -23,27 +25,27 @@ export class WaveManager {
         this.waveNumber = GameStateManager.getInstance().currentWave;
         
         this.game.towerManager.clearTowers();
-
-        // Generate path
         this.game.pathManager.generatePath(this.waveNumber);
         this.game.mapManager.setPathFromCells(this.game.pathManager.pathCells);
 
-        // Update Kernel Position
         if (this.game.kernel) {
             this.game.kernel.container.x = this.game.pathManager.endNodePos.x;
             this.game.kernel.container.y = this.game.pathManager.endNodePos.y;
         }
 
+        // Randomize Pattern
+        const patterns: SwarmPattern[] = ['sustained_stream', 'bulk_breach', 'staggered_burst'];
+        this.currentPattern = patterns[Math.floor(Math.random() * patterns.length)];
+
         this.isWaveActive = false;
     }
 
-    // PHASE 2: Start the swarm
     public startWave() {
         if (this.isWaveActive) return;
-        
         this.isWaveActive = true;
+
         if (this.waveNumber % 10 === 0) {
-            this.enemiesToSpawn = 1; 
+            this.enemiesToSpawn = 1; // Boss only
         } else {
             this.enemiesToSpawn = 10 + Math.floor(this.waveNumber * 4);
         }
@@ -58,7 +60,15 @@ export class WaveManager {
             if (this.spawnTimer <= 0) {
                 this.spawnEnemy();
                 this.enemiesToSpawn--;
-                this.spawnTimer = Math.max(10, 40 - (this.waveNumber * 1.5));
+
+                // DYNAMIC PATTERN SPACING
+                if (this.currentPattern === 'bulk_breach') {
+                    this.spawnTimer = 5; // Very fast cluster
+                } else if (this.currentPattern === 'staggered_burst') {
+                    this.spawnTimer = (this.enemiesToSpawn % 5 === 0) ? 120 : 15; // Waves of 5
+                } else {
+                    this.spawnTimer = Math.max(15, 45 - (this.waveNumber * 1.5)); // Regular stream
+                }
             }
         }
 
@@ -67,13 +77,9 @@ export class WaveManager {
             enemy.update(delta);
 
             if (enemy.reachedGoal) {
-                const damage = enemy.type === EnemyType.FRACTAL ? 10 : 
-                               enemy.type === EnemyType.BEHEMOTH ? 3 : 1;
+                const damage = enemy.type === 3 ? 10 : 1;
                 GameStateManager.getInstance().takeDamage(damage);
-                
-                // FLASH KERNEL ON BREACH
                 if (this.game.kernel) this.game.kernel.triggerFlash();
-                
                 this.removeEnemy(i);
                 continue;
             }
@@ -86,44 +92,38 @@ export class WaveManager {
             }
         }
 
-        // WAVE COMPLETE CHECK
         if (this.enemiesToSpawn === 0 && this.enemies.length === 0) {
             this.isWaveActive = false;
-            // Auto-prepare next wave
             this.prepareWave();
         }
     }
 
-    public getUpcomingEnemyTypes(): EnemyType[] {
-        const nextWave = this.waveNumber; // Current prepared wave
-        const types: Set<EnemyType> = new Set();
-        
-        if (nextWave % 10 === 0) {
-            types.add(EnemyType.FRACTAL);
+    public getUpcomingEnemyTypes(): number[] {
+        const types: Set<number> = new Set();
+        if (this.waveNumber % 10 === 0) {
+            types.add(3);
         } else {
-            types.add(EnemyType.GLIDER);
-            if (nextWave >= 4) types.add(EnemyType.STRIDER);
-            if (nextWave >= 8) types.add(EnemyType.BEHEMOTH);
+            types.add(0);
+            if (this.waveNumber >= 4) types.add(1);
+            if (this.waveNumber >= 8) types.add(2);
         }
         return Array.from(types);
     }
 
     private spawnEnemy() {
-        let type: EnemyType = EnemyType.GLIDER;
-        
+        let type: number = 0;
         if (this.waveNumber % 10 === 0) {
-            type = EnemyType.FRACTAL;
+            type = 3;
         } else {
             const rand = Math.random();
             if (this.waveNumber >= 8) {
-                if (rand > 0.85) type = EnemyType.BEHEMOTH;
-                else if (rand > 0.5) type = EnemyType.STRIDER;
+                if (rand > 0.8) type = 2;
+                else if (rand > 0.4) type = 1;
             } else if (this.waveNumber >= 4) {
-                if (rand > 0.6) type = EnemyType.STRIDER;
+                if (rand > 0.6) type = 1;
             }
         }
-
-        const enemy = new Enemy(type, this.waveNumber);
+        const enemy = new Enemy(type as any, this.waveNumber);
         this.enemies.push(enemy);
         this.game.enemyLayer.addChild(enemy.container);
     }

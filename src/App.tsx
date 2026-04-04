@@ -72,6 +72,14 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (game) {
+      game.isPaused = isPaused;
+    }
+  }, [isPaused, game]);
+
+  const isGameOver = integrity <= 0;
+
   const saveAndQuit = () => {
     GameStateManager.getInstance().save();
     setIsPaused(false);
@@ -196,12 +204,25 @@ function App() {
     <div className="game-wrapper">
       <div className="orientation-warning">
         <div className="warning-icon">🔄</div>
-        <div className="warning-text">CRITICAL_ERROR: SYSTEM_OUTPUT_WIDTH_INSUFFICIENT.<br/><br/>[ ROTATE DEVICE ]</div>
+        <div className="warning-text">SYSTEM_DISPLAY_OPTIMIZATION_REQUIRED</div>
+        <div className="warning-subtext">[ PLEASE_ROTATE_DEVICE_TO_LANDSCAPE_TO_INITIALIZE_MAINFRAME ]</div>
       </div>
       <div id="game-container"></div>
       
       <div className="game-overlay">
-        {isPaused && (
+        {/* GAME OVER OVERLAY */}
+        {isGameOver && (
+          <div className="pause-overlay game-over">
+            <div className="pause-content">
+              <h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE: KERNEL_PANIC</h2>
+              <div className="pause-options">
+                <button onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT_MENU ]</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isPaused && !isGameOver && (
           <div className="pause-overlay">
             <div className="pause-content">
               <h2 className="pause-title">PAUSED</h2>
@@ -263,7 +284,7 @@ function App() {
                     </div>
                     <div className="slim-card-info">
                       <span className="name">{cfg.name}</span>
-                      <span className="stats">DMG:{cfg.damage}</span>
+                      <span className="stats">DMG:{cfg.damage} // RNG:{cfg.range}sq</span>
                       <span className="cost">{cost}c</span>
                     </div>
                   </div>

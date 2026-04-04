@@ -73,12 +73,34 @@ export class MapManager {
             for (let y = 0; y < this.rows; y++) {
                 if (this.grid[x][y] === TileType.PATH) {
                     const sx = x * TILE_SIZE;
-                    const sy = y * TILE_SIZE;
-                    this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
-                    this.graphics.fill(0x000000);
-                    this.pathMask.rect(sx, sy, TILE_SIZE, TILE_SIZE);
-                    this.pathMask.fill(0xffffff);
-                }
+                    if (type === TileType.PATH) {
+                        this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
+                        this.graphics.fill(0x000000);
+                        this.pathMask.rect(sx, sy, TILE_SIZE, TILE_SIZE);
+                        this.pathMask.fill(0xffffff);
+
+                        // EDGE LIGHTING LOGIC
+                        if (x > 0 && x < this.cols - 1) { // Skip absolute start/end edges
+                            const neighbors = [
+                                { nx: x+1, ny: y, side: 'right' },
+                                { nx: x-1, ny: y, side: 'left' },
+                                { nx: x, ny: y+1, side: 'bottom' },
+                                { nx: x, ny: y-1, side: 'top' }
+                            ];
+                            neighbors.forEach(n => {
+                                if (n.nx >= 0 && n.nx < this.cols && n.ny >= 0 && n.ny < this.rows) {
+                                    if (this.grid[n.nx][n.ny] === TileType.BUILDABLE) {
+                                        // Draw glowing line on the specific edge
+                                        if (n.side === 'right') { this.graphics.moveTo(sx + TILE_SIZE, sy).lineTo(sx + TILE_SIZE, sy + TILE_SIZE); }
+                                        if (n.side === 'left') { this.graphics.moveTo(sx, sy).lineTo(sx, sy + TILE_SIZE); }
+                                        if (n.side === 'bottom') { this.graphics.moveTo(sx, sy + TILE_SIZE).lineTo(sx + TILE_SIZE, sy + TILE_SIZE); }
+                                        if (n.side === 'top') { this.graphics.moveTo(sx, sy).lineTo(sx + TILE_SIZE, sy); }
+                                        this.graphics.stroke({ width: 1.5, color: 0x0066ff, alpha: 0.6 });
+                                    }
+                                }
+                            });
+                        }
+                    } else {
             }
         }
 
