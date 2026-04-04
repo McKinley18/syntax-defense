@@ -43,10 +43,6 @@ export class MapManager {
     public setPathFromEdges(edges: {start: PIXI.Point, end: PIXI.Point}[]) {
         this.initGrid();
         
-        // Use current screen width in tiles for path constraints
-        const currentCols = Math.ceil(window.innerWidth / TILE_SIZE);
-        const currentRows = Math.ceil(window.innerHeight / TILE_SIZE);
-
         edges.forEach(edge => {
             const gx1 = Math.floor(edge.start.x / TILE_SIZE);
             const gy1 = Math.floor(edge.start.y / TILE_SIZE);
