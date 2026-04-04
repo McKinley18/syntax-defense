@@ -67,6 +67,20 @@ export class WaveManager {
         }
     }
 
+    public getUpcomingEnemyTypes(): EnemyType[] {
+        const nextWave = this.waveNumber + 1;
+        const types: Set<EnemyType> = new Set();
+        
+        if (nextWave % 10 === 0) {
+            types.add(EnemyType.FRACTAL);
+        } else {
+            types.add(EnemyType.GLIDER);
+            if (nextWave >= 4) types.add(EnemyType.STRIDER);
+            if (nextWave >= 8) types.add(EnemyType.BEHEMOTH);
+        }
+        return Array.from(types);
+    }
+
     private spawnEnemy() {
         let type: EnemyType = EnemyType.GLIDER;
         

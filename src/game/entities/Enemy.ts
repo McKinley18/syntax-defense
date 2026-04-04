@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameContainer } from '../GameContainer';
 import { GameStateManager } from '../systems/GameStateManager';
+import { TILE_SIZE } from '../systems/MapManager';
 
 export const EnemyType = {
     GLIDER: 0,
@@ -12,14 +13,14 @@ export const EnemyType = {
 export type EnemyType = typeof EnemyType[keyof typeof EnemyType];
 
 interface EnemyConfig {
-    hp: number; speed: number; reward: number; color: number; size: number;
+    hp: number; speed: number; reward: number; color: number;
 }
 
 const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
-    [EnemyType.GLIDER]: { hp: 30, speed: 2, reward: 25, color: 0x00ffff, size: 12 },
-    [EnemyType.STRIDER]: { hp: 100, speed: 1.2, reward: 50, color: 0xff00ff, size: 16 },
-    [EnemyType.BEHEMOTH]: { hp: 400, speed: 0.7, reward: 150, color: 0x00ff00, size: 22 },
-    [EnemyType.FRACTAL]: { hp: 2000, speed: 0.4, reward: 500, color: 0xffff00, size: 30 }
+    [EnemyType.GLIDER]: { hp: 30, speed: 2, reward: 25, color: 0x00ffff },
+    [EnemyType.STRIDER]: { hp: 100, speed: 1.2, reward: 50, color: 0xff00ff },
+    [EnemyType.BEHEMOTH]: { hp: 400, speed: 0.7, reward: 150, color: 0x00ff00 },
+    [EnemyType.FRACTAL]: { hp: 2000, speed: 0.4, reward: 500, color: 0xffff00 }
 };
 
 export class Enemy {
@@ -41,8 +42,6 @@ export class Enemy {
     constructor(type: EnemyType, waveNumber: number) {
         this.type = type;
         this.container = new PIXI.Container();
-        
-        // Get high-fidelity path from Manager
         this.pathPoints = GameContainer.instance.pathManager.getPathPoints();
         
         const config = ENEMY_CONFIGS[type];
@@ -58,7 +57,6 @@ export class Enemy {
         this.healthBar = new PIXI.Graphics();
         this.container.addChild(this.visual, this.healthBar);
 
-        // Initial Position
         if (this.pathPoints.length > 0) {
             this.container.x = this.pathPoints[0].x;
             this.container.y = this.pathPoints[0].y;
@@ -67,13 +65,16 @@ export class Enemy {
 
     private createVisual(config: EnemyConfig): PIXI.Graphics {
         const g = new PIXI.Graphics();
-        const s = config.size;
+        // MANDATE: ONE BLOCK IN SIZE (24px)
+        const s = TILE_SIZE / 2 - 2; 
+        
         if (this.type === EnemyType.GLIDER) g.circle(0, 0, s);
         else if (this.type === EnemyType.STRIDER) g.poly([-s, s, 0, -s, s, s]);
         else if (this.type === EnemyType.BEHEMOTH) g.rect(-s, -s, s*2, s*2);
         else g.poly([-s, 0, -s/2, -s, s/2, -s, s, 0, s/2, s, -s/2, s]);
-        g.fill({ color: config.color, alpha: 0.8 });
-        g.stroke({ width: 2, color: 0xffffff });
+        
+        g.fill({ color: config.color, alpha: 0.9 });
+        g.stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
         return g;
     }
 
@@ -110,10 +111,10 @@ export class Enemy {
     private updateHealthBar() {
         this.healthBar.clear();
         if (this.health < this.maxHealth) {
-            const w = 30; const h = 4;
-            this.healthBar.rect(-w/2, -25, w, h);
+            const w = 20; const h = 3;
+            this.healthBar.rect(-w/2, -18, w, h);
             this.healthBar.fill(0x000000);
-            this.healthBar.rect(-w/2, -25, w * (this.health/this.maxHealth), h);
+            this.healthBar.rect(-w/2, -18, w * (this.health/this.maxHealth), h);
             this.healthBar.fill(0xff0000);
         }
     }

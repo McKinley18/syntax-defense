@@ -117,8 +117,12 @@ function App() {
               <div className="info-body">
                 {infoTab === 'LORE' && (
                   <div className="lore-text">
-                    <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0. VIRAL GEOMETRY PROPAGATING THROUGH DATA LANES. FIREWALL STATUS: OFFLINE.</p>
-                    <p>&gt;&gt; DIRECTIVE: DEPLOY SYNTAX-HARDENED NODES. PROTECT THE ROOT AT ALL COSTS.</p>
+                    <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0. VIRAL GEOMETRY PROPAGATING THROUGH DATA LANES.</p>
+                    <p>&gt;&gt; SYSTEM_ANOMALIES_DETECTED:</p>
+                    <p>1. [ OVERCLOCK ]: TURRET FIRE RATES INCREASED BY 50%.</p>
+                    <p>2. [ LAG_SPIKE ]: VIRAL PROPAGATION SPEEDS REDUCED BY 30%.</p>
+                    <p>3. [ SYSTEM_DRAIN ]: TURRET RANGE EFFICIENCY REDUCED BY 20%.</p>
+                    <p>&gt;&gt; DIRECTIVE: PROTECT THE ROOT AT ALL COSTS.</p>
                   </div>
                 )}
                 {infoTab === 'LOGIC' && (
@@ -209,12 +213,12 @@ function App() {
           
           <div className="matrix-row">
             <div className="matrix-cell left wave-info">
-              {waveName} // W_{wave}
+              {waveName} // LVL_{wave}
             </div>
             <div className="matrix-cell center value credits-value">
               {credits}
             </div>
-            <div className="matrix-cell right">
+            <div className="matrix-cell right integrity-stack">
               <div className="integrity-bar-small">
                 <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div>
               </div>
@@ -222,27 +226,50 @@ function App() {
           </div>
         </div>
 
-        <div className="build-menu">
-          <div className="turret-grid">
-            {[TowerType.PULSE_MG, TowerType.FROST_RAY, TowerType.BLAST_NOVA, TowerType.RAILGUN].map(type => {
-              const cfg = TOWER_CONFIGS[type];
-              // Dynamic cost calculation for Hardcore mode
-              const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : cfg.cost;
-              
-              return (
-                <div 
-                  key={type}
-                  className={`turret-card ${selectedTurret === type ? 'active' : ''}`}
-                  onClick={() => selectTurret(type)}
-                >
-                  <div className="card-header" style={{ color: `#${cfg.color.toString(16).padStart(6, '0')}` }}>{cfg.name}</div>
-                  <div className="card-body">
-                    <div>DMG:{cfg.damage} RNG:{cfg.range}</div>
-                    <div className="cost" style={{ color: isHardcore ? '#ff3300' : '#00ffff' }}>{cost}c</div>
+        <div className="tactical-hub">
+          <div className="defense-section">
+            <div className="hub-label">DEFENSE_PROTOCOLS</div>
+            <div className="turret-grid">
+              {[TowerType.PULSE_MG, TowerType.FROST_RAY, TowerType.BLAST_NOVA, TowerType.RAILGUN].map(type => {
+                const cfg = TOWER_CONFIGS[type];
+                const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : cfg.cost;
+                
+                return (
+                  <div 
+                    key={type}
+                    className={`turret-card ${selectedTurret === type ? 'active' : ''}`}
+                    data-type={type}
+                    onClick={() => selectTurret(type)}
+                  >
+                    <div className="turret-visual-box">
+                      <div className="turret-preview" style={{ color: `#${cfg.color.toString(16).padStart(6,'0')}` }}></div>
+                    </div>
+                    <div className="card-info">
+                      <div className="card-header" style={{ color: `#${cfg.color.toString(16).padStart(6, '0')}` }}>{cfg.name}</div>
+                      <div className="card-stats">DMG: {cfg.damage}</div>
+                      <div className="cost" style={{ color: isHardcore ? '#ff3300' : '#00ffff' }}>{cost}c</div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="intel-section">
+            <div className="hub-label">VIRAL_INTEL</div>
+            <div className="intel-monitor">
+              <div className="intel-grid">
+                {game?.waveManager.getUpcomingEnemyTypes().map(type => (
+                  <div key={type} className="intel-card">
+                    <div className={`shape ${type === 0 ? 'circle' : type === 1 ? 'triangle' : type === 2 ? 'square' : 'hexagon'}`}></div>
+                    <div className="intel-name">
+                      {type === 0 ? 'GLIDER' : type === 1 ? 'STRIDER' : type === 2 ? 'BEHEMOTH' : 'FRACTAL'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="scanner-line"></div>
+            </div>
           </div>
         </div>
       </div>
