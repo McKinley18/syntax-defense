@@ -17,7 +17,7 @@ function App() {
   const [selectedTurret, setSelectedTurret] = useState(0);
   const [game, setGame] = useState<GameContainer | null>(null);
   const [isHardcore, setIsHardcore] = useState(false);
-
+  const [isPaused, setIsPaused] = useState(false);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -61,6 +61,17 @@ function App() {
     } else {
       alert("CRITICAL_ERROR: NO SAVED_DATA ON LOCAL_MOUNT.");
     }
+  };
+
+  const saveAndQuit = () => {
+    GameStateManager.getInstance().save();
+    setIsPaused(false);
+    setScreen('MENU');
+  };
+
+  const quitToMenu = () => {
+    setIsPaused(false);
+    setScreen('MENU');
   };
 
   const selectTurret = (type: number) => {
@@ -144,26 +155,10 @@ function App() {
           )}
           {screen === 'ENEMIES' && (
             <div className="visual-grid">
-              <div className="visual-card">
-                <div className="shape circle"></div>
-                <div className="label">GLIDER</div>
-                <div className="desc">PRIORITY: LOW // SPEED: HIGH</div>
-              </div>
-              <div className="visual-card">
-                <div className="shape triangle"></div>
-                <div className="label">STRIDER</div>
-                <div className="desc">PRIORITY: MED // SPEED: MED</div>
-              </div>
-              <div className="visual-card">
-                <div className="shape square"></div>
-                <div className="label">BEHEMOTH</div>
-                <div className="desc">PRIORITY: HIGH // SPEED: LOW</div>
-              </div>
-              <div className="visual-card">
-                <div className="shape hexagon"></div>
-                <div className="label">FRACTAL</div>
-                <div className="desc">PRIORITY: CRITICAL // SPEED: SLOW</div>
-              </div>
+              <div className="visual-card"><div className="shape circle"></div><div className="label">GLIDER</div><div className="desc">PRIORITY: LOW</div></div>
+              <div className="visual-card"><div className="shape triangle"></div><div className="label">STRIDER</div><div className="desc">PRIORITY: MED</div></div>
+              <div className="visual-card"><div className="shape square"></div><div className="label">BEHEMOTH</div><div className="desc">PRIORITY: HIGH</div></div>
+              <div className="visual-card"><div className="shape hexagon"></div><div className="label">FRACTAL</div><div className="desc">PRIORITY: CRITICAL</div></div>
             </div>
           )}
           {screen === 'TURRETS' && (
@@ -192,6 +187,20 @@ function App() {
       <div id="game-container"></div>
       
       <div className="game-overlay">
+        {/* PAUSE OVERLAY */}
+        {isPaused && (
+          <div className="pause-overlay">
+            <div className="pause-content">
+              <h2 className="pause-title">SESSION_PAUSED</h2>
+              <div className="pause-options">
+                <button onClick={() => setIsPaused(false)}>[ RESUME_EXECUTION ]</button>
+                <button onClick={saveAndQuit}>[ SAVE_PROGRESS_AND_EXIT ]</button>
+                <button onClick={quitToMenu} style={{color: '#ff3300', borderColor: '#ff3300'}}>[ TERMINATE_WITHOUT_SAVING ]</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* GLITCH ALERT OVERLAY */}
         {GameStateManager.getInstance().activeGlitch !== 'NONE' && (
           <div className={`glitch-banner ${GameStateManager.getInstance().activeGlitch}`}>
@@ -202,7 +211,8 @@ function App() {
         {/* RESPONSIVE 2-LINE TACTICAL MATRIX BANNER */}
         <div className="terminal-header-matrix">
           <div className="matrix-row">
-            <div className="matrix-cell left">
+            <div className="matrix-cell left" style={{ display: 'flex', gap: '10px' }}>
+              <button className="exec-button" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
               <button className="exec-button" onClick={executeNextWave}>
                 {isSmallScreen ? "> EXEC_WAVE" : "> EXECUTE_NEXT_WAVE_CMD"}
               </button>
@@ -233,39 +243,21 @@ function App() {
               {[TowerType.PULSE_MG, TowerType.FROST_RAY, TowerType.BLAST_NOVA, TowerType.RAILGUN].map(type => {
                 const cfg = TOWER_CONFIGS[type];
                 const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : cfg.cost;
-                
                 return (
-                  <div 
-                    key={type}
-                    className={`turret-card ${selectedTurret === type ? 'active' : ''}`}
-                    data-type={type}
-                    onClick={() => selectTurret(type)}
-                  >
-                    <div className="turret-visual-box">
-                      <div className="turret-preview" style={{ color: `#${cfg.color.toString(16).padStart(6,'0')}` }}></div>
-                    </div>
-                    <div className="card-info">
-                      <div className="card-header" style={{ color: `#${cfg.color.toString(16).padStart(6, '0')}` }}>{cfg.name}</div>
-                      <div className="card-stats">DMG: {cfg.damage}</div>
-                      <div className="cost" style={{ color: isHardcore ? '#ff3300' : '#00ffff' }}>{cost}c</div>
-                    </div>
+                  <div key={type} className={`turret-card ${selectedTurret === type ? 'active' : ''}`} data-type={type} onClick={() => selectTurret(type)}>
+                    <div className="turret-visual-box"><div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div></div></div>
+                    <div className="card-info"><div className="card-header" style={{ color: `#${cfg.color.toString(16).padStart(6, '0')}` }}>{cfg.name}</div><div className="card-stats">DMG: {cfg.damage}</div><div className="cost" style={{ color: isHardcore ? '#ff3300' : '#00ffff' }}>{cost}c</div></div>
                   </div>
                 );
               })}
             </div>
           </div>
-
           <div className="intel-section">
             <div className="hub-label">VIRAL_INTEL</div>
             <div className="intel-monitor">
               <div className="intel-grid">
                 {game?.waveManager.getUpcomingEnemyTypes().map(type => (
-                  <div key={type} className="intel-card">
-                    <div className={`shape ${type === 0 ? 'circle' : type === 1 ? 'triangle' : type === 2 ? 'square' : 'hexagon'}`}></div>
-                    <div className="intel-name">
-                      {type === 0 ? 'GLIDER' : type === 1 ? 'STRIDER' : type === 2 ? 'BEHEMOTH' : 'FRACTAL'}
-                    </div>
-                  </div>
+                  <div key={type} className="intel-card"><div className={`shape ${type === 0 ? 'circle' : type === 1 ? 'triangle' : type === 2 ? 'square' : 'hexagon'}`}></div><div className="intel-name">{type === 0 ? 'GLIDER' : type === 1 ? 'STRIDER' : type === 2 ? 'BEHEMOTH' : 'FRACTAL'}</div></div>
                 ))}
               </div>
               <div className="scanner-line"></div>

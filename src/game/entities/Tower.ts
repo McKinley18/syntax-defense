@@ -40,7 +40,7 @@ export class Tower {
     private turretHead: PIXI.Container;
     private recoilOffset: number = 0;
     private muzzleFlash: PIXI.Graphics;
-    private glow: PIXI.Graphics;
+    private energyCore: PIXI.Graphics;
 
     private effectiveRange: number;
     private effectiveRate: number;
@@ -59,35 +59,28 @@ export class Tower {
         if (glitch === 'SYSTEM_DRAIN') this.effectiveRange = Math.max(1, this.effectiveRange - 2);
         else if (glitch === 'OVERCLOCK') this.effectiveRate = Math.max(5, this.effectiveRate * 0.5);
 
-        // 1. MECHANICAL BASE
+        // 1. OCTAGONAL REINFORCED BASE
         const base = new PIXI.Graphics();
         const s = TILE_SIZE / 2 - 2;
-        // Octagonal reinforced base
         base.poly([-s, -s/2, -s/2, -s, s/2, -s, s, -s/2, s, s/2, s/2, s, -s/2, s, -s, s/2]);
         base.fill(0x1a1a1a);
         base.stroke({ width: 2, color: 0x333333 });
-        // Add corner "bolts"
-        base.circle(-s+2, -s+2, 1.5).fill(0x444444);
-        base.circle(s-2, -s+2, 1.5).fill(0x444444);
-        base.circle(s-2, s-2, 1.5).fill(0x444444);
-        base.circle(-s+2, s-2, 1.5).fill(0x444444);
         this.container.addChild(base);
 
         // 2. ROTATIONAL GEAR
         const gear = new PIXI.Graphics();
         gear.circle(0, 0, 7);
         gear.fill(0x222222);
-        gear.stroke({ width: 1, color: 0x000000 });
         this.container.addChild(gear);
 
         this.turretHead = new PIXI.Container();
         this.container.addChild(this.turretHead);
 
-        // 3. INTERNAL GLOW CORE
-        this.glow = new PIXI.Graphics();
-        this.glow.circle(0, 0, 4);
-        this.glow.fill({ color: this.config.color, alpha: 0.3 });
-        this.turretHead.addChild(this.glow);
+        // 3. ENERGY CORE (Animated)
+        this.energyCore = new PIXI.Graphics();
+        this.energyCore.circle(0, 0, 4);
+        this.energyCore.fill({ color: this.config.color, alpha: 0.6 });
+        this.turretHead.addChild(this.energyCore);
 
         this.muzzleFlash = new PIXI.Graphics();
         this.muzzleFlash.alpha = 0;
@@ -98,47 +91,40 @@ export class Tower {
 
     private createWeaponVisuals() {
         const g = new PIXI.Graphics();
+        const c = this.config.color;
         
         if (this.type === TowerType.PULSE_MG) {
-            // DUAL BARRELS with cooling jackets
-            g.rect(-5, -16, 3, 14).fill(0x333333).stroke({width:1, color:0x000000});
-            g.rect(2, -16, 3, 14).fill(0x333333).stroke({width:1, color:0x000000});
-            // Barrel tips
-            g.rect(-5, -18, 3, 3).fill(0x111111);
-            g.rect(2, -18, 3, 3).fill(0x111111);
-            // Center housing
-            g.roundRect(-6, -6, 12, 10, 2).fill(0x2c3e50).stroke({width:1, color:0x000000});
+            // DUAL BARRELS WITH GREEN HIGHLIGHTS
+            g.rect(-5, -16, 3, 14).fill(0x333333);
+            g.rect(2, -16, 3, 14).fill(0x333333);
+            // Color accents on tips
+            g.rect(-5, -18, 3, 3).fill(c);
+            g.rect(2, -18, 3, 3).fill(c);
         } 
         else if (this.type === TowerType.FROST_RAY) {
-            // CRYOGENIC DISH
-            g.arc(0, 0, 10, -Math.PI, 0).fill(0x2c3e50).stroke({width:1, color:0x00ffff, alpha:0.5});
-            // Focal needle
-            g.poly([-2, -2, 0, -22, 2, -2]).fill(0x00ffff);
-            // Energy rings
-            g.circle(0, -8, 4).stroke({width:1, color:0x00ffff});
-            g.circle(0, -14, 3).stroke({width:1, color:0x00ffff});
+            // TRIANGULAR CRYOGENIC DISH
+            g.poly([-8, 0, 0, -22, 8, 0]).fill(0x2c3e50).stroke({width:1, color:c});
+            // Focal crystal
+            g.poly([-2, -10, 0, -24, 2, -10]).fill(c);
         } 
         else if (this.type === TowerType.BLAST_NOVA) {
-            // HEAVY MORTAR DOME
-            g.circle(0, 0, 9).fill(0x2c3e50).stroke({width:2, color:0x111111});
-            // Four radial vents
-            for(let i=0; i<4; i++) {
-                const angle = (i * Math.PI) / 2;
-                g.rect(Math.cos(angle)*6-2, Math.sin(angle)*6-2, 4, 4).fill(0x111111);
-            }
-            // Top muzzle
-            g.circle(0, -4, 5).fill(0x111111).stroke({width:1, color:0xffcc00});
+            // HEAVY SQUARE MORTAR
+            g.rect(-8, -8, 16, 16).fill(0x2c3e50).stroke({width:2, color:0x111111});
+            // Color band
+            g.rect(-9, -4, 18, 4).fill(c);
+            // Heavy muzzle
+            g.circle(0, -6, 6).fill(0x111111).stroke({width:1, color:c});
         } 
         else if (this.type === TowerType.RAILGUN) {
-            // MAGNETIC ACCELERATOR RAILS
-            g.rect(-6, -28, 3, 26).fill(0x333333).stroke({width:1, color:0x000000});
-            g.rect(3, -28, 3, 26).fill(0x333333).stroke({width:1, color:0x000000});
-            // Accelerator coils (Glow red)
+            // MAGNETIC RAILS (TRAPEZOIDAL ACCELERATOR)
+            g.rect(-6, -28, 2, 26).fill(0x333333);
+            g.rect(4, -28, 2, 26).fill(0x333333);
+            // Energy coils between rails
             for(let i=0; i<4; i++) {
-                g.rect(-7, -24 + (i*6), 14, 2).fill(0xff3300).stroke({width:0.5, color:0x000000});
+                g.rect(-4, -24 + (i*6), 8, 2).fill(c);
             }
-            // Rear heavy housing
-            g.rect(-8, -4, 16, 12).fill(0x2c3e50).stroke({width:2, color:0x111111});
+            // Heavy breach
+            g.rect(-8, -4, 16, 12).fill(0x2c3e50);
         }
         
         this.turretHead.addChild(g);
@@ -152,8 +138,8 @@ export class Tower {
         }
         if (this.muzzleFlash.alpha > 0) this.muzzleFlash.alpha -= 0.1 * delta;
 
-        // Pulse core glow
-        this.glow.alpha = 0.3 + Math.sin(Date.now() * 0.01) * 0.2;
+        // Core animation
+        this.energyCore.alpha = 0.4 + Math.sin(Date.now() * 0.01) * 0.3;
 
         const target = this.findTarget(enemies);
         if (target) {
@@ -169,8 +155,6 @@ export class Tower {
                 this.fire(target, enemies);
                 this.fireTimer = this.effectiveRate;
             }
-        } else if (this.type === TowerType.PULSE_MG) {
-            this.turretHead.rotation += 0.01 * delta;
         }
     }
 
@@ -178,12 +162,10 @@ export class Tower {
         let bestTarget: Enemy | null = null;
         let maxProgress = -1;
         const pixelRangeSq = (this.effectiveRange * TILE_SIZE) ** 2;
-        
         for (const enemy of enemies) {
             const dx = enemy.container.x - this.container.x;
             const dy = enemy.container.y - this.container.y;
             const distSq = dx*dx + dy*dy;
-            
             if (distSq <= pixelRangeSq && enemy.totalProgress > maxProgress) {
                 maxProgress = enemy.totalProgress;
                 bestTarget = enemy;
