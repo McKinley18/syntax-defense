@@ -25,7 +25,19 @@ export class WaveManager {
         this.waveNumber = GameStateManager.getInstance().currentWave;
         
         this.game.towerManager.clearTowers();
-        this.game.pathManager.generatePath(this.waveNumber);
+        
+        // FAIL-SAFE PATH GEN WITH COMPLEXITY CHECK
+        let success = false;
+        let attempts = 0;
+        while (!success && attempts < 100) {
+            this.game.pathManager.generatePath(this.waveNumber);
+            // Verify complexity (at least 4 nodes in macro path)
+            if (this.game.pathManager.macroPath.length >= 4) {
+                success = true;
+            }
+            attempts++;
+        }
+        
         this.game.mapManager.setPathFromCells(this.game.pathManager.pathCells);
 
         if (this.game.kernel) {
@@ -33,11 +45,11 @@ export class WaveManager {
             this.game.kernel.container.y = this.game.pathManager.endNodePos.y;
         }
 
-        // Randomize Pattern
         const patterns: SwarmPattern[] = ['sustained_stream', 'bulk_breach', 'staggered_burst'];
         this.currentPattern = patterns[Math.floor(Math.random() * patterns.length)];
 
         this.isWaveActive = false;
+        GameStateManager.getInstance().save(); // Persistent sync
     }
 
     public startWave() {
@@ -45,9 +57,9 @@ export class WaveManager {
         this.isWaveActive = true;
 
         if (this.waveNumber % 10 === 0) {
-            this.enemiesToSpawn = 1; // Boss only
+            this.enemiesToSpawn = 1; 
         } else {
-            this.enemiesToSpawn = 10 + Math.floor(this.waveNumber * 4);
+            this.enemiesToSpawn = 10 + Math.floor(this.waveNumber * 2.5);
         }
         this.spawnTimer = 0;
     }
@@ -61,13 +73,12 @@ export class WaveManager {
                 this.spawnEnemy();
                 this.enemiesToSpawn--;
 
-                // OPTIMIZED SWARM FLOW: Dynamic Spacing
                 if (this.currentPattern === 'bulk_breach') {
-                    this.spawnTimer = 15 + Math.random() * 10; // Forced separation for bulk
+                    this.spawnTimer = 15 + Math.random() * 10; 
                 } else if (this.currentPattern === 'staggered_burst') {
-                    this.spawnTimer = (this.enemiesToSpawn % 5 === 0) ? 150 : 25; // Clean group breaks
+                    this.spawnTimer = (this.enemiesToSpawn % 5 === 0) ? 150 : 25; 
                 } else {
-                    this.spawnTimer = Math.max(30, 60 - (this.waveNumber * 1.2)); // Smooth sustained stream
+                    this.spawnTimer = Math.max(30, 60 - (this.waveNumber * 1.2)); 
                 }
             }
         }
@@ -77,7 +88,7 @@ export class WaveManager {
             enemy.update(delta);
 
             if (enemy.reachedGoal) {
-                const damage = enemy.type === 3 ? 10 : 1;
+                const damage = enemy.type === EnemyType.FRACTAL ? 10 : 1;
                 GameStateManager.getInstance().takeDamage(damage);
                 if (this.game.kernel) this.game.kernel.triggerFlash();
                 this.removeEnemy(i);
@@ -85,9 +96,13 @@ export class WaveManager {
             }
 
             if (enemy.health <= 0) {
-                GameStateManager.getInstance().addCredits(enemy.reward);
+                // DYNAMIC REWARD ENGINE: Scales with HP growth
+                const baseReward = enemy.type === EnemyType.BEHEMOTH ? 25 : enemy.type === EnemyType.FRACTAL ? 100 : 10;
+                const scaledReward = Math.floor(baseReward * Math.pow(1.04, this.waveNumber));
+                
+                GameStateManager.getInstance().addCredits(scaledReward);
                 this.game.particleManager.spawnExplosion(enemy.container.x, enemy.container.y, 0.8);
-                this.game.particleManager.spawnFloatingText(enemy.container.x, enemy.container.y, `+${enemy.reward}c`);
+                this.game.particleManager.spawnFloatingText(enemy.container.x, enemy.container.y, `+${scaledReward}c`);
                 this.removeEnemy(i);
             }
         }
@@ -111,19 +126,19 @@ export class WaveManager {
     }
 
     private spawnEnemy() {
-        let type: number = 0;
+        let type: EnemyType = EnemyType.GLIDER;
         if (this.waveNumber % 10 === 0) {
-            type = 3;
+            type = EnemyType.FRACTAL;
         } else {
             const rand = Math.random();
             if (this.waveNumber >= 8) {
-                if (rand > 0.8) type = 2;
-                else if (rand > 0.4) type = 1;
+                if (rand > 0.8) type = EnemyType.BEHEMOTH;
+                else if (rand > 0.4) type = EnemyType.STRIDER;
             } else if (this.waveNumber >= 4) {
-                if (rand > 0.6) type = 1;
+                if (rand > 0.6) type = EnemyType.STRIDER;
             }
         }
-        const enemy = new Enemy(type as any, this.waveNumber);
+        const enemy = new Enemy(type, this.waveNumber);
         this.enemies.push(enemy);
         this.game.enemyLayer.addChild(enemy.container);
     }
