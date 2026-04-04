@@ -20,14 +20,9 @@ function App() {
   const [isHardcore, setIsHardcore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isWaveActive, setIsWaveActive] = useState(false);
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
 
-  const isMobile = screenWidth < 768;
-
+  // STUDIO-GRADE ORIENTATION LOCK
   useEffect(() => {
-    const handleResize = () => setScreenWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    
     const lockOrientation = async () => {
       try {
         const screenObj = window.screen as any;
@@ -37,7 +32,6 @@ function App() {
       } catch (e) { /* Browser restriction catch */ }
     };
     lockOrientation();
-    return () => window.removeEventListener('resize', handleResize);
   }, [screen]);
 
   useEffect(() => {
