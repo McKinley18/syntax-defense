@@ -33,8 +33,8 @@ export class MapManager {
      * Identifies current viewable edges and limits grid to that area.
      */
     private updateDimensions() {
-        this.cols = Math.ceil(window.innerWidth / TILE_SIZE);
-        this.rows = Math.ceil(window.innerHeight / TILE_SIZE);
+        this.cols = Math.ceil(window.innerWidth / TILE_SIZE) + 1; // +1 SAFETY COLUMN
+        this.rows = Math.ceil(window.innerHeight / TILE_SIZE) + 1;
         this.initGrid();
     }
 

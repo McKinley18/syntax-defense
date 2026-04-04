@@ -211,11 +211,8 @@ function App() {
         {/* RESPONSIVE 2-LINE TACTICAL MATRIX BANNER */}
         <div className="terminal-header-matrix">
           <div className="matrix-row">
-            <div className="matrix-cell left command-stack">
+            <div className="matrix-cell left">
               <button className="exec-button" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
-              <button className="exec-button" onClick={executeNextWave}>
-                {isSmallScreen ? "> EXEC_WAVE" : "> EXECUTE_NEXT_WAVE_CMD"}
-              </button>
             </div>
             <div className="matrix-cell center label">TOKENS</div>
             <div className="matrix-cell right wave-info-top">
@@ -224,7 +221,11 @@ function App() {
           </div>
           
           <div className="matrix-row">
-            <div className="matrix-cell left"></div>
+            <div className="matrix-cell left">
+              <button className="exec-button" onClick={executeNextWave}>
+                {isSmallScreen ? "> EXEC_WAVE" : "> EXECUTE_NEXT_WAVE_CMD"}
+              </button>
+            </div>
             <div className="matrix-cell center value credits-value">
               {credits}
             </div>

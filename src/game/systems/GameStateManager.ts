@@ -5,7 +5,7 @@ export class GameStateManager {
     
     public credits: number = 500;
     public integrity: number = 20;
-    public currentWave: number = 0;
+    public currentWave: number = 1; // START AT LEVEL 1
     public isHardcore: boolean = false;
     public activeGlitch: GlitchType = 'NONE';
     
@@ -80,7 +80,7 @@ export class GameStateManager {
         this.isHardcore = hardcore;
         this.credits = hardcore ? 1000 : 500;
         this.integrity = 20;
-        this.currentWave = 0;
+        this.currentWave = 1; // RESET TO LEVEL 1
         this.activeGlitch = 'NONE';
         localStorage.removeItem('syntax_defense_save');
     }

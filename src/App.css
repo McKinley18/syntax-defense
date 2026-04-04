@@ -4,18 +4,23 @@
   --neon-cyan: #00ffff;
   --neon-green: #00ffcc;
   --bg-deep: #000000;
-  --header-height: clamp(90px, 15vh, 140px); /* INCREASED SUBSTANCE */
-  --font-xs: clamp(0.7rem, 1.8vw, 0.9rem);
-  --font-sm: clamp(0.9rem, 2.2vw, 1.2rem);
-  --font-md: clamp(1.2rem, 3.5vw, 2rem);
+  --header-height: clamp(80px, 12vh, 120px);
+  --font-xs: clamp(0.65rem, 1.8vw, 0.85rem);
+  --font-sm: clamp(0.85rem, 2.2vw, 1.1rem);
+  --font-md: clamp(1.1rem, 3vw, 1.6rem);
+}
+
+* {
+  box-sizing: border-box; /* PREVENT OVERFLOW */
 }
 
 html, body, #root {
   margin: 0; padding: 0;
-  width: 100%; height: 100%;
+  width: 100vw; height: 100vh;
   overflow: hidden;
   background-color: var(--bg-deep);
   font-family: 'Courier New', Courier, monospace;
+  -webkit-font-smoothing: antialiased;
 }
 
 .game-wrapper {
@@ -27,101 +32,138 @@ html, body, #root {
 #game-container {
   position: absolute;
   top: 0; left: 0;
-  width: 100%; height: 100%;
+  width: 100vw; height: 100vh; /* LOCK TO VIEWPORT */
 }
 
-/* 2. SYMMETRICAL TACTICAL HUD */
-.terminal-header-matrix {
-  background: rgba(0, 5, 10, 0.98);
-  border-bottom: 2px solid var(--neon-blue);
-  padding: 10px 0; /* Remove side padding to use full width */
+/* 1. FLUID MAIN MENU */
+.main-menu {
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  perspective: 1000px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-title-static {
+  font-family: 'Arial Black', sans-serif;
+  font-size: clamp(3rem, 15vw, 8rem);
+  font-weight: 900;
+  line-height: 0.85;
+  text-align: center;
+  color: var(--neon-blue);
+  text-transform: uppercase;
+  margin-bottom: 5vh;
+  transform: rotateX(25deg);
+  text-shadow: 0 1px 0 #0044bb, 0 3px 0 #002299, 0 0 20px rgba(0, 102, 255, 0.6);
+}
+
+.menu-options {
+  display: flex; flex-direction: column;
+  gap: clamp(8px, 2vh, 15px);
+  width: 100%; max-width: 450px;
+}
+
+.menu-options button {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  padding: clamp(10px, 2vh, 18px);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.2s;
+}
+
+.menu-options button:hover {
+  background: var(--neon-cyan); color: #000;
+  box-shadow: 0 0 20px var(--neon-cyan);
+}
+
+.menu-content {
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  align-items: center;
+}
+
+/* 2. FLUID TACTICAL HUD */
+.terminal-header-matrix {
+  background: rgba(0, 5, 10, 0.95);
+  border-bottom: 1px solid var(--neon-blue);
+  padding: 8px clamp(10px, 3vw, 30px);
+  display: flex; flex-direction: column;
+  gap: 4px;
   z-index: 20;
   pointer-events: auto;
+  width: 100vw; /* LOCK TO VIEWPORT */
 }
 
 .matrix-row {
-  display: flex;
+  display: flex; justify-content: space-between; align-items: center;
   width: 100%;
-  align-items: stretch;
 }
 
-.matrix-cell {
-  width: 33.33%; /* STRICT EQUAL WIDTH */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0 15px;
-  box-sizing: border-box;
-}
+.matrix-cell { flex: 1; min-width: 0; }
+.matrix-cell.center { display: flex; justify-content: center; }
+.matrix-cell.right { display: flex; justify-content: flex-end; }
 
-/* VERTICAL SEPARATORS */
-.matrix-cell.center {
-  border-left: 1px solid rgba(0, 102, 255, 0.3);
-  border-right: 1px solid rgba(0, 102, 255, 0.3);
-}
-
-.matrix-cell.left { align-items: flex-start; }
-.matrix-cell.center { align-items: center; text-align: center; }
-.matrix-cell.right { align-items: flex-end; text-align: right; }
-
-.terminal-header-matrix .label { 
-  font-size: var(--font-xs); 
-  color: #55aaaa; 
-  letter-spacing: 2px; 
-  font-weight: bold;
-  text-transform: uppercase;
-}
+.terminal-header-matrix .label { font-size: var(--font-xs); color: #55aaaa; letter-spacing: 1px; }
 
 .credits-value { 
   color: var(--neon-cyan); 
-  font-size: var(--font-md) !important; 
-  font-weight: 900;
-  text-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-  margin: 5px 0;
+  font-size: clamp(1.2rem, 4vw, 2.2rem) !important; 
+  font-weight: bold;
+  text-shadow: 0 0 10px var(--neon-cyan);
 }
 
 .exec-button {
   background: rgba(0, 102, 255, 0.1);
   border: 1px solid var(--neon-blue);
   color: var(--neon-blue);
-  padding: 6px 10px;
+  padding: 4px 12px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
   font-size: var(--font-xs);
   cursor: pointer;
   text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s;
   width: 100%;
-  max-width: 180px;
-  margin-bottom: 4px;
 }
 
 .exec-button:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
+.exec-button:active { transform: scale(0.95); }
 
 .wave-info-top {
   font-size: var(--font-xs);
   color: #55aaaa;
-  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  justify-content: flex-end;
 }
 
+/* REFINED INTEGRITY STACK */
 .integrity-stack {
   display: flex;
   flex-direction: column;
   align-items: center; 
-  width: 100%;
-  max-width: 200px;
+  gap: 1px;
 }
 
 .integrity-stack .label {
+  font-size: var(--font-xs);
   color: var(--neon-green);
-  margin-bottom: 4px;
+  font-weight: bold;
 }
 
 .integrity-bar-small {
-  height: 10px; 
-  width: 100%;
+  height: 6px; 
+  width: clamp(80px, 20vw, 180px);
   background: #111; 
   border: 1px solid #333;
 }
@@ -130,7 +172,7 @@ html, body, #root {
 
 /* 3. FLUID ENCYCLOPEDIA */
 .encyclopedia {
-  width: 100%; height: 100%;
+  width: 100vw; height: 100vh;
   background: #000; color: var(--neon-cyan);
   padding: clamp(15px, 5vw, 40px);
   box-sizing: border-box;
@@ -179,6 +221,7 @@ html, body, #root {
   gap: 20px;
   pointer-events: auto;
   min-height: 120px;
+  width: 100vw; /* LOCK TO VIEWPORT */
 }
 
 .hub-label {
@@ -189,16 +232,13 @@ html, body, #root {
   font-weight: bold;
 }
 
+.defense-section { flex: 2; display: flex; flex-direction: column; }
+.turret-grid { display: flex; gap: 8px; overflow-x: auto; }
+
 .turret-card {
-  background: #050505; 
-  border: 1px solid #333;
-  padding: 8px; 
-  min-width: 130px; 
-  display: flex; 
-  align-items: center; 
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
+  background: #050505; border: 1px solid #333;
+  padding: 8px; min-width: 130px; display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: all 0.2s;
 }
 
 .turret-card.active { border-color: var(--neon-cyan); background: #111; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
@@ -208,28 +248,12 @@ html, body, #root {
 .card-stats { font-size: 0.6rem; color: #888; }
 .card-info .cost { font-size: 0.8rem; font-weight: bold; color: var(--neon-cyan); }
 
-.intel-monitor {
-  background: rgba(0, 102, 255, 0.05);
-  border: 1px solid rgba(0, 102, 255, 0.2);
-  padding: 8px;
-  position: relative;
-  overflow: hidden;
-  height: 100%;
-}
-
+.intel-section { flex: 1; display: flex; flex-direction: column; min-width: 180px; }
+.intel-monitor { background: rgba(0, 102, 255, 0.05); border: 1px solid rgba(0, 102, 255, 0.2); padding: 8px; position: relative; overflow: hidden; height: 100%; }
 .intel-grid { display: flex; gap: 15px; justify-content: center; align-items: center; height: 100%; }
 .intel-card { display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.8; }
 .intel-name { font-size: 0.5rem; color: var(--neon-cyan); font-weight: bold; }
-
-.scanner-line {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 2px;
-  background: var(--neon-blue);
-  box-shadow: 0 0 10px var(--neon-blue);
-  opacity: 0.3;
-  animation: scan-move 3s infinite linear;
-}
-
+.scanner-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); opacity: 0.3; animation: scan-move 3s infinite linear; }
 @keyframes scan-move { 0% { top: 0; } 100% { top: 100%; } }
 
 /* MINIATURE TURRET ICONS */
@@ -249,8 +273,8 @@ html, body, #root {
 .turret-card[data-type="3"] .mini-weapon::before { left: 10px; } .turret-card[data-type="3"] .mini-weapon::after { right: 10px; }
 .turret-card[data-type="3"] .mini-head::after { content: '---'; position: absolute; font-size: 8px; color: var(--turret-color); transform: rotate(90deg); font-weight: bold; }
 
-/* ORIENTATION & BACKGROUND */
-.grid-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+/* BACKGROUND EFFECTS */
+.grid-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; }
 .grid-lines { position: absolute; width: 100%; height: 100%; background-image: linear-gradient(to right, rgba(0, 102, 255, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 102, 255, 0.2) 1px, transparent 1px); background-size: 32px 32px; opacity: 1; }
 .glow-bit { position: absolute; width: 4px; height: 4px; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); border-radius: 50%; opacity: 0; margin-top: -2px; margin-left: -2px; }
 .glow-bit::after { content: ''; position: absolute; opacity: 0.8; }
@@ -278,13 +302,69 @@ html, body, #root {
 .glitch-banner.SYSTEM_DRAIN { border-color: #ff3300; color: #ff3300; }
 @keyframes glitch-flash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
-.game-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; }
+.game-overlay { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; z-index: 10; }
 
 .orientation-warning { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: var(--neon-cyan); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; }
 @media (orientation: portrait) { .orientation-warning { display: flex; } }
 .warning-icon { font-size: 3rem; margin-bottom: 20px; animation: rotate-hint 2s infinite ease-in-out; }
 @keyframes rotate-hint { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
 .warning-text { font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 2px; }
+
+/* PAUSE MENU */
+.pause-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 500;
+  pointer-events: auto;
+}
+
+.pause-content {
+  background: #050505;
+  border: 2px solid var(--neon-blue);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 0 30px rgba(0, 102, 255, 0.3);
+}
+
+.pause-title {
+  color: var(--neon-blue);
+  font-size: var(--font-md);
+  margin-bottom: 30px;
+  letter-spacing: 4px;
+}
+
+.pause-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  min-width: 300px;
+}
+
+.pause-options button {
+  background: rgba(0, 102, 255, 0.1);
+  border: 1px solid var(--neon-blue);
+  color: var(--neon-cyan);
+  padding: 12px 20px;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: var(--font-sm);
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.pause-options button:hover {
+  background: var(--neon-blue);
+  color: #000;
+  box-shadow: 0 0 15px var(--neon-blue);
+}
 
 .shape { width: 30px; height: 30px; margin-bottom: 10px; }
 .circle { border-radius: 50%; background: #ff00ff; }
