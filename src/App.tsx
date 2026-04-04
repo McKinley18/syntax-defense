@@ -19,13 +19,6 @@ function App() {
   const [game, setGame] = useState<GameContainer | null>(null);
   const [isHardcore, setIsHardcore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-
-  useEffect(() => {
-    const handleResize = () => setScreenWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     if (screen === 'GAME' && !game) {

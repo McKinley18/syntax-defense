@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { TILE_SIZE, MAP_ROWS } from './MapManager';
+import { TILE_SIZE } from './MapManager';
 
 export interface GridCoord {
     x: number;
