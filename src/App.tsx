@@ -184,25 +184,40 @@ function App() {
           {screen === 'ENEMIES' && (
             <div className="visual-grid">
               {Object.values(VISUAL_REGISTRY).map(config => (
-                <div key={config.name} className="visual-card">
-                  <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
-                  <div className="label">{config.name}</div>
-                  <div className="desc">PRIORITY: {config.priority} // HP: {config.baseHp}</div>
+                <div key={config.name} className="visual-card-large">
+                  <div className="card-visual-box">
+                    <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
+                  </div>
+                  <div className="card-detail-box">
+                    <div className="label">{config.name}</div>
+                    <div className="stats">HP: {config.baseHp} // SPEED: {config.speed}</div>
+                    <div className="desc">{config.priority === 'LOW' ? 'SWARM_UNIT: HIGH_QUANTITY_LOW_RESISTANCE' : config.priority === 'MED' ? 'BALANCED_NODE: STANDARD_THREAT_SIGNATURE' : config.priority === 'HIGH' ? 'HEAVY_DATA_LOAD: ARMORED_CORE_DENSITY' : 'BOSS_PROCESS: CRITICAL_SYSTEM_THREAT'}</div>
+                  </div>
                 </div>
               ))}
             </div>
           )}
           {screen === 'TURRETS' && (
             <div className="visual-grid">
-              {Object.values(TOWER_CONFIGS).map(t => (
-                <div key={t.name} className="visual-card">
-                  <div className="mini-turret" style={{ '--turret-color': `#${t.color.toString(16).padStart(6,'0')}` } as any}>
-                    <div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+              {[0, 1, 2, 3].map(id => {
+                const type = id as TowerType;
+                const cfg = TOWER_CONFIGS[type];
+                return (
+                  <div key={cfg.name} className="visual-card-large">
+                    <div className="card-visual-box">
+                      <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
+                        <div className="mini-base"></div>
+                        <div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+                      </div>
+                    </div>
+                    <div className="card-detail-box">
+                      <div className="label">{cfg.name}</div>
+                      <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div>
+                      <div className="desc">{type === 0 ? 'RAPID_SUPPRESSION: DUAL_BARREL_AUTO_CANON' : type === 1 ? 'CRYOGENIC_DISH: TEMPORARY_DATA_FREEZE' : type === 2 ? 'RADIUS_DISCHARGE: HEAVY_AOE_FRAGMENTATION' : 'MAGNETIC_ACCELERATOR: MASSIVE_SINGLE_TARGET_PENETRATION'}</div>
+                    </div>
                   </div>
-                  <div className="label">{t.name}</div>
-                  <div className="desc">{t.cost}c // DMG: {t.damage}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
