@@ -4,8 +4,6 @@ import { TextureGenerator } from '../utils/TextureGenerator';
 import type { GridCoord } from './PathManager';
 
 export const TILE_SIZE = 24;
-export const MAP_COLS = Math.ceil(2000 / TILE_SIZE); 
-export const MAP_ROWS = Math.ceil(2000 / TILE_SIZE);
 
 export const TileType = {
     PATH: 0,
@@ -33,8 +31,9 @@ export class MapManager {
     }
 
     private updateDimensions() {
-        this.cols = Math.ceil(window.innerWidth / TILE_SIZE) + 1;
-        this.rows = Math.ceil(window.innerHeight / TILE_SIZE) + 1;
+        // Use floor to ensure we don't have partial tiles on the edges
+        this.cols = Math.floor(window.innerWidth / TILE_SIZE) + 2;
+        this.rows = Math.floor(window.innerHeight / TILE_SIZE) + 2;
         this.initGrid();
     }
 
@@ -51,6 +50,7 @@ export class MapManager {
     public setPathFromCells(cells: GridCoord[]) {
         this.updateDimensions();
         cells.forEach(cell => {
+            // APPLY STRICT 2x2 STAMP
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const gx = cell.x + i;
@@ -65,39 +65,41 @@ export class MapManager {
     }
 
     public render() {
-        this.cols = Math.floor(window.innerWidth / TILE_SIZE) + 1;
-        this.rows = Math.floor(window.innerHeight / TILE_SIZE) + 1;
-
         this.graphics.clear();
         this.pathMask.clear();
 
-        // RENDER GRID FIRST (Z-Index 0)
+        // 1. RENDER GRID LINES FIRST
         if (!this.gridSprite) {
-            const cell = new PIXI.Graphics();
-            // Snap to exactly TILE_SIZE
-            cell.rect(0, 0, TILE_SIZE, TILE_SIZE);
-            cell.fill(0x020408);
-            cell.stroke({ width: 1, color: 0x0066ff, alpha: 0.3 });
-            const tex = this.game.app.renderer.generateTexture(cell);
-            this.gridSprite = new PIXI.TilingSprite({ texture: tex, width: window.innerWidth, height: window.innerHeight });
+            const cellG = new PIXI.Graphics();
+            // Draw a rectangle with an inside stroke to ensure perfect boundary alignment
+            cellG.rect(0, 0, TILE_SIZE, TILE_SIZE);
+            cellG.fill(0x020408);
+            cellG.stroke({ width: 1, color: 0x0066ff, alpha: 0.25, alignment: 0 }); // alignment 0 = inside
+            
+            const tex = this.game.app.renderer.generateTexture(cellG);
+            this.gridSprite = new PIXI.TilingSprite({
+                texture: tex,
+                width: window.innerWidth + TILE_SIZE,
+                height: window.innerHeight + TILE_SIZE
+            });
             this.game.groundLayer.addChildAt(this.gridSprite, 0);
         }
 
-        // RENDER PATH VOID (Z-Index 1)
+        // 2. STAMP BLACK PATH VOID OVER THE GRID
         for (let x = 0; x < this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
                 if (this.grid[x][y] === TileType.PATH) {
-                    const sx = Math.floor(x * TILE_SIZE);
-                    const sy = Math.floor(y * TILE_SIZE);
+                    const sx = Math.round(x * TILE_SIZE);
+                    const sy = Math.round(y * TILE_SIZE);
                     
-                    // Stamp exactly on grid lines
+                    // The black box must cover the grid lines perfectly
                     this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.graphics.fill(0x000000);
                     
                     this.pathMask.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.pathMask.fill(0xffffff);
 
-                    // EDGE LIGHTING - Symmetrical Alignment
+                    // 3. EDGE LIGHTING
                     if (x > 0 && x < this.cols - 1) {
                         const neighbors = [
                             { nx: x+1, ny: y, s: 'r' },
@@ -126,24 +128,29 @@ export class MapManager {
         if (!this.binarySprite) {
             const tex = TextureGenerator.getInstance().binaryTexture;
             if (tex) {
-                this.binarySprite = new PIXI.TilingSprite({ texture: tex, width: window.innerWidth, height: window.innerHeight });
+                this.binarySprite = new PIXI.TilingSprite({
+                    texture: tex,
+                    width: window.innerWidth + TILE_SIZE,
+                    height: window.innerHeight + TILE_SIZE
+                });
                 this.binarySprite.alpha = 0.4;
                 this.game.groundLayer.addChild(this.binarySprite);
                 this.game.groundLayer.addChild(this.pathMask);
                 this.binarySprite.mask = this.pathMask;
             }
         }
+        
         this.syncToViewport();
     }
 
     private syncToViewport() {
         if (this.gridSprite) {
-            this.gridSprite.width = window.innerWidth;
-            this.gridSprite.height = window.innerHeight;
+            this.gridSprite.width = window.innerWidth + TILE_SIZE;
+            this.gridSprite.height = window.innerHeight + TILE_SIZE;
         }
         if (this.binarySprite) {
-            this.binarySprite.width = window.innerWidth;
-            this.binarySprite.height = window.innerHeight;
+            this.binarySprite.width = window.innerWidth + TILE_SIZE;
+            this.binarySprite.height = window.innerHeight + TILE_SIZE;
         }
     }
 
