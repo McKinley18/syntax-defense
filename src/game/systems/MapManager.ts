@@ -1,12 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { GameContainer } from '../GameContainer';
 import { TextureGenerator } from '../utils/TextureGenerator';
-import { GridCoord } from './PathManager';
+import type { GridCoord } from './PathManager';
 
 export const TILE_SIZE = 24;
-const MAX_DIM = Math.max(window.screen.width, window.screen.height, 2000);
-export const MAP_COLS = Math.ceil(MAX_DIM / TILE_SIZE);
-export const MAP_ROWS = Math.ceil(MAX_DIM / TILE_SIZE);
 
 export const TileType = {
     PATH: 0,
@@ -17,6 +14,9 @@ export type TileType = typeof TileType[keyof typeof TileType];
 
 export class MapManager {
     public grid: TileType[][] = [];
+    public cols: number = 0;
+    public rows: number = 0;
+    
     private graphics: PIXI.Graphics;
     private pathMask: PIXI.Graphics;
     private binarySprite: PIXI.TilingSprite | null = null;
@@ -26,33 +26,38 @@ export class MapManager {
         this.game = game;
         this.graphics = new PIXI.Graphics();
         this.pathMask = new PIXI.Graphics();
+        this.updateDimensions();
+    }
+
+    /**
+     * Identifies current viewable edges and limits grid to that area.
+     */
+    private updateDimensions() {
+        this.cols = Math.ceil(window.innerWidth / TILE_SIZE);
+        this.rows = Math.ceil(window.innerHeight / TILE_SIZE);
         this.initGrid();
     }
 
     private initGrid() {
         this.grid = [];
-        for (let x = 0; x < MAP_COLS; x++) {
+        for (let x = 0; x < this.cols; x++) {
             this.grid[x] = [];
-            for (let y = 0; y < MAP_ROWS; y++) {
+            for (let y = 0; y < this.rows; y++) {
                 this.grid[x][y] = TileType.BUILDABLE;
             }
         }
     }
 
-    /**
-     * FLAWLESS 2-TILE STAMP RENDERER
-     * Iterates through every cell in the snake and marks a 2x2 block.
-     */
     public setPathFromCells(cells: GridCoord[]) {
-        this.initGrid();
+        // ALWAYS SYNC TO VIEWABLE EDGES ON START WAVE
+        this.updateDimensions();
         
         cells.forEach(cell => {
-            // APPLY 2X2 STAMP AT EVERY STEP
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const gx = cell.x + i;
                     const gy = cell.y + j;
-                    if (gx >= 0 && gx < MAP_COLS && gy >= 0 && gy < MAP_ROWS) {
+                    if (gx >= 0 && gx < this.cols && gy >= 0 && gy < this.rows) {
                         this.grid[gx][gy] = TileType.PATH;
                     }
                 }
@@ -65,8 +70,9 @@ export class MapManager {
         this.graphics.clear();
         this.pathMask.clear();
 
-        for (let x = 0; x < MAP_COLS; x++) {
-            for (let y = 0; y < MAP_ROWS; y++) {
+        // ONLY RENDER WITHIN VIEWABLE COLS/ROWS
+        for (let x = 0; x < this.cols; x++) {
+            for (let y = 0; y < this.rows; y++) {
                 const type = this.grid[x][y];
                 const sx = x * TILE_SIZE;
                 const sy = y * TILE_SIZE;
@@ -88,19 +94,23 @@ export class MapManager {
             this.game.groundLayer.addChild(this.graphics);
         }
 
+        // RE-SYNC BINARY FLOW TO EXACT VIEWPORT
         if (!this.binarySprite) {
             const tex = TextureGenerator.getInstance().binaryTexture;
             if (tex) {
                 this.binarySprite = new PIXI.TilingSprite({
                     texture: tex,
-                    width: MAX_DIM,
-                    height: MAX_DIM
+                    width: window.innerWidth,
+                    height: window.innerHeight
                 });
                 this.binarySprite.alpha = 0.5;
                 this.game.groundLayer.addChild(this.binarySprite);
                 this.game.groundLayer.addChild(this.pathMask);
                 this.binarySprite.mask = this.pathMask;
             }
+        } else {
+            this.binarySprite.width = window.innerWidth;
+            this.binarySprite.height = window.innerHeight;
         }
     }
 
@@ -114,7 +124,7 @@ export class MapManager {
     public isBuildable(x: number, y: number): boolean {
         const gx = Math.floor(x / TILE_SIZE);
         const gy = Math.floor(y / TILE_SIZE);
-        if (gx >= 0 && gx < MAP_COLS && gy >= 0 && gy < MAP_ROWS) {
+        if (gx >= 0 && gx < this.cols && gy >= 0 && gy < this.rows) {
             return this.grid[gx][gy] === TileType.BUILDABLE;
         }
         return false;

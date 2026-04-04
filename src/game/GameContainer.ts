@@ -57,7 +57,6 @@ export class GameContainer {
             autoDensity: true,
         });
 
-        // Generate textures first
         const tg = TextureGenerator.getInstance();
         tg.generate(this.app);
 
@@ -75,8 +74,8 @@ export class GameContainer {
         this.waveManager = new WaveManager(this);
         this.inputHandler = new InputHandler(this);
 
-        // Set initial path
-        this.mapManager.setPathFromEdges(this.pathManager.getEdges());
+        // SYNC INITIAL PATH
+        this.mapManager.setPathFromCells(this.pathManager.pathCells);
         
         this.app.ticker.add((ticker) => this.update(ticker));
     }

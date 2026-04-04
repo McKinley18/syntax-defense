@@ -22,14 +22,13 @@ export class WaveManager {
         
         this.game.towerManager.clearTowers();
 
-        // 1. Dynamic Path Complexity based on Wave
+        // 1. Generate new path for this wave
         this.game.pathManager.generatePath(this.waveNumber);
         this.game.mapManager.setPathFromCells(this.game.pathManager.pathCells);
 
         // 2. Swarm Size Scaling
-        // Base 10 + 5 per wave, but Boss waves have fewer, tougher units
         if (this.waveNumber % 10 === 0) {
-            this.enemiesToSpawn = 1; // JUST THE BOSS (and maybe a few guards)
+            this.enemiesToSpawn = 1; // Boss only
         } else {
             this.enemiesToSpawn = 10 + Math.floor(this.waveNumber * 4);
         }
@@ -43,7 +42,6 @@ export class WaveManager {
             if (this.spawnTimer <= 0) {
                 this.spawnEnemy();
                 this.enemiesToSpawn--;
-                // Faster spawning as waves progress
                 this.spawnTimer = Math.max(10, 40 - (this.waveNumber * 1.5));
             }
         }
@@ -53,7 +51,6 @@ export class WaveManager {
             enemy.update(delta);
 
             if (enemy.reachedGoal) {
-                // Bosses do critical integrity damage
                 const damage = enemy.type === EnemyType.FRACTAL ? 10 : 
                                enemy.type === EnemyType.BEHEMOTH ? 3 : 1;
                 GameStateManager.getInstance().takeDamage(damage);
@@ -73,26 +70,19 @@ export class WaveManager {
     private spawnEnemy() {
         let type: EnemyType = EnemyType.GLIDER;
         
-        // BOSS WAVE logic (Every 10 waves)
         if (this.waveNumber % 10 === 0) {
             type = EnemyType.FRACTAL;
         } else {
             const rand = Math.random();
-            // Wave-based introduction
             if (this.waveNumber >= 8) {
                 if (rand > 0.85) type = EnemyType.BEHEMOTH;
                 else if (rand > 0.5) type = EnemyType.STRIDER;
-                else type = EnemyType.GLIDER;
             } else if (this.waveNumber >= 4) {
                 if (rand > 0.6) type = EnemyType.STRIDER;
-                else type = EnemyType.GLIDER;
-            } else {
-                type = EnemyType.GLIDER;
             }
         }
 
-        const startNodeId = this.game.pathManager.startNodes[Math.floor(Math.random() * this.game.pathManager.startNodes.length)];
-        const enemy = new Enemy(type, this.waveNumber, startNodeId);
+        const enemy = new Enemy(type, this.waveNumber);
         this.enemies.push(enemy);
         this.game.enemyLayer.addChild(enemy.container);
     }
