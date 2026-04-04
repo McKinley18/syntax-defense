@@ -20,26 +20,25 @@ function App() {
   const [isHardcore, setIsHardcore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isWaveActive, setIsWaveActive] = useState(false);
-
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
 
-  // STUDIO-GRADE ORIENTATION LOCK
+  const isMobile = screenWidth < 768;
+
   useEffect(() => {
     const handleResize = () => setScreenWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     
     const lockOrientation = async () => {
       try {
-        if (screen === 'GAME' && window.screen.orientation?.lock) {
-          await window.screen.orientation.lock('landscape');
+        const screenObj = window.screen as any;
+        if (screen === 'GAME' && screenObj.orientation?.lock) {
+          await screenObj.orientation.lock('landscape');
         }
       } catch (e) { /* Browser restriction catch */ }
     };
     lockOrientation();
     return () => window.removeEventListener('resize', handleResize);
   }, [screen]);
-
-  const isSmallScreen = screenWidth < 768;
 
   useEffect(() => {
     if (screen === 'GAME' && !game) {
@@ -63,6 +62,14 @@ function App() {
     }
   }, [screen, game]);
 
+  useEffect(() => {
+    if (game) {
+      game.isPaused = isPaused;
+    }
+  }, [isPaused, game]);
+
+  const isGameOver = integrity <= 0;
+
   const startNewGame = (hardcore: boolean = false) => {
     GameStateManager.getInstance().resetGame(hardcore);
     setIsHardcore(hardcore);
@@ -77,14 +84,6 @@ function App() {
       alert("CRITICAL_ERROR: NO SAVED_DATA ON LOCAL_MOUNT.");
     }
   };
-
-  useEffect(() => {
-    if (game) {
-      game.isPaused = isPaused;
-    }
-  }, [isPaused, game]);
-
-  const isGameOver = integrity <= 0;
 
   const saveAndQuit = () => {
     GameStateManager.getInstance().save();
@@ -102,8 +101,8 @@ function App() {
     if (game) {
       game.app.destroy(true, { children: true, texture: true });
       const container = document.getElementById('game-container');
-      if (container) container.innerHTML = ''; // Clear canvas
-      setGame(null); // Reset instance
+      if (container) container.innerHTML = '';
+      setGame(null);
     }
     setIsPaused(false);
     setScreen('MENU');
@@ -163,19 +162,19 @@ function App() {
               <div className="info-body">
                 {infoTab === 'LORE' && (
                   <div className="lore-text">
-                    <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p>
+                    <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0. VIRAL GEOMETRY PROPAGATING THROUGH DATA LANES.</p>
                     <p>&gt;&gt; SYSTEM_ANOMALIES_DETECTED:</p>
-                    <p>1. [ OVERCLOCK ]: TURRET FIRE RATES +50%.</p>
-                    <p>2. [ LAG_SPIKE ]: VIRAL SPEED -30%.</p>
-                    <p>3. [ SYSTEM_DRAIN ]: TURRET RANGE -20%.</p>
-                    <p>&gt;&gt; DIRECTIVE: PROTECT THE ROOT.</p>
+                    <p>1. [ OVERCLOCK ]: TURRET FIRE RATES INCREASED BY 50%.</p>
+                    <p>2. [ LAG_SPIKE ]: VIRAL PROPAGATION SPEEDS REDUCED BY 30%.</p>
+                    <p>3. [ SYSTEM_DRAIN ]: TURRET RANGE EFFICIENCY REDUCED BY 20%.</p>
+                    <p>&gt;&gt; DIRECTIVE: PROTECT THE ROOT AT ALL COSTS.</p>
                   </div>
                 )}
                 {infoTab === 'LOGIC' && (
                   <div className="logic-text">
-                    <p>[ WAVE_SHIFT ]: PATHS RECONFIGURE EVERY LEVEL.</p>
-                    <p>[ BUDGET ]: 10% INTEREST ON UNSPENT TOKENS.</p>
-                    <p>[ HARDCORE ]: NO INTEREST. +50% COSTS.</p>
+                    <p>[ WAVE_SHIFT ]: RECONFIGURING DATA LANES TO TRAP VIRAL LOADS.</p>
+                    <p>[ BUDGET_RECYCLE ]: NO CREDITS ARE RETURNED ON NODE DISSOLUTION. EARN INTEREST ON UNSPENT CREDITS.</p>
+                    <p>[ HARDCORE_MODE ]: 1000c START. NO INTEREST. +50% PROTOCOL COSTS.</p>
                   </div>
                 )}
                 {infoTab === 'DIAGNOSTICS' && (
@@ -194,7 +193,7 @@ function App() {
                 <div key={config.name} className="visual-card">
                   <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
                   <div className="label">{config.name}</div>
-                  <div className="desc">PRIORITY: {config.priority}</div>
+                  <div className="desc">PRIORITY: {config.priority} // HP: {config.baseHp}</div>
                 </div>
               ))}
             </div>

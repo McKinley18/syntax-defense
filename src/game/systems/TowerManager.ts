@@ -32,6 +32,7 @@ export class TowerManager {
     private setupPlacementInput() {
         this.game.app.stage.eventMode = 'static';
         
+        // Always clear preview on move IF not placing
         this.game.app.stage.on('globalpointermove', (e) => {
             if (!this.isPlacing) {
                 this.previewGraphics.clear();
@@ -43,7 +44,6 @@ export class TowerManager {
 
         this.game.app.stage.on('pointertap', (e) => {
             if (!this.isPlacing) return;
-            
             const worldPos = this.game.viewport.toLocal(e.global);
             
             if (this.game.mapManager.isBuildable(worldPos.x, worldPos.y)) {
@@ -51,15 +51,12 @@ export class TowerManager {
                     const center = this.game.mapManager.getTileCenter(worldPos.x, worldPos.y);
                     this.placeTower(this.selectedTurretType, center.x, center.y);
                     
-                    // STOP PLACING AFTER SUCCESSFUL ACTION
                     this.isPlacing = false;
                     this.previewGraphics.clear();
                     e.preventDefault();
                 }
             } else {
-                // CANCEL PLACING IF TAP INVALID AREA
-                this.isPlacing = false;
-                this.previewGraphics.clear();
+                // DON'T AUTO-CANCEL ON BACKGROUND TAP - Wait for explicit card change or placement
             }
         });
     }
