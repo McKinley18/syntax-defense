@@ -52,11 +52,18 @@ export class Enemy {
         const g = new PIXI.Graphics();
         const s = TILE_SIZE / 2 - 2; 
         
-        if (config.shape === 'circle') g.circle(0, 0, s);
-        else if (config.shape === 'triangle') g.poly([-s, s, 0, -s, s, s]);
-        else if (config.shape === 'square') g.rect(-s, -s, s*2, s*2);
-        else if (config.shape === 'hexagon') g.poly([-s, 0, -s/2, -s, s/2, -s, s, 0, s/2, s, -s/2, s]);
+        // SYNC WITH REGISTRY SHAPES
+        if (config.shape === 'circle') {
+            g.circle(0, 0, s);
+        } else if (config.shape === 'triangle') {
+            g.poly([-s, s, 0, -s, s, s]);
+        } else if (config.shape === 'square') {
+            g.rect(-s, -s, s*2, s*2);
+        } else if (config.shape === 'hexagon') {
+            g.poly([-s, 0, -s/2, -s, s/2, -s, s, 0, s/2, s, -s/2, s]);
+        }
         
+        // SYNC WITH REGISTRY COLOR
         g.fill({ color: config.color, alpha: 0.9 });
         g.stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
         return g;

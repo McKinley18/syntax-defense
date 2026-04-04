@@ -56,6 +56,7 @@ export class GameContainer {
             background: '#0a0a0a',
             resizeTo: window,
             antialias: true,
+            roundPixels: true, // ENSURE RAZOR-SHARP SNAP
             resolution: window.devicePixelRatio || 1,
             autoDensity: true,
         });

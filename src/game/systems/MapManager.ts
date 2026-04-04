@@ -65,22 +65,39 @@ export class MapManager {
     }
 
     public render() {
+        this.cols = Math.floor(window.innerWidth / TILE_SIZE) + 1;
+        this.rows = Math.floor(window.innerHeight / TILE_SIZE) + 1;
+
         this.graphics.clear();
         this.pathMask.clear();
 
+        // RENDER GRID FIRST (Z-Index 0)
+        if (!this.gridSprite) {
+            const cell = new PIXI.Graphics();
+            // Snap to exactly TILE_SIZE
+            cell.rect(0, 0, TILE_SIZE, TILE_SIZE);
+            cell.fill(0x020408);
+            cell.stroke({ width: 1, color: 0x0066ff, alpha: 0.3 });
+            const tex = this.game.app.renderer.generateTexture(cell);
+            this.gridSprite = new PIXI.TilingSprite({ texture: tex, width: window.innerWidth, height: window.innerHeight });
+            this.game.groundLayer.addChildAt(this.gridSprite, 0);
+        }
+
+        // RENDER PATH VOID (Z-Index 1)
         for (let x = 0; x < this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
                 if (this.grid[x][y] === TileType.PATH) {
-                    const sx = x * TILE_SIZE;
-                    const sy = y * TILE_SIZE;
+                    const sx = Math.floor(x * TILE_SIZE);
+                    const sy = Math.floor(y * TILE_SIZE);
                     
+                    // Stamp exactly on grid lines
                     this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.graphics.fill(0x000000);
                     
                     this.pathMask.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.pathMask.fill(0xffffff);
 
-                    // EDGE LIGHTING
+                    // EDGE LIGHTING - Symmetrical Alignment
                     if (x > 0 && x < this.cols - 1) {
                         const neighbors = [
                             { nx: x+1, ny: y, s: 'r' },
@@ -100,16 +117,6 @@ export class MapManager {
                     }
                 }
             }
-        }
-
-        if (!this.gridSprite) {
-            const cell = new PIXI.Graphics();
-            cell.rect(0, 0, TILE_SIZE, TILE_SIZE);
-            cell.fill(0x020408);
-            cell.stroke({ width: 1, color: 0x0066ff, alpha: 0.3 });
-            const tex = this.game.app.renderer.generateTexture(cell);
-            this.gridSprite = new PIXI.TilingSprite({ texture: tex, width: window.innerWidth, height: window.innerHeight });
-            this.game.groundLayer.addChildAt(this.gridSprite, 0);
         }
 
         if (!this.game.groundLayer.children.includes(this.graphics)) {

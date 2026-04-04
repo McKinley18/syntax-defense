@@ -82,11 +82,23 @@ function App() {
 
   const saveAndQuit = () => {
     GameStateManager.getInstance().save();
+    if (game) {
+      game.app.destroy(true, { children: true, texture: true });
+      const container = document.getElementById('game-container');
+      if (container) container.innerHTML = '';
+      setGame(null);
+    }
     setIsPaused(false);
     setScreen('MENU');
   };
 
   const quitToMenu = () => {
+    if (game) {
+      game.app.destroy(true, { children: true, texture: true });
+      const container = document.getElementById('game-container');
+      if (container) container.innerHTML = ''; // Clear canvas
+      setGame(null); // Reset instance
+    }
     setIsPaused(false);
     setScreen('MENU');
   };
@@ -241,9 +253,9 @@ function App() {
             <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
             <div className="intel-grid">
               {game?.waveManager.getUpcomingEnemyTypes().map(type => {
-                const config = VISUAL_REGISTRY[type as EnemyType];
+                const config = (VISUAL_REGISTRY as any)[type];
                 return (
-                  <div key={type} className="intel-card">
+                  <div key={type} className="intel-icon-box">
                     <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
                     <span className="intel-label">{config.name}</span>
                   </div>
