@@ -211,24 +211,25 @@ function App() {
         {/* RESPONSIVE 2-LINE TACTICAL MATRIX BANNER */}
         <div className="terminal-header-matrix">
           <div className="matrix-row">
-            <div className="matrix-cell left" style={{ display: 'flex', gap: '10px' }}>
+            <div className="matrix-cell left command-stack">
               <button className="exec-button" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
               <button className="exec-button" onClick={executeNextWave}>
                 {isSmallScreen ? "> EXEC_WAVE" : "> EXECUTE_NEXT_WAVE_CMD"}
               </button>
             </div>
             <div className="matrix-cell center label">TOKENS</div>
-            <div className="matrix-cell right label">{isSmallScreen ? "INTEGRITY" : "SYSTEM_INTEGRITY"}</div>
+            <div className="matrix-cell right wave-info-top">
+              {waveName} // LVL_{wave}
+            </div>
           </div>
           
           <div className="matrix-row">
-            <div className="matrix-cell left wave-info">
-              {waveName} // LVL_{wave}
-            </div>
+            <div className="matrix-cell left"></div>
             <div className="matrix-cell center value credits-value">
               {credits}
             </div>
             <div className="matrix-cell right integrity-stack">
+              <span className="label">SYSTEM_INTEGRITY</span>
               <div className="integrity-bar-small">
                 <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div>
               </div>
