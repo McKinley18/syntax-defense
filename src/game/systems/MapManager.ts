@@ -1,10 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { GameContainer } from '../GameContainer';
 import { TextureGenerator } from '../utils/TextureGenerator';
+import { GridCoord } from './PathManager';
 
 export const TILE_SIZE = 24;
-
-// FIX: Use the largest possible screen dimension to ensure full coverage on rotation
 const MAX_DIM = Math.max(window.screen.width, window.screen.height, 2000);
 export const MAP_COLS = Math.ceil(MAX_DIM / TILE_SIZE);
 export const MAP_ROWS = Math.ceil(MAX_DIM / TILE_SIZE);
@@ -40,36 +39,21 @@ export class MapManager {
         }
     }
 
-    public setPathFromEdges(edges: {start: PIXI.Point, end: PIXI.Point}[]) {
+    /**
+     * FLAWLESS 2-TILE STAMP RENDERER
+     * Iterates through every cell in the snake and marks a 2x2 block.
+     */
+    public setPathFromCells(cells: GridCoord[]) {
         this.initGrid();
         
-        edges.forEach(edge => {
-            const gx1 = Math.floor(edge.start.x / TILE_SIZE);
-            const gy1 = Math.floor(edge.start.y / TILE_SIZE);
-            const gx2 = Math.floor(edge.end.x / TILE_SIZE);
-            const gy2 = Math.floor(edge.end.y / TILE_SIZE);
-
-            const minX = Math.min(gx1, gx2);
-            const maxX = Math.max(gx1, gx2);
-            const minY = Math.min(gy1, gy2);
-            const maxY = Math.max(gy1, gy2);
-
-            for (let x = minX; x <= maxX; x++) {
-                for (let y = minY; y <= maxY; y++) {
-                    if (x >= 0 && x < MAP_COLS && y >= 0 && y < MAP_ROWS) {
-                        this.grid[x][y] = TileType.PATH;
-                        
-                        // STRICT 2-TILE WIDTH ENFORCEMENT
-                        if (Math.abs(gx1 - gx2) > Math.abs(gy1 - gy2)) { // Horizontal
-                            if (y + 1 < MAP_ROWS) this.grid[x][y + 1] = TileType.PATH;
-                        } else { // Vertical
-                            if (x + 1 < MAP_COLS) this.grid[x + 1][y] = TileType.PATH;
-                        }
-
-                        // Corner Elbow: Ensure 2x2 connection at every turn
-                        if (x + 1 < MAP_COLS && y + 1 < MAP_ROWS) {
-                            this.grid[x + 1][y + 1] = TileType.PATH;
-                        }
+        cells.forEach(cell => {
+            // APPLY 2X2 STAMP AT EVERY STEP
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    const gx = cell.x + i;
+                    const gy = cell.y + j;
+                    if (gx >= 0 && gx < MAP_COLS && gy >= 0 && gy < MAP_ROWS) {
+                        this.grid[gx][gy] = TileType.PATH;
                     }
                 }
             }
@@ -81,7 +65,6 @@ export class MapManager {
         this.graphics.clear();
         this.pathMask.clear();
 
-        // Render enough tiles to cover any screen size
         for (let x = 0; x < MAP_COLS; x++) {
             for (let y = 0; y < MAP_ROWS; y++) {
                 const type = this.grid[x][y];
@@ -110,7 +93,7 @@ export class MapManager {
             if (tex) {
                 this.binarySprite = new PIXI.TilingSprite({
                     texture: tex,
-                    width: MAX_DIM, // FIX: Cover max dimension
+                    width: MAX_DIM,
                     height: MAX_DIM
                 });
                 this.binarySprite.alpha = 0.5;
@@ -118,10 +101,6 @@ export class MapManager {
                 this.game.groundLayer.addChild(this.pathMask);
                 this.binarySprite.mask = this.pathMask;
             }
-        } else {
-            // Update dimensions on re-render
-            this.binarySprite.width = MAX_DIM;
-            this.binarySprite.height = MAX_DIM;
         }
     }
 

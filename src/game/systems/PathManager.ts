@@ -1,18 +1,15 @@
 import * as PIXI from 'pixi.js';
-import { TILE_SIZE, MAP_ROWS } from './MapManager';
+import { TILE_SIZE, MAP_ROWS, MAP_COLS } from './MapManager';
 
-export interface PathNode {
-    id: string;
-    pos: PIXI.Point;
-    next: string[];
+export interface GridCoord {
+    x: number;
+    y: number;
 }
 
 export class PathManager {
-    public nodes: Map<string, PathNode> = new Map();
-    public startNodes: string[] = [];
-    public endNodes: string[] = [];
-    
-    private occupiedGrid: Set<string> = new Set();
+    public pathCells: GridCoord[] = [];
+    public startNodePos: PIXI.Point = new PIXI.Point(0, 0);
+    public endNodePos: PIXI.Point = new PIXI.Point(0, 0);
 
     constructor() {
         this.generatePath(1);
@@ -21,131 +18,128 @@ export class PathManager {
     public generatePath(waveNumber: number) {
         let success = false;
         let attempts = 0;
-
-        while (!success && attempts < 30) {
-            try {
-                this.nodes.clear();
-                this.startNodes = [];
-                this.endNodes = [];
-                this.occupiedGrid.clear();
-
-                this.attemptGeneration(waveNumber);
-                if (this.validatePath()) {
-                    // Ensure the path is actually long enough to be challenging
-                    const edges = this.getEdges();
-                    if (edges.length >= 10) {
-                        success = true;
-                    }
-                }
-            } catch (e) {
-                attempts++;
+        
+        while (!success && attempts < 50) {
+            if (this.attemptComplexSnake(waveNumber)) {
+                success = true;
             }
+            attempts++;
         }
     }
 
-    private attemptGeneration(wave: number) {
+    private attemptComplexSnake(wave: number): boolean {
+        const visibleCols = Math.floor(window.innerWidth / TILE_SIZE);
         const topMargin = 6;
         const bottomMargin = 8;
-        const midY = Math.floor((MAP_ROWS - topMargin - bottomMargin) / 2) + topMargin;
         
-        let gx = 0;
-        let gy = midY;
+        this.pathCells = [];
+        const visited = new Set<string>();
+
+        let cx = 0;
+        let cy = Math.floor((MAP_ROWS - topMargin - bottomMargin) / 2) + topMargin;
         
-        let lastId = this.addNodeAtGrid(gx, gy);
-        this.startNodes.push(lastId);
+        const startX = cx;
+        const startY = cy;
 
-        gx = 3;
-        lastId = this.addNodeAtGrid(gx, gy);
-        this.link(this.startNodes[0], lastId);
+        // Add initial 2x2 stamp area to visited to prevent immediate collision
+        this.markVisited(cx, cy, visited);
+        this.pathCells.push({ x: cx, y: cy });
 
-        // Escalating segments for progression
-        const totalSegments = 12 + Math.min(wave, 18);
         let lastDir = { x: 1, y: 0 };
+        let stepsSinceTurn = 0;
 
-        // DYNAMIC VISIBLE BOUNDARY
-        const visibleCols = Math.floor(window.innerWidth / TILE_SIZE);
+        // Target: Right edge
+        const targetX = visibleCols - 1;
 
-        for (let i = 0; i < totalSegments; i++) {
+        // Loop until we hit the right edge
+        for (let i = 0; i < 1000; i++) {
+            if (cx >= targetX) break;
+
             const possibleDirs = [
-                { x: 1, y: 0 }, { x: 1, y: 0 }, // Right Bias
-                { x: 0, y: 1 }, { x: 0, y: -1 }
-            ].filter(d => d.x !== -lastDir.x || d.y !== -lastDir.y);
+                { x: 1, y: 0 },  // Right
+                { x: 0, y: 1 },  // Down
+                { x: 0, y: -1 }, // Up
+                { x: -1, y: 0 }  // Left (SWITCH-BACK)
+            ];
 
-            const dir = possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
-            const step = 3 + Math.floor(Math.random() * 4);
+            // Filter out 180-degree turns and margins
+            const validDirs = possibleDirs.filter(d => {
+                const nx = cx + d.x;
+                const ny = cy + d.y;
+                
+                // Stay within visible bounds
+                if (nx < 0 || nx > visibleCols || ny < topMargin || ny > MAP_ROWS - bottomMargin) return false;
+                
+                // Prevent 180-degree reversal
+                if (d.x === -lastDir.x && d.y === -lastDir.y) return false;
 
-            const nx = Math.max(2, Math.min(visibleCols - 4, gx + dir.x * step));
-            const ny = Math.max(topMargin, Math.min(MAP_ROWS - bottomMargin, gy + dir.y * step));
+                // STRICT SPATIAL AWARENESS: Check if the 2x2 area we are about to fill is already used
+                // We check a 3x3 area to ensure a 1-tile gap between "Switch-Back" corridors
+                return this.isAreaClear(nx, ny, visited, 2);
+            });
 
-            // Proximity check - slightly looser for better connectivity
-            if (this.isAreaClear(nx, ny, 1)) {
-                const nextId = this.addNodeAtGrid(nx, ny);
-                this.link(lastId, nextId);
-                lastId = nextId;
-                gx = nx;
-                gy = ny;
-                lastDir = dir;
+            if (validDirs.length === 0) return false; // Trapped, retry
+
+            // Weighting: High bias for Right, Medium for same direction (inertia), Low for Left
+            validDirs.sort((a, b) => {
+                let scoreA = 0;
+                let scoreB = 0;
+
+                // Right bias
+                if (a.x === 1) scoreA += 10;
+                if (b.x === 1) scoreB += 10;
+
+                // Inertia (prefer continuing straight for a few tiles)
+                if (a.x === lastDir.x && a.y === lastDir.y && stepsSinceTurn < 4) scoreA += 5;
+                if (b.x === lastDir.x && b.y === lastDir.y && stepsSinceTurn < 4) scoreB += 5;
+
+                // Switch-back weight (Only allow if we are well away from the start)
+                if (a.x === -1 && cx > 10) scoreA += 2;
+                if (b.x === -1 && cx > 10) scoreB += 2;
+
+                return (scoreB + Math.random() * 5) - (scoreA + Math.random() * 5);
+            });
+
+            const dir = validDirs[0];
+            if (dir.x !== lastDir.x || dir.y !== lastDir.y) {
+                stepsSinceTurn = 0;
+            } else {
+                stepsSinceTurn++;
             }
+
+            cx += dir.x;
+            cy += dir.y;
+            lastDir = dir;
+
+            this.markVisited(cx, cy, visited);
+            this.pathCells.push({ x: cx, y: cy });
         }
 
-        // STRICT VISIBLE END: RIGHT EDGE
-        const goalId = this.addNodeAtGrid(visibleCols - 1, gy);
-        this.link(lastId, goalId);
-        this.endNodes.push(goalId);
+        this.startNodePos = new PIXI.Point(startX * TILE_SIZE + TILE_SIZE, startY * TILE_SIZE + TILE_SIZE);
+        this.endNodePos = new PIXI.Point(cx * TILE_SIZE + TILE_SIZE, cy * TILE_SIZE + TILE_SIZE);
+        
+        return true;
     }
 
-    private isAreaClear(gx: number, gy: number, radius: number): boolean {
-        // ENHANCED BUFFER: Check a wider area to prevent "scuffing" other path segments
-        const buffer = radius + 1; 
-        for (let x = gx - buffer; x <= gx + buffer; x++) {
-            for (let y = gy - buffer; y <= gy + buffer; y++) {
-                if (this.occupiedGrid.has(`${x},${y}`)) return false;
+    private isAreaClear(gx: number, gy: number, visited: Set<string>, radius: number): boolean {
+        for (let ox = -radius; ox <= radius; ox++) {
+            for (let oy = -radius; oy <= radius; oy++) {
+                if (visited.has(`${gx + ox},${gy + oy}`)) return false;
             }
         }
         return true;
     }
 
-    private addNodeAtGrid(gx: number, gy: number): string {
-        const id = Math.random().toString(36).substr(2, 9);
-        const pos = new PIXI.Point(gx * TILE_SIZE + TILE_SIZE / 2, gy * TILE_SIZE + TILE_SIZE / 2);
-        this.nodes.set(id, { id, pos, next: [] });
-        
-        // Mark a 3x3 footprint as occupied to keep corridors clean
-        for(let ox=-1; ox<=1; ox++) {
-            for(let oy=-1; oy<=1; oy++) {
-                this.occupiedGrid.add(`${gx+ox},${gy+oy}`);
-            }
-        }
-        return id;
+    private markVisited(gx: number, gy: number, visited: Set<string>) {
+        // We only mark the 1x1 core to allow the path to wind tightly,
+        // but the renderer will still draw it as 2x2.
+        visited.add(`${gx},${gy}`);
     }
 
-    private link(fromId: string, toId: string) {
-        const node = this.nodes.get(fromId);
-        if (node) node.next.push(toId);
-    }
-
-    private validatePath(): boolean {
-        if (this.startNodes.length === 0 || this.endNodes.length === 0) return false;
-        const reachable = new Set<string>();
-        const queue = [...this.startNodes];
-        while (queue.length > 0) {
-            const currId = queue.shift()!;
-            if (reachable.has(currId)) continue;
-            reachable.add(currId);
-            const node = this.nodes.get(currId);
-            if (node) queue.push(...node.next);
-        }
-        return this.endNodes.some(id => reachable.has(id));
-    }
-
-    public getEdges(): { start: PIXI.Point, end: PIXI.Point }[] {
-        const edges: { start: PIXI.Point, end: PIXI.Point }[] = [];
-        this.nodes.forEach(node => {
-            node.next.forEach(nextId => {
-                const nextNode = this.nodes.get(nextId);
-                if (nextNode) edges.push({ start: node.pos, end: nextNode.pos });
-            });
-        });
-        return edges;
+    public getPathPoints(): PIXI.Point[] {
+        return this.pathCells.map(c => new PIXI.Point(
+            c.x * TILE_SIZE + TILE_SIZE / 2, 
+            c.y * TILE_SIZE + TILE_SIZE / 2
+        ));
     }
 }

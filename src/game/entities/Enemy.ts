@@ -12,11 +12,7 @@ export const EnemyType = {
 export type EnemyType = typeof EnemyType[keyof typeof EnemyType];
 
 interface EnemyConfig {
-    hp: number;
-    speed: number;
-    reward: number;
-    color: number;
-    size: number;
+    hp: number; speed: number; reward: number; color: number; size: number;
 }
 
 const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
@@ -33,41 +29,40 @@ export class Enemy {
     public type: EnemyType;
     public speed: number;
     public reward: number;
-    public stagger: number;
-    public reachedGoal: boolean = false;
     public totalProgress: number = 0;
+    public reachedGoal: boolean = false;
     
-    private freezeTimer: number = 0;
-    private currentNodeId: string;
-    private targetNodeId: string | null = null;
-    private segmentProgress: number = 0;
+    private pathPoints: PIXI.Point[];
+    private currentPointIndex: number = 0;
     private visual: PIXI.Graphics;
     private healthBar: PIXI.Graphics;
+    private freezeTimer: number = 0;
 
-    constructor(type: EnemyType, waveNumber: number, startNodeId: string) {
+    constructor(type: EnemyType, waveNumber: number) {
         this.type = type;
         this.container = new PIXI.Container();
-        this.stagger = (Math.random() - 0.5) * 40;
-        this.currentNodeId = startNodeId;
-
+        
+        // Get high-fidelity path from Manager
+        this.pathPoints = GameContainer.instance.pathManager.getPathPoints();
+        
         const config = ENEMY_CONFIGS[type];
-        // EXPONENTIAL HP SCALING: 15% increase per wave for higher difficulty
         this.maxHealth = Math.floor(config.hp * Math.pow(1.15, waveNumber));
         this.health = this.maxHealth;
-        
-        // Glitch Logic: LAG_SPIKE reduces speed by 30%
-        let finalSpeed = config.speed;
-        if (GameStateManager.getInstance().activeGlitch === 'LAG_SPIKE') {
-            finalSpeed *= 0.7;
-        }
-        this.speed = finalSpeed;
-        
         this.reward = config.reward;
+
+        let finalSpeed = config.speed;
+        if (GameStateManager.getInstance().activeGlitch === 'LAG_SPIKE') finalSpeed *= 0.7;
+        this.speed = finalSpeed;
 
         this.visual = this.createVisual(config);
         this.healthBar = new PIXI.Graphics();
         this.container.addChild(this.visual, this.healthBar);
-        this.pickNextTarget();
+
+        // Initial Position
+        if (this.pathPoints.length > 0) {
+            this.container.x = this.pathPoints[0].x;
+            this.container.y = this.pathPoints[0].y;
+        }
     }
 
     private createVisual(config: EnemyConfig): PIXI.Graphics {
@@ -82,62 +77,30 @@ export class Enemy {
         return g;
     }
 
-    public freeze(duration: number) {
-        this.freezeTimer = duration;
-    }
-
-    private pickNextTarget() {
-        const node = GameContainer.instance.pathManager.nodes.get(this.currentNodeId);
-        if (node && node.next.length > 0) {
-            this.targetNodeId = node.next[Math.floor(Math.random() * node.next.length)];
-            this.segmentProgress = 0;
-        } else {
-            this.targetNodeId = null;
-            this.reachedGoal = true;
-        }
-    }
-
     public update(delta: number) {
         if (this.freezeTimer > 0) {
             this.freezeTimer -= delta;
             this.visual.tint = 0x00ffff;
             return;
         }
-        
-        // Visual Glitch if health is critical
-        if (this.health < this.maxHealth * 0.25 && Math.random() > 0.8) {
-            this.visual.tint = 0xff0000;
-            this.visual.x = (Math.random() - 0.5) * 4;
-        } else {
-            this.visual.tint = 0xffffff;
-            this.visual.x = 0;
+        this.visual.tint = 0xffffff;
+
+        if (this.currentPointIndex >= this.pathPoints.length - 1) {
+            this.reachedGoal = true;
+            return;
         }
 
-        if (!this.targetNodeId) return;
+        const target = this.pathPoints[this.currentPointIndex + 1];
+        const dx = target.x - this.container.x;
+        const dy = target.y - this.container.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
 
-        const startNode = GameContainer.instance.pathManager.nodes.get(this.currentNodeId);
-        const endNode = GameContainer.instance.pathManager.nodes.get(this.targetNodeId);
-
-        if (startNode && endNode) {
-            const dx = endNode.pos.x - startNode.pos.x;
-            const dy = endNode.pos.y - startNode.pos.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            
-            const moveStep = (this.speed * delta);
-            this.segmentProgress += moveStep / dist;
-            this.totalProgress += moveStep;
-
-            if (this.segmentProgress >= 1) {
-                this.currentNodeId = this.targetNodeId;
-                this.pickNextTarget();
-            } else {
-                this.container.x = startNode.pos.x + dx * this.segmentProgress;
-                this.container.y = startNode.pos.y + dy * this.segmentProgress;
-                const nx = -dy / dist;
-                const ny = dx / dist;
-                this.container.x += nx * this.stagger;
-                this.container.y += ny * this.stagger;
-            }
+        if (dist < (this.speed * delta)) {
+            this.currentPointIndex++;
+        } else {
+            this.container.x += (dx / dist) * this.speed * delta;
+            this.container.y += (dy / dist) * this.speed * delta;
+            this.totalProgress += this.speed * delta;
         }
 
         this.visual.rotation += 0.05 * delta;
@@ -157,10 +120,11 @@ export class Enemy {
 
     public takeDamage(amount: number): boolean {
         this.health -= amount;
-        
-        // Spawn small debris on impact
         GameContainer.instance.particleManager.spawnDebris(this.container.x, this.container.y, ENEMY_CONFIGS[this.type].color);
-        
         return this.health <= 0;
+    }
+
+    public freeze(duration: number) {
+        this.freezeTimer = duration;
     }
 }

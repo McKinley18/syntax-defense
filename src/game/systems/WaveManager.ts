@@ -24,7 +24,7 @@ export class WaveManager {
 
         // 1. Dynamic Path Complexity based on Wave
         this.game.pathManager.generatePath(this.waveNumber);
-        this.game.mapManager.setPathFromEdges(this.game.pathManager.getEdges());
+        this.game.mapManager.setPathFromCells(this.game.pathManager.pathCells);
 
         // 2. Swarm Size Scaling
         // Base 10 + 5 per wave, but Boss waves have fewer, tougher units
