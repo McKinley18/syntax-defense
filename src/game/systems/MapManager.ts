@@ -31,12 +31,12 @@ export class MapManager {
     }
 
     private updateDimensions() {
-        // MANDATE: NO PARTIAL BOXES. Round down to the nearest TILE_SIZE.
+        // MANDATE: Identify viewable edges and snap to TILE_SIZE
         const width = Math.floor(window.innerWidth / TILE_SIZE) * TILE_SIZE;
         const height = Math.floor(window.innerHeight / TILE_SIZE) * TILE_SIZE;
         
-        this.cols = width / TILE_SIZE;
-        this.rows = height / TILE_SIZE;
+        this.cols = Math.floor(width / TILE_SIZE);
+        this.rows = Math.floor(height / TILE_SIZE);
         this.initGrid();
     }
 
@@ -52,8 +52,9 @@ export class MapManager {
 
     public setPathFromCells(cells: GridCoord[]) {
         this.updateDimensions();
+        
         cells.forEach(cell => {
-            // APPLY STRICT 2x2 STAMP - Snapped to Grid
+            // APPLY STRICT 2x2 STAMP - Snapped to Grid Boundaries
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const gx = cell.x + i;
@@ -71,13 +72,13 @@ export class MapManager {
         this.graphics.clear();
         this.pathMask.clear();
 
-        // 1. GRID GENERATION - INSIDE STROKE Snapped
+        // 1. GENERATE PIXEL-FLUSH GRID
         if (!this.gridSprite) {
             const cellG = new PIXI.Graphics();
+            // Draw square with precise inside stroke to act as Gutter
             cellG.rect(0, 0, TILE_SIZE, TILE_SIZE);
             cellG.fill(0x020408);
-            // Stroke is drawn exactly along the edges
-            cellG.stroke({ width: 1, color: 0x0066ff, alpha: 0.25, alignment: 0 }); 
+            cellG.stroke({ width: 1, color: 0x0066ff, alpha: 0.2, alignment: 0 }); // alignment 0 = exactly on edge
             
             const tex = this.game.app.renderer.generateTexture(cellG);
             this.gridSprite = new PIXI.TilingSprite({
@@ -88,21 +89,22 @@ export class MapManager {
             this.game.groundLayer.addChildAt(this.gridSprite, 0);
         }
 
-        // 2. PATH STAMPING - Exact Pixel Sync
+        // 2. STAMP PATHS - Must use same coordinate floor-math
         for (let x = 0; x < this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
                 if (this.grid[x][y] === TileType.PATH) {
-                    const sx = Math.round(x * TILE_SIZE);
-                    const sy = Math.round(y * TILE_SIZE);
-
-                    // INSET 1px to ensure blue grid lines remain visible as "Gutters"
-                    this.graphics.rect(sx + 1, sy + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+                    const sx = x * TILE_SIZE;
+                    const sy = y * TILE_SIZE;
+                    
+                    // Black void must perfectly overlap grid lines
+                    this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.graphics.fill(0x000000);
-
+                    
+                    // Synchronize path mask for binary flow
                     this.pathMask.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.pathMask.fill(0xffffff);
 
-                    // 3. EDGE LIGHTING - Perfectly aligned with Grid Boundaries
+                    // 3. EDGE HIGHLIGHTING - Snapped to 24px increments
                     if (x > 0 && x < this.cols - 1) {
                         const neighbors = [
                             { nx: x+1, ny: y, s: 'r' },

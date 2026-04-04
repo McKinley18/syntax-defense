@@ -21,19 +21,25 @@ function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [isWaveActive, setIsWaveActive] = useState(false);
 
-  // ATTEMPT ORIENTATION LOCK
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+
+  // STUDIO-GRADE ORIENTATION LOCK
   useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    
     const lockOrientation = async () => {
       try {
-        if (screen === 'GAME' && (screen as any).orientation?.lock) {
-          await (screen as any).orientation.lock('landscape');
+        if (screen === 'GAME' && window.screen.orientation?.lock) {
+          await window.screen.orientation.lock('landscape');
         }
-      } catch (e) {
-        console.warn("Orientation lock not supported on this device/browser.");
-      }
+      } catch (e) { /* Browser restriction catch */ }
     };
     lockOrientation();
+    return () => window.removeEventListener('resize', handleResize);
   }, [screen]);
+
+  const isSmallScreen = screenWidth < 768;
 
   useEffect(() => {
     if (screen === 'GAME' && !game) {
@@ -262,7 +268,14 @@ function App() {
                 );
               })}
             </div>
-            <button className="massive-exec-button" onClick={executeWave}>[ EXECUTE_DEFENSE_PROTOCOL ]</button>
+            
+            <div className="game-summary">
+              <p>&gt; DEPLOY DEFENSIVE PROTOCOLS TO PROTECT THE CORE KERNEL.</p>
+              <p>&gt; EARN TOKENS BY NEUTRALIZING VIRAL GEOMETRY.</p>
+              <p>&gt; NOTE: NODES DE-MATERIALIZE AFTER EVERY SWARM.</p>
+            </div>
+
+            <button className="massive-exec-button" onClick={executeWave}>[ EXECUTE_PROTOCOL ]</button>
           </div>
         )}
 

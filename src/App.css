@@ -161,13 +161,28 @@ html, body, #root {
 .intel-icon-box { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .intel-label { font-size: 0.5rem; color: var(--neon-cyan); font-weight: bold; }
 
+.game-summary {
+  background: rgba(0, 102, 255, 0.05);
+  border: 1px solid rgba(0, 102, 255, 0.2);
+  padding: 15px;
+  width: 100%;
+  font-size: 0.65rem;
+  color: #aaa;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.game-summary p { margin: 4px 0; }
+
 .massive-exec-button {
   background: var(--neon-blue); color: #000;
-  border: none; padding: 15px 40px;
+  border: none; padding: 12px 20px;
   font-family: 'Courier New', Courier, monospace;
-  font-weight: 900; font-size: 1rem;
+  font-weight: 900; font-size: 0.85rem; /* SMALLER TO FIT ONE LINE */
   cursor: pointer; text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  width: 100%; /* FULL WIDTH BUT ONE LINE */
+  white-space: nowrap;
 }
 
 /* MINIATURE TURRET ICONS */
