@@ -93,8 +93,10 @@ export class PathManager {
     }
 
     private isAreaClear(gx: number, gy: number, radius: number): boolean {
-        for (let x = gx - radius; x <= gx + radius; x++) {
-            for (let y = gy - radius; y <= gy + radius; y++) {
+        // ENHANCED BUFFER: Check a wider area to prevent "scuffing" other path segments
+        const buffer = radius + 1; 
+        for (let x = gx - buffer; x <= gx + buffer; x++) {
+            for (let y = gy - buffer; y <= gy + buffer; y++) {
                 if (this.occupiedGrid.has(`${x},${y}`)) return false;
             }
         }
@@ -106,7 +108,7 @@ export class PathManager {
         const pos = new PIXI.Point(gx * TILE_SIZE + TILE_SIZE / 2, gy * TILE_SIZE + TILE_SIZE / 2);
         this.nodes.set(id, { id, pos, next: [] });
         
-        // Mark blocks as occupied to prevent clumping
+        // Mark a 3x3 footprint as occupied to keep corridors clean
         for(let ox=-1; ox<=1; ox++) {
             for(let oy=-1; oy<=1; oy++) {
                 this.occupiedGrid.add(`${gx+ox},${gy+oy}`);

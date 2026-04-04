@@ -59,12 +59,16 @@ export class MapManager {
                     if (x >= 0 && x < MAP_COLS && y >= 0 && y < MAP_ROWS) {
                         this.grid[x][y] = TileType.PATH;
                         
+                        // STRICT 2-TILE WIDTH ENFORCEMENT
                         if (Math.abs(gx1 - gx2) > Math.abs(gy1 - gy2)) { // Horizontal
                             if (y + 1 < MAP_ROWS) this.grid[x][y + 1] = TileType.PATH;
-                            if (y + 2 < MAP_ROWS && (x + y) % 5 === 0) this.grid[x][y + 2] = TileType.PATH;
                         } else { // Vertical
                             if (x + 1 < MAP_COLS) this.grid[x + 1][y] = TileType.PATH;
-                            if (x + 2 < MAP_COLS && (x + y) % 5 === 0) this.grid[x + 2][y] = TileType.PATH;
+                        }
+
+                        // Corner Elbow: Ensure 2x2 connection at every turn
+                        if (x + 1 < MAP_COLS && y + 1 < MAP_ROWS) {
+                            this.grid[x + 1][y + 1] = TileType.PATH;
                         }
                     }
                 }
