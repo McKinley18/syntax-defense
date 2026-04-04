@@ -67,10 +67,14 @@ export class MapManager {
     }
 
     public render() {
+        // RE-CALCULATE ON EVERY RENDER CALL
+        this.cols = Math.ceil(window.innerWidth / TILE_SIZE);
+        this.rows = Math.ceil(window.innerHeight / TILE_SIZE);
+
         this.graphics.clear();
         this.pathMask.clear();
 
-        // ONLY RENDER WITHIN VIEWABLE COLS/ROWS
+        // ONLY RENDER WITHIN CURRENT VIEWABLE COLS/ROWS
         for (let x = 0; x < this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
                 const type = this.grid[x][y];

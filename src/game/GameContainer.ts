@@ -77,6 +77,16 @@ export class GameContainer {
         // SYNC INITIAL PATH
         this.mapManager.setPathFromCells(this.pathManager.pathCells);
         
+        // ADD DYNAMIC RESIZE LISTENER
+        window.addEventListener('resize', () => {
+            if (this.app.renderer) {
+                this.app.renderer.resize(window.innerWidth, window.innerHeight);
+                if (this.mapManager) {
+                    this.mapManager.render(); // Force re-draw to current edges
+                }
+            }
+        });
+        
         this.app.ticker.add((ticker) => this.update(ticker));
     }
 
