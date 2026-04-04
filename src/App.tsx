@@ -19,6 +19,7 @@ function App() {
   const [game, setGame] = useState<GameContainer | null>(null);
   const [isHardcore, setIsHardcore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isWaveActive, setIsWaveActive] = useState(false);
 
   useEffect(() => {
     if (screen === 'GAME' && !game) {
@@ -31,7 +32,10 @@ function App() {
           setIntegrity(state.integrity);
           setWaveName(state.getWaveName());
           setIsHardcore(state.isHardcore);
-          if (g.waveManager) setWave(g.waveManager.waveNumber);
+          if (g.waveManager) {
+            setWave(g.waveManager.waveNumber);
+            setIsWaveActive(g.waveManager.isWaveActive);
+          }
         }, 100);
         return () => clearInterval(interval);
       }
@@ -72,7 +76,7 @@ function App() {
     }
   };
 
-  const executeNextWave = () => {
+  const executeWave = () => {
     game?.waveManager.startWave();
   };
 
@@ -196,70 +200,69 @@ function App() {
           </div>
         )}
 
+        {/* FLOATING TOP BAR */}
+        <div className="floating-top-bar">
+          <div className="hud-corner top-left">
+            <button className="exec-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
+            <div className="wave-label">{waveName} // LVL_{wave}</div>
+          </div>
+          <div className="hud-corner top-right">
+            <div className="stat-row">
+              <span className="label">TOKENS</span>
+              <span className="credits-value">{credits}</span>
+            </div>
+            <div className="integrity-stack">
+              <div className="integrity-bar-small">
+                <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* PRE-WAVE INTEL OVERLAY */}
+        {!isWaveActive && !isPaused && (
+          <div className="pre-wave-overlay">
+            <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
+            <div className="intel-icons">
+              {game?.waveManager.getUpcomingEnemyTypes().map(type => {
+                const config = VISUAL_REGISTRY[type];
+                return (
+                  <div key={type} className="intel-icon-box">
+                    <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
+                    <span className="intel-label">{config.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <button className="massive-exec-button" onClick={executeWave}>[ EXECUTE_DEFENSE_PROTOCOL ]</button>
+          </div>
+        )}
+
         {GameStateManager.getInstance().activeGlitch !== 'NONE' && (
           <div className={`glitch-banner ${GameStateManager.getInstance().activeGlitch}`}>
             GLITCH: {GameStateManager.getInstance().activeGlitch}
           </div>
         )}
 
-        {/* NEW VERTICAL TACTICAL SIDEBAR */}
-        <div className="tactical-sidebar">
-          <div className="sidebar-section">
-            <div className="sidebar-label">CORE_STATUS</div>
-            <div className="sidebar-stat">
-              <span className="label">TOKENS</span>
-              <span className="credits-value">{credits}</span>
-            </div>
-            <div className="integrity-stack">
-              <span className="label">INTEGRITY</span>
-              <div className="integrity-bar-small">
-                <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="sidebar-section">
-            <button className="exec-button" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
-            <button className="exec-button" onClick={executeNextWave} style={{borderColor: 'var(--neon-cyan)', color: 'var(--neon-cyan)'}}>
-              [ EXEC_WAVE ]
-            </button>
-            <div className="wave-info-sidebar">{waveName}<br/>LVL_{wave}</div>
-          </div>
-
-          <div className="sidebar-label">DEFENSE_PROTOCOLS</div>
-          <div className="sidebar-turrets">
+        {/* SLIM BOTTOM SELECTOR */}
+        <div className="slim-bottom-selector">
+          <div className="turret-grid-horizontal">
             {[TowerType.PULSE_MG, TowerType.FROST_RAY, TowerType.BLAST_NOVA, TowerType.RAILGUN].map(type => {
               const cfg = TOWER_CONFIGS[type];
               const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : cfg.cost;
               return (
-                <div key={type} className={`turret-card ${selectedTurret === type ? 'active' : ''}`} data-type={type} onClick={() => selectTurret(type)}>
+                <div key={type} className={`slim-turret-card ${selectedTurret === type ? 'active' : ''}`} onClick={() => selectTurret(type)}>
                   <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
                     <div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
                   </div>
-                  <div className="card-info">
-                    <div className="card-header">{cfg.name}</div>
-                    <div className="cost">{cost}c</div>
+                  <div className="slim-card-info">
+                    <span className="name">{cfg.name}</span>
+                    <span className="stats">DMG:{cfg.damage}</span>
+                    <span className="cost">{cost}c</span>
                   </div>
                 </div>
               );
             })}
-          </div>
-
-          <div className="sidebar-section">
-            <div className="sidebar-label">VIRAL_INTEL</div>
-            <div className="intel-monitor">
-              <div className="intel-grid">
-                {game?.waveManager.getUpcomingEnemyTypes().map(type => {
-                  const config = VISUAL_REGISTRY[type];
-                  return (
-                    <div key={type} className="intel-card">
-                      <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="scanner-line"></div>
-            </div>
           </div>
         </div>
       </div>

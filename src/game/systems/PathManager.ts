@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { TILE_SIZE } from './MapManager';
+import { TILE_SIZE, MAP_ROWS } from './MapManager';
 
 export interface GridCoord {
     x: number;
@@ -34,12 +34,12 @@ export class PathManager {
         const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
         this.microCols = visibleCols;
 
-        // SIDEBAR AWARENESS: Offset path start by the sidebar width (~180px / 24px = ~8 tiles)
-        const sidebarBuffer = Math.ceil(180 / TILE_SIZE); 
-        const topMargin = 1; // UNLOCKED VERTICAL SPACE
+        // FIXED: START AT ABSOLUTE LEFT (gx=0)
+        const sidebarBuffer = 0; 
+        const topMargin = 1; 
         const bottomMargin = 1;
 
-        const availCols = visibleCols - sidebarBuffer - 2; // Subtract sidebar and right buffer
+        const availCols = visibleCols - 2; // Right buffer
         const availRows = visibleRows - (topMargin + bottomMargin);
 
         const macroCols = Math.floor(availCols / 4);
@@ -47,14 +47,14 @@ export class PathManager {
 
         if (macroCols <= 0 || macroRows <= 0) return false;
 
-        this.offsetX = sidebarBuffer + 1;
+        this.offsetX = 0; // START AT THE LEFT
         this.offsetY = topMargin;
 
         const startY = Math.floor(Math.random() * macroRows);
         let path: GridCoord[] = [];
         let visited = new Set<string>();
         
-        // INCREASED WINDING: Demand at least 70% coverage of the macro-grid
+        // Dynamic target length
         let targetLength = Math.floor(macroCols * macroRows * 0.4) + Math.min(waveNumber, 5);
 
         const dfs = (mx: number, my: number): boolean => {
@@ -69,10 +69,10 @@ export class PathManager {
             path.push({ x: mx, y: my });
 
             const dirs = [
-                { dx: 1, dy: 0, weight: 4 },   // Right
-                { dx: 0, dy: 1, weight: 10 },  // Down (Higher weight for winding)
-                { dx: 0, dy: -1, weight: 10 }, // Up (Higher weight for winding)
-                { dx: -1, dy: 0, weight: 2 }   // Left (Switch-back)
+                { dx: 1, dy: 0, weight: 4 },   
+                { dx: 0, dy: 1, weight: 10 },  
+                { dx: 0, dy: -1, weight: 10 }, 
+                { dx: -1, dy: 0, weight: 2 }   
             ];
 
             dirs.sort((a, b) => (Math.random() * b.weight) - (Math.random() * a.weight));
@@ -108,11 +108,11 @@ export class PathManager {
             const microCenterY = this.offsetY + (mc.y * 4) + 1;
 
             if (i === 0) {
-                // Connect to left sidebar edge
-                for (let x = this.offsetX - 1; x <= microCenterX; x++) {
+                // Connect to left edge
+                for (let x = 0; x <= microCenterX; x++) {
                     this.pathCells.push({ x, y: microCenterY });
                 }
-                this.startNodePos = new PIXI.Point(this.offsetX * TILE_SIZE, microCenterY * TILE_SIZE + TILE_SIZE);
+                this.startNodePos = new PIXI.Point(0, microCenterY * TILE_SIZE + TILE_SIZE);
             }
 
             if (i > 0) {
@@ -128,7 +128,7 @@ export class PathManager {
 
             if (i === macroPath.length - 1) {
                 for (let x = microCenterX + 1; x < this.microCols; x++) {
-                    this.pathCells.push({ x, y: microCenterY });
+                    this.pathCells.push({ x: x, y: microCenterY });
                 }
                 this.endNodePos = new PIXI.Point(this.microCols * TILE_SIZE, microCenterY * TILE_SIZE + TILE_SIZE);
             }

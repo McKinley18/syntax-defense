@@ -177,32 +177,32 @@ export class Tower {
     private fire(target: Enemy, allEnemies: Enemy[]) {
         this.recoilOffset = 3;
         this.showMuzzleFlash();
+
+        // CALCULATE TIP OF BARREL IN WORLD SPACE
+        const muzzleDist = this.type === TowerType.RAILGUN ? 30 : 20;
+        const angle = this.turretHead.rotation - Math.PI/2;
+        const muzzleX = this.container.x + Math.cos(angle) * muzzleDist;
+        const muzzleY = this.container.y + Math.sin(angle) * muzzleDist;
+
         if (this.config.special === 'aoe') {
             allEnemies.forEach(e => {
                 const dx = e.container.x - target.container.x;
                 const dy = e.container.y - target.container.y;
                 if (dx*dx + dy*dy < 3600) e.takeDamage(this.config.damage);
             });
-            this.drawEffect(target.container.x, target.container.y, 'ring');
+            this.drawEffect(muzzleX, muzzleY, target.container.x, target.container.y, 'ring');
         } else {
             const isDead = target.takeDamage(this.config.damage);
             if (this.config.special === 'freeze' && !isDead) target.freeze(300);
-            this.drawEffect(target.container.x, target.container.y, 'line');
+            this.drawEffect(muzzleX, muzzleY, target.container.x, target.container.y, 'line');
         }
     }
 
-    private showMuzzleFlash() {
-        this.muzzleFlash.clear();
-        this.muzzleFlash.circle(0, -20, 5 + Math.random() * 5);
-        this.muzzleFlash.fill({ color: 0xffffff, alpha: 0.8 });
-        this.muzzleFlash.alpha = 1;
-    }
-
-    private drawEffect(tx: number, ty: number, style: 'line' | 'ring') {
+    private drawEffect(mx: number, my: number, tx: number, ty: number, style: 'line' | 'ring') {
         const g = new PIXI.Graphics();
         if (style === 'line') {
-            g.moveTo(this.container.x, this.container.y).lineTo(tx, ty);
-            g.stroke({ width: 1.5, color: this.config.color, alpha: 0.8 });
+            g.moveTo(mx, my).lineTo(tx, ty);
+            g.stroke({ width: 2, color: this.config.color, alpha: 0.8 });
         } else {
             g.circle(tx, ty, 60);
             g.stroke({ width: 3, color: this.config.color, alpha: 0.5 });

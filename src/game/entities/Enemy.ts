@@ -95,10 +95,15 @@ export class Enemy {
     private updateHealthBar() {
         this.healthBar.clear();
         if (this.health < this.maxHealth) {
-            const w = 20; const h = 3;
-            this.healthBar.rect(-w/2, -18, w, h);
+            const w = 24; // EXACT ONE-BLOCK WIDTH
+            const h = 4;
+            // Background (Black outline)
+            this.healthBar.rect(-w/2 - 1, -20 - 1, w + 2, h + 2);
             this.healthBar.fill(0x000000);
-            this.healthBar.rect(-w/2, -18, w * (this.health/this.maxHealth), h);
+            
+            // Health Fill (Vibrant Red)
+            const fillWidth = Math.max(0, w * (this.health / this.maxHealth));
+            this.healthBar.rect(-w/2, -20, fillWidth, h);
             this.healthBar.fill(0xff0000);
         }
     }

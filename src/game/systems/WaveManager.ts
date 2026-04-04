@@ -4,7 +4,8 @@ import { GameStateManager } from './GameStateManager';
 
 export class WaveManager {
     public enemies: Enemy[] = [];
-    public waveNumber: number = 0;
+    public waveNumber: number = 1;
+    public isWaveActive: boolean = false;
     
     private spawnTimer: number = 0;
     private enemiesToSpawn: number = 0;
@@ -14,29 +15,38 @@ export class WaveManager {
         this.game = game;
     }
 
-    public startWave() {
-        if (this.enemies.length > 0 || this.enemiesToSpawn > 0) return;
+    // PHASE 1: Generate path and show intel
+    public prepareWave() {
+        if (this.enemies.length > 0 || this.enemiesToSpawn > 0 || this.isWaveActive) return;
 
         GameStateManager.getInstance().resetForNextWave();
         this.waveNumber = GameStateManager.getInstance().currentWave;
         
         this.game.towerManager.clearTowers();
 
-        // 1. Generate new path for this wave
+        // Generate path
         this.game.pathManager.generatePath(this.waveNumber);
         this.game.mapManager.setPathFromCells(this.game.pathManager.pathCells);
 
-        // 2. Swarm Size Scaling
+        this.isWaveActive = false;
+    }
+
+    // PHASE 2: Start the swarm
+    public startWave() {
+        if (this.isWaveActive) return;
+        
+        this.isWaveActive = true;
         if (this.waveNumber % 10 === 0) {
-            this.enemiesToSpawn = 1; // Boss only
+            this.enemiesToSpawn = 1; 
         } else {
             this.enemiesToSpawn = 10 + Math.floor(this.waveNumber * 4);
         }
-        
         this.spawnTimer = 0;
     }
 
     public update(delta: number) {
+        if (!this.isWaveActive) return;
+
         if (this.enemiesToSpawn > 0) {
             this.spawnTimer -= delta;
             if (this.spawnTimer <= 0) {
@@ -65,10 +75,17 @@ export class WaveManager {
                 this.removeEnemy(i);
             }
         }
+
+        // WAVE COMPLETE CHECK
+        if (this.enemiesToSpawn === 0 && this.enemies.length === 0) {
+            this.isWaveActive = false;
+            // Auto-prepare next wave
+            this.prepareWave();
+        }
     }
 
     public getUpcomingEnemyTypes(): EnemyType[] {
-        const nextWave = this.waveNumber + 1;
+        const nextWave = this.waveNumber; // Current prepared wave
         const types: Set<EnemyType> = new Set();
         
         if (nextWave % 10 === 0) {
