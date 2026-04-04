@@ -198,8 +198,10 @@ function App() {
         {/* RESPONSIVE 2-LINE TACTICAL MATRIX BANNER */}
         <div className="terminal-header-matrix">
           <div className="matrix-row">
-            <div className="matrix-cell left command-prompt" onClick={executeNextWave}>
-              {isSmallScreen ? "> EXEC_WAVE" : "> execute NextWave_Command? [Y]"}
+            <div className="matrix-cell left">
+              <button className="exec-button" onClick={executeNextWave}>
+                {isSmallScreen ? "> EXEC_WAVE" : "> EXECUTE_NEXT_WAVE_CMD"}
+              </button>
             </div>
             <div className="matrix-cell center label">TOKENS</div>
             <div className="matrix-cell right label">{isSmallScreen ? "INTEGRITY" : "SYSTEM_INTEGRITY"}</div>

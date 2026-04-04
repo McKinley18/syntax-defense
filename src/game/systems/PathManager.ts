@@ -85,7 +85,9 @@ export class PathManager {
             }
         }
 
-        const goalId = this.addNodeAtGrid(MAP_COLS - 1, gy);
+        // DYNAMIC RIGHT EDGE based on current screen width
+        const currentCols = Math.floor(window.innerWidth / TILE_SIZE);
+        const goalId = this.addNodeAtGrid(currentCols - 1, gy);
         this.link(lastId, goalId);
         this.endNodes.push(goalId);
     }

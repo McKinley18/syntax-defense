@@ -109,7 +109,31 @@ html, body, #root {
 .terminal-header-matrix .label { font-size: var(--font-xs); color: #55aaaa; letter-spacing: 1px; }
 .terminal-header-matrix .value { font-size: var(--font-md); font-weight: bold; }
 
-.command-prompt { color: var(--neon-blue); font-weight: bold; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exec-button {
+  background: rgba(0, 102, 255, 0.1);
+  border: 1px solid var(--neon-blue);
+  color: var(--neon-blue);
+  padding: 6px 12px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  font-size: var(--font-xs);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  pointer-events: auto; /* ENSURE CLICKS WORK */
+}
+
+.exec-button:hover {
+  background: var(--neon-blue);
+  color: #000;
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
+.exec-button:active {
+  transform: scale(0.95);
+}
+
 .wave-info { font-size: var(--font-xs); color: #55aaaa; text-transform: uppercase; }
 
 .integrity-bar-small {
