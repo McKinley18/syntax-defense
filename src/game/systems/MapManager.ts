@@ -31,9 +31,12 @@ export class MapManager {
     }
 
     private updateDimensions() {
-        // Use floor to ensure we don't have partial tiles on the edges
-        this.cols = Math.floor(window.innerWidth / TILE_SIZE) + 2;
-        this.rows = Math.floor(window.innerHeight / TILE_SIZE) + 2;
+        // MANDATE: NO PARTIAL BOXES. Round down to the nearest TILE_SIZE.
+        const width = Math.floor(window.innerWidth / TILE_SIZE) * TILE_SIZE;
+        const height = Math.floor(window.innerHeight / TILE_SIZE) * TILE_SIZE;
+        
+        this.cols = width / TILE_SIZE;
+        this.rows = height / TILE_SIZE;
         this.initGrid();
     }
 
@@ -50,7 +53,7 @@ export class MapManager {
     public setPathFromCells(cells: GridCoord[]) {
         this.updateDimensions();
         cells.forEach(cell => {
-            // APPLY STRICT 2x2 STAMP
+            // APPLY STRICT 2x2 STAMP - Snapped to Grid
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const gx = cell.x + i;
@@ -68,38 +71,38 @@ export class MapManager {
         this.graphics.clear();
         this.pathMask.clear();
 
-        // 1. RENDER GRID LINES FIRST
+        // 1. GRID GENERATION - INSIDE STROKE Snapped
         if (!this.gridSprite) {
             const cellG = new PIXI.Graphics();
-            // Draw a rectangle with an inside stroke to ensure perfect boundary alignment
             cellG.rect(0, 0, TILE_SIZE, TILE_SIZE);
             cellG.fill(0x020408);
-            cellG.stroke({ width: 1, color: 0x0066ff, alpha: 0.25, alignment: 0 }); // alignment 0 = inside
+            // Stroke is drawn exactly along the edges
+            cellG.stroke({ width: 1, color: 0x0066ff, alpha: 0.25, alignment: 0 }); 
             
             const tex = this.game.app.renderer.generateTexture(cellG);
             this.gridSprite = new PIXI.TilingSprite({
                 texture: tex,
-                width: window.innerWidth + TILE_SIZE,
-                height: window.innerHeight + TILE_SIZE
+                width: this.cols * TILE_SIZE,
+                height: this.rows * TILE_SIZE
             });
             this.game.groundLayer.addChildAt(this.gridSprite, 0);
         }
 
-        // 2. STAMP BLACK PATH VOID OVER THE GRID
+        // 2. PATH STAMPING - Exact Pixel Sync
         for (let x = 0; x < this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
                 if (this.grid[x][y] === TileType.PATH) {
                     const sx = Math.round(x * TILE_SIZE);
                     const sy = Math.round(y * TILE_SIZE);
-                    
-                    // The black box must cover the grid lines perfectly
-                    this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
+
+                    // INSET 1px to ensure blue grid lines remain visible as "Gutters"
+                    this.graphics.rect(sx + 1, sy + 1, TILE_SIZE - 2, TILE_SIZE - 2);
                     this.graphics.fill(0x000000);
-                    
+
                     this.pathMask.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.pathMask.fill(0xffffff);
 
-                    // 3. EDGE LIGHTING
+                    // 3. EDGE LIGHTING - Perfectly aligned with Grid Boundaries
                     if (x > 0 && x < this.cols - 1) {
                         const neighbors = [
                             { nx: x+1, ny: y, s: 'r' },
@@ -130,8 +133,8 @@ export class MapManager {
             if (tex) {
                 this.binarySprite = new PIXI.TilingSprite({
                     texture: tex,
-                    width: window.innerWidth + TILE_SIZE,
-                    height: window.innerHeight + TILE_SIZE
+                    width: this.cols * TILE_SIZE,
+                    height: this.rows * TILE_SIZE
                 });
                 this.binarySprite.alpha = 0.4;
                 this.game.groundLayer.addChild(this.binarySprite);
@@ -144,14 +147,10 @@ export class MapManager {
     }
 
     private syncToViewport() {
-        if (this.gridSprite) {
-            this.gridSprite.width = window.innerWidth + TILE_SIZE;
-            this.gridSprite.height = window.innerHeight + TILE_SIZE;
-        }
-        if (this.binarySprite) {
-            this.binarySprite.width = window.innerWidth + TILE_SIZE;
-            this.binarySprite.height = window.innerHeight + TILE_SIZE;
-        }
+        const w = this.cols * TILE_SIZE;
+        const h = this.rows * TILE_SIZE;
+        if (this.gridSprite) { this.gridSprite.width = w; this.gridSprite.height = h; }
+        if (this.binarySprite) { this.binarySprite.width = w; this.binarySprite.height = h; }
     }
 
     public update(delta: number) {

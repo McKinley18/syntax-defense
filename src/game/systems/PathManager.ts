@@ -36,7 +36,7 @@ export class PathManager {
 
         // FIXED: START AT ABSOLUTE LEFT (gx=0)
         const topMargin = 1; 
-        const bottomMargin = 1;
+        const bottomMargin = 2; // KEEP BOTTOM ROW CLEAR
 
         const availCols = visibleCols - 2; 
         const availRows = visibleRows - (topMargin + bottomMargin);

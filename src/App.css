@@ -117,9 +117,15 @@ html, body, #root {
 .turret-grid-horizontal { display: flex; gap: 10px; align-items: center; }
 
 .slim-turret-card {
-  background: #050505; border: 1px solid #333;
-  padding: 6px 12px; display: flex; align-items: center; gap: 10px;
-  cursor: pointer; min-width: 150px; transition: all 0.2s;
+  background: #050505; 
+  border: 1px solid #333;
+  padding: 4px 8px; /* TIGHTER PADDING */
+  display: flex; 
+  align-items: center; 
+  justify-content: center; /* CENTER CONTENT */
+  cursor: pointer; 
+  min-width: 110px; /* REDUCED WIDTH */
+  transition: all 0.2s;
 }
 
 .slim-turret-card.active { border-color: var(--neon-cyan); background: #111; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); }
