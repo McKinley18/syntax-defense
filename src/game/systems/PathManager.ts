@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { TILE_SIZE } from './MapManager';
+import { TILE_SIZE, MAP_ROWS } from './MapManager';
 
 export interface GridCoord {
     x: number;
@@ -11,7 +11,6 @@ export class PathManager {
     public startNodePos: PIXI.Point = new PIXI.Point(0, 0);
     public endNodePos: PIXI.Point = new PIXI.Point(0, 0);
 
-    // Metadata for the MapManager to use for precise stamping
     public macroPath: GridCoord[] = [];
     public offsetX: number = 0;
     public offsetY: number = 0;
@@ -24,7 +23,6 @@ export class PathManager {
     public generatePath(waveNumber: number) {
         let success = false;
         let attempts = 0;
-
         while (!success && attempts < 100) {
             success = this.attemptMacroGeneration(waveNumber);
             attempts++;
@@ -34,36 +32,34 @@ export class PathManager {
     private attemptMacroGeneration(waveNumber: number): boolean {
         const visibleCols = Math.floor(window.innerWidth / TILE_SIZE);
         const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
-        
         this.microCols = visibleCols;
 
-        const topMargin = 6;
-        const bottomMargin = 8;
-        const sideMargin = 1; // 1 micro-tile buffer on left and right
+        // SIDEBAR AWARENESS: Offset path start by the sidebar width (~180px / 24px = ~8 tiles)
+        const sidebarBuffer = Math.ceil(180 / TILE_SIZE); 
+        const topMargin = 1; // UNLOCKED VERTICAL SPACE
+        const bottomMargin = 1;
 
-        const availCols = visibleCols - (sideMargin * 2);
+        const availCols = visibleCols - sidebarBuffer - 2; // Subtract sidebar and right buffer
         const availRows = visibleRows - (topMargin + bottomMargin);
 
-        // A Macro Cell is 4x4 micro tiles
         const macroCols = Math.floor(availCols / 4);
         const macroRows = Math.floor(availRows / 4);
 
         if (macroCols <= 0 || macroRows <= 0) return false;
 
-        this.offsetX = sideMargin + Math.floor((availCols - (macroCols * 4)) / 2);
-        this.offsetY = topMargin + Math.floor((availRows - (macroRows * 4)) / 2);
+        this.offsetX = sidebarBuffer + 1;
+        this.offsetY = topMargin;
 
         const startY = Math.floor(Math.random() * macroRows);
-        
         let path: GridCoord[] = [];
         let visited = new Set<string>();
-        let targetLength = macroCols + Math.min(waveNumber, 10); // Require longer paths as wave increases
+        
+        // INCREASED WINDING: Demand at least 70% coverage of the macro-grid
+        let targetLength = Math.floor(macroCols * macroRows * 0.4) + Math.min(waveNumber, 5);
 
-        // DFS Backtracking Walk
         const dfs = (mx: number, my: number): boolean => {
             if (mx === macroCols - 1) {
-                // Reached the right edge
-                if (path.length >= targetLength || path.length > (macroCols * macroRows * 0.5)) {
+                if (path.length >= targetLength) {
                     path.push({ x: mx, y: my });
                     return true;
                 }
@@ -72,21 +68,18 @@ export class PathManager {
             visited.add(`${mx},${my}`);
             path.push({ x: mx, y: my });
 
-            // Define directional weights to encourage winding but guarantee progression
             const dirs = [
-                { dx: 1, dy: 0, weight: 5 },   // Right
-                { dx: 0, dy: 1, weight: 6 },   // Down
-                { dx: 0, dy: -1, weight: 6 },  // Up
-                { dx: -1, dy: 0, weight: 1 }   // Left (Switch-back)
+                { dx: 1, dy: 0, weight: 4 },   // Right
+                { dx: 0, dy: 1, weight: 10 },  // Down (Higher weight for winding)
+                { dx: 0, dy: -1, weight: 10 }, // Up (Higher weight for winding)
+                { dx: -1, dy: 0, weight: 2 }   // Left (Switch-back)
             ];
 
-            // Randomize based on weight
             dirs.sort((a, b) => (Math.random() * b.weight) - (Math.random() * a.weight));
 
             for (const d of dirs) {
                 const nx = mx + d.dx;
                 const ny = my + d.dy;
-                
                 if (nx >= 0 && nx < macroCols && ny >= 0 && ny < macroRows) {
                     if (!visited.has(`${nx},${ny}`)) {
                         if (dfs(nx, ny)) return true;
@@ -94,40 +87,32 @@ export class PathManager {
                 }
             }
 
-            // Backtrack
             path.pop();
             visited.delete(`${mx},${my}`);
             return false;
         };
 
         const success = dfs(0, startY);
-
         if (success) {
             this.macroPath = path;
             this.buildMicroPathFromMacro(path);
         }
-
         return success;
     }
 
     private buildMicroPathFromMacro(macroPath: GridCoord[]) {
         this.pathCells = [];
-        
-        // Convert Macro Path into exact Micro Coordinates for enemies to follow
         for (let i = 0; i < macroPath.length; i++) {
             const mc = macroPath[i];
-            
-            // The center of a 4x4 macro cell is the 2x2 block at offset (1,1)
             const microCenterX = this.offsetX + (mc.x * 4) + 1;
             const microCenterY = this.offsetY + (mc.y * 4) + 1;
 
             if (i === 0) {
-                // Entry segment: from the absolute left screen edge to the center of the first macro cell
-                for (let x = 0; x <= microCenterX; x++) {
-                    this.pathCells.push({ x: x, y: microCenterY });
+                // Connect to left sidebar edge
+                for (let x = this.offsetX - 1; x <= microCenterX; x++) {
+                    this.pathCells.push({ x, y: microCenterY });
                 }
-                // Enemy Start Pos (Top-Left of the 2x2 corridor center)
-                this.startNodePos = new PIXI.Point(0, microCenterY * TILE_SIZE + TILE_SIZE);
+                this.startNodePos = new PIXI.Point(this.offsetX * TILE_SIZE, microCenterY * TILE_SIZE + TILE_SIZE);
             }
 
             if (i > 0) {
@@ -135,32 +120,22 @@ export class PathManager {
                 const prevCenterX = this.offsetX + (prev.x * 4) + 1;
                 const prevCenterY = this.offsetY + (prev.y * 4) + 1;
 
-                // Create intermediate steps for enemies to walk smoothly through the connecting corridor
-                if (mc.x > prev.x) { // Right
-                    for (let x = prevCenterX + 1; x <= microCenterX; x++) this.pathCells.push({ x, y: microCenterY });
-                } else if (mc.x < prev.x) { // Left
-                    for (let x = prevCenterX - 1; x >= microCenterX; x--) this.pathCells.push({ x, y: microCenterY });
-                } else if (mc.y > prev.y) { // Down
-                    for (let y = prevCenterY + 1; y <= microCenterY; y++) this.pathCells.push({ x: microCenterX, y });
-                } else if (mc.y < prev.y) { // Up
-                    for (let y = prevCenterY - 1; y >= microCenterY; y--) this.pathCells.push({ x: microCenterX, y });
-                }
+                if (mc.x > prev.x) { for (let x = prevCenterX + 1; x <= microCenterX; x++) this.pathCells.push({ x, y: microCenterY }); }
+                else if (mc.x < prev.x) { for (let x = prevCenterX - 1; x >= microCenterX; x--) this.pathCells.push({ x, y: microCenterY }); }
+                else if (mc.y > prev.y) { for (let y = prevCenterY + 1; y <= microCenterY; y++) this.pathCells.push({ x: microCenterX, y }); }
+                else if (mc.y < prev.y) { for (let y = prevCenterY - 1; y >= microCenterY; y--) this.pathCells.push({ x: microCenterX, y }); }
             }
 
             if (i === macroPath.length - 1) {
-                // Exit segment: from the center of the last macro cell to the absolute right screen edge
                 for (let x = microCenterX + 1; x < this.microCols; x++) {
-                    this.pathCells.push({ x: x, y: microCenterY });
+                    this.pathCells.push({ x, y: microCenterY });
                 }
-                // Enemy End Pos
                 this.endNodePos = new PIXI.Point(this.microCols * TILE_SIZE, microCenterY * TILE_SIZE + TILE_SIZE);
             }
         }
     }
 
     public getPathPoints(): PIXI.Point[] {
-        // Convert the 1-tile wide navigation spine into exact PIXI World Coordinates for the Enemy
-        // We offset by TILE_SIZE (which is half of the 2-tile wide path) to keep them centered
         return this.pathCells.map(c => new PIXI.Point(
             c.x * TILE_SIZE + TILE_SIZE, 
             c.y * TILE_SIZE + TILE_SIZE

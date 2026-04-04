@@ -2,26 +2,9 @@ import * as PIXI from 'pixi.js';
 import { GameContainer } from '../GameContainer';
 import { GameStateManager } from '../systems/GameStateManager';
 import { TILE_SIZE } from '../systems/MapManager';
+import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
 
-export const EnemyType = {
-    GLIDER: 0,
-    STRIDER: 1,
-    BEHEMOTH: 2,
-    FRACTAL: 3
-} as const;
-
-export type EnemyType = typeof EnemyType[keyof typeof EnemyType];
-
-interface EnemyConfig {
-    hp: number; speed: number; reward: number; color: number;
-}
-
-const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
-    [EnemyType.GLIDER]: { hp: 30, speed: 2, reward: 25, color: 0x00ffff },
-    [EnemyType.STRIDER]: { hp: 100, speed: 1.2, reward: 50, color: 0xff00ff },
-    [EnemyType.BEHEMOTH]: { hp: 400, speed: 0.7, reward: 150, color: 0x00ff00 },
-    [EnemyType.FRACTAL]: { hp: 2000, speed: 0.4, reward: 500, color: 0xffff00 }
-};
+export { EnemyType };
 
 export class Enemy {
     public container: PIXI.Container;
@@ -44,8 +27,10 @@ export class Enemy {
         this.container = new PIXI.Container();
         this.pathPoints = GameContainer.instance.pathManager.getPathPoints();
         
-        const config = ENEMY_CONFIGS[type];
-        this.maxHealth = Math.floor(config.hp * Math.pow(1.15, waveNumber));
+        // SYNC FROM REGISTRY
+        const config = VISUAL_REGISTRY[type];
+        
+        this.maxHealth = Math.floor(config.baseHp * Math.pow(1.15, waveNumber));
         this.health = this.maxHealth;
         this.reward = config.reward;
 
@@ -63,15 +48,14 @@ export class Enemy {
         }
     }
 
-    private createVisual(config: EnemyConfig): PIXI.Graphics {
+    private createVisual(config: any): PIXI.Graphics {
         const g = new PIXI.Graphics();
-        // MANDATE: ONE BLOCK IN SIZE (24px)
         const s = TILE_SIZE / 2 - 2; 
         
-        if (this.type === EnemyType.GLIDER) g.circle(0, 0, s);
-        else if (this.type === EnemyType.STRIDER) g.poly([-s, s, 0, -s, s, s]);
-        else if (this.type === EnemyType.BEHEMOTH) g.rect(-s, -s, s*2, s*2);
-        else g.poly([-s, 0, -s/2, -s, s/2, -s, s, 0, s/2, s, -s/2, s]);
+        if (config.shape === 'circle') g.circle(0, 0, s);
+        else if (config.shape === 'triangle') g.poly([-s, s, 0, -s, s, s]);
+        else if (config.shape === 'square') g.rect(-s, -s, s*2, s*2);
+        else if (config.shape === 'hexagon') g.poly([-s, 0, -s/2, -s, s/2, -s, s, 0, s/2, s, -s/2, s]);
         
         g.fill({ color: config.color, alpha: 0.9 });
         g.stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
@@ -121,7 +105,7 @@ export class Enemy {
 
     public takeDamage(amount: number): boolean {
         this.health -= amount;
-        GameContainer.instance.particleManager.spawnDebris(this.container.x, this.container.y, ENEMY_CONFIGS[this.type].color);
+        GameContainer.instance.particleManager.spawnDebris(this.container.x, this.container.y, VISUAL_REGISTRY[this.type].color);
         return this.health <= 0;
     }
 
