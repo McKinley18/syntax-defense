@@ -62,6 +62,9 @@ export class PathManager {
         const totalSegments = 12 + Math.min(wave, 18);
         let lastDir = { x: 1, y: 0 };
 
+        // DYNAMIC VISIBLE BOUNDARY
+        const visibleCols = Math.floor(window.innerWidth / TILE_SIZE);
+
         for (let i = 0; i < totalSegments; i++) {
             const possibleDirs = [
                 { x: 1, y: 0 }, { x: 1, y: 0 }, // Right Bias
@@ -71,11 +74,11 @@ export class PathManager {
             const dir = possibleDirs[Math.floor(Math.random() * possibleDirs.length)];
             const step = 3 + Math.floor(Math.random() * 4);
 
-            const nx = Math.max(2, Math.min(MAP_COLS - 4, gx + dir.x * step));
+            const nx = Math.max(2, Math.min(visibleCols - 4, gx + dir.x * step));
             const ny = Math.max(topMargin, Math.min(MAP_ROWS - bottomMargin, gy + dir.y * step));
 
-            // Proximity check to prevent clumping
-            if (this.isAreaClear(nx, ny, 2)) {
+            // Proximity check - slightly looser for better connectivity
+            if (this.isAreaClear(nx, ny, 1)) {
                 const nextId = this.addNodeAtGrid(nx, ny);
                 this.link(lastId, nextId);
                 lastId = nextId;
@@ -85,9 +88,8 @@ export class PathManager {
             }
         }
 
-        // DYNAMIC RIGHT EDGE based on current screen width
-        const currentCols = Math.floor(window.innerWidth / TILE_SIZE);
-        const goalId = this.addNodeAtGrid(currentCols - 1, gy);
+        // STRICT VISIBLE END: RIGHT EDGE
+        const goalId = this.addNodeAtGrid(visibleCols - 1, gy);
         this.link(lastId, goalId);
         this.endNodes.push(goalId);
     }
