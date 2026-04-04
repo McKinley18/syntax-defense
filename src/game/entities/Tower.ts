@@ -198,6 +198,13 @@ export class Tower {
         }
     }
 
+    private showMuzzleFlash() {
+        this.muzzleFlash.clear();
+        this.muzzleFlash.circle(0, -20, 5 + Math.random() * 5);
+        this.muzzleFlash.fill({ color: 0xffffff, alpha: 0.8 });
+        this.muzzleFlash.alpha = 1;
+    }
+
     private drawEffect(mx: number, my: number, tx: number, ty: number, style: 'line' | 'ring') {
         const g = new PIXI.Graphics();
         if (style === 'line') {

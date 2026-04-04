@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { TILE_SIZE, MAP_ROWS } from './MapManager';
+import { TILE_SIZE } from './MapManager';
 
 export interface GridCoord {
     x: number;
@@ -35,11 +35,10 @@ export class PathManager {
         this.microCols = visibleCols;
 
         // FIXED: START AT ABSOLUTE LEFT (gx=0)
-        const sidebarBuffer = 0; 
         const topMargin = 1; 
         const bottomMargin = 1;
 
-        const availCols = visibleCols - 2; // Right buffer
+        const availCols = visibleCols - 2; 
         const availRows = visibleRows - (topMargin + bottomMargin);
 
         const macroCols = Math.floor(availCols / 4);
@@ -47,14 +46,13 @@ export class PathManager {
 
         if (macroCols <= 0 || macroRows <= 0) return false;
 
-        this.offsetX = 0; // START AT THE LEFT
+        this.offsetX = 0; 
         this.offsetY = topMargin;
 
         const startY = Math.floor(Math.random() * macroRows);
         let path: GridCoord[] = [];
         let visited = new Set<string>();
         
-        // Dynamic target length
         let targetLength = Math.floor(macroCols * macroRows * 0.4) + Math.min(waveNumber, 5);
 
         const dfs = (mx: number, my: number): boolean => {
@@ -108,7 +106,6 @@ export class PathManager {
             const microCenterY = this.offsetY + (mc.y * 4) + 1;
 
             if (i === 0) {
-                // Connect to left edge
                 for (let x = 0; x <= microCenterX; x++) {
                     this.pathCells.push({ x, y: microCenterY });
                 }
