@@ -295,8 +295,18 @@ function App() {
                   <div 
                     key={type} 
                     className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''}`} 
+                    data-type={type}
                     onClick={() => selectTurret(type)}
                   >
+                    <div className="turret-visual-box">
+                      <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
+                        <div className="mini-base"></div>
+                        <div className="mini-head">
+                          <div className="mini-weapon"></div>
+                          <div className="mini-core"></div>
+                        </div>
+                      </div>
+                    </div>
                     <div className="slim-card-info">
                       <span className="name">{cfg.name}</span>
                       <span className="stats">DMG:{cfg.damage} // RNG:{cfg.range}sq</span>

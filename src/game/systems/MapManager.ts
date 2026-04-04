@@ -17,7 +17,7 @@ export class MapManager {
     public cols: number = 0;
     public rows: number = 0;
     
-    private graphics: PIXI.Graphics;
+    private pathGraphics: PIXI.Graphics;
     private pathMask: PIXI.Graphics;
     private binarySprite: PIXI.TilingSprite | null = null;
     private gridSprite: PIXI.TilingSprite | null = null;
@@ -25,18 +25,18 @@ export class MapManager {
 
     constructor(game: GameContainer) {
         this.game = game;
-        this.graphics = new PIXI.Graphics();
+        this.pathGraphics = new PIXI.Graphics();
         this.pathMask = new PIXI.Graphics();
         this.updateDimensions();
     }
 
     private updateDimensions() {
-        // MANDATE: Identify viewable edges and snap to TILE_SIZE
+        // MANDATE: NO PARTIAL BOXES. Round down to the nearest TILE_SIZE.
         const width = Math.floor(window.innerWidth / TILE_SIZE) * TILE_SIZE;
         const height = Math.floor(window.innerHeight / TILE_SIZE) * TILE_SIZE;
         
-        this.cols = Math.floor(width / TILE_SIZE);
-        this.rows = Math.floor(height / TILE_SIZE);
+        this.cols = width / TILE_SIZE;
+        this.rows = height / TILE_SIZE;
         this.initGrid();
     }
 
@@ -52,9 +52,8 @@ export class MapManager {
 
     public setPathFromCells(cells: GridCoord[]) {
         this.updateDimensions();
-        
         cells.forEach(cell => {
-            // APPLY STRICT 2x2 STAMP - Snapped to Grid Boundaries
+            // APPLY STRICT 2x2 STAMP - Snapped to Grid
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const gx = cell.x + i;
@@ -69,88 +68,78 @@ export class MapManager {
     }
 
     public render() {
-        this.graphics.clear();
+        this.pathGraphics.clear();
         this.pathMask.clear();
 
-        // 1. GENERATE PIXEL-FLUSH GRID
+        // 1. RENDER GRID (If not already cached)
         if (!this.gridSprite) {
             const cellG = new PIXI.Graphics();
-            // Draw square with precise inside stroke to act as Gutter
             cellG.rect(0, 0, TILE_SIZE, TILE_SIZE);
             cellG.fill(0x020408);
-            cellG.stroke({ width: 1, color: 0x0066ff, alpha: 0.2, alignment: 0 }); // alignment 0 = exactly on edge
-            
+            // INSIDE STROKE: Ensures line is at the exact cell edge
+            cellG.stroke({ width: 1, color: 0x0066ff, alpha: 0.3, alignment: 0 }); 
             const tex = this.game.app.renderer.generateTexture(cellG);
+            
             this.gridSprite = new PIXI.TilingSprite({
                 texture: tex,
-                width: this.cols * TILE_SIZE,
-                height: this.rows * TILE_SIZE
+                width: window.innerWidth,
+                height: window.innerHeight
             });
             this.game.groundLayer.addChildAt(this.gridSprite, 0);
         }
 
-        // 2. STAMP PATHS - Must use same coordinate floor-math
+        // 2. BUILD PATH VOID AND MASK
         for (let x = 0; x < this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
                 if (this.grid[x][y] === TileType.PATH) {
                     const sx = x * TILE_SIZE;
                     const sy = y * TILE_SIZE;
                     
-                    // Black void must perfectly overlap grid lines
-                    this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
-                    this.graphics.fill(0x000000);
+                    // SOLID BLACK path
+                    this.pathGraphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
+                    this.pathGraphics.fill(0x000000);
                     
-                    // Synchronize path mask for binary flow
+                    // Same shape for mask
                     this.pathMask.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.pathMask.fill(0xffffff);
-
-                    // 3. EDGE HIGHLIGHTING - Snapped to 24px increments
-                    if (x > 0 && x < this.cols - 1) {
-                        const neighbors = [
-                            { nx: x+1, ny: y, s: 'r' },
-                            { nx: x-1, ny: y, s: 'l' },
-                            { nx: x, ny: y+1, s: 'b' },
-                            { nx: x, ny: y-1, s: 't' }
-                        ];
-                        neighbors.forEach(n => {
-                            if (this.grid[n.nx] && this.grid[n.nx][n.ny] === TileType.BUILDABLE) {
-                                if (n.s === 'r') this.graphics.moveTo(sx + TILE_SIZE, sy).lineTo(sx + TILE_SIZE, sy + TILE_SIZE);
-                                if (n.s === 'l') this.graphics.moveTo(sx, sy).lineTo(sx, sy + TILE_SIZE);
-                                if (n.s === 'b') this.graphics.moveTo(sx, sy + TILE_SIZE).lineTo(sx + TILE_SIZE, sy + TILE_SIZE);
-                                if (n.s === 't') this.graphics.moveTo(sx, sy).lineTo(sx + TILE_SIZE, sy);
-                                this.graphics.stroke({ width: 1.5, color: 0x0066ff, alpha: 0.6 });
-                            }
-                        });
-                    }
                 }
             }
         }
 
-        if (!this.game.groundLayer.children.includes(this.graphics)) {
-            this.game.groundLayer.addChild(this.graphics);
+        // 3. APPLY INVERTED MASK TO GRID
+        // This makes the grid invisible ONLY where the path is
+        // Resulting in the grid lines acting as perfectly flush borders
+        if (this.gridSprite) {
+            this.gridSprite.mask = this.pathMask;
+            // @ts-ignore - Pixi 8 property
+            this.pathMask.context.alphaMode = 'erase'; 
         }
 
+        if (!this.game.groundLayer.children.includes(this.pathGraphics)) {
+            this.game.groundLayer.addChild(this.pathGraphics);
+        }
+
+        // 4. BINARY FLOW (Only inside path)
         if (!this.binarySprite) {
             const tex = TextureGenerator.getInstance().binaryTexture;
             if (tex) {
                 this.binarySprite = new PIXI.TilingSprite({
                     texture: tex,
-                    width: this.cols * TILE_SIZE,
-                    height: this.rows * TILE_SIZE
+                    width: window.innerWidth,
+                    height: window.innerHeight
                 });
                 this.binarySprite.alpha = 0.4;
                 this.game.groundLayer.addChild(this.binarySprite);
-                this.game.groundLayer.addChild(this.pathMask);
                 this.binarySprite.mask = this.pathMask;
             }
         }
-        
+
         this.syncToViewport();
     }
 
     private syncToViewport() {
-        const w = this.cols * TILE_SIZE;
-        const h = this.rows * TILE_SIZE;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
         if (this.gridSprite) { this.gridSprite.width = w; this.gridSprite.height = h; }
         if (this.binarySprite) { this.binarySprite.width = w; this.binarySprite.height = h; }
     }

@@ -18,6 +18,7 @@ html, body, #root {
   overflow: hidden;
   background-color: var(--bg-deep);
   font-family: 'Courier New', Courier, monospace;
+  -webkit-font-smoothing: antialiased;
 }
 
 #game-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
@@ -42,7 +43,6 @@ html, body, #root {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   position: relative; z-index: 10;
-  transform: translateY(-5vh);
 }
 
 .menu-title-static {
@@ -54,7 +54,7 @@ html, body, #root {
   color: var(--neon-blue);
   margin-bottom: 6vh;
   transform: rotateX(35deg) translateZ(50px);
-  text-shadow: 0 1px 0 #0044bb, 0 3px 0 #002299, 0 5px 0 #001177, 0 0 30px rgba(0, 102, 255, 0.8);
+  text-shadow: 0 1px 0 #0044bb, 0 3px 0 #002299, 0 5px 0 #001177, 0 0 30px rgba(0, 102, 255, 0.6);
 }
 
 .menu-options-grid {
@@ -75,7 +75,6 @@ html, body, #root {
 .menu-options-grid button:hover {
   background: var(--neon-cyan); color: #000;
   box-shadow: 0 0 25px var(--neon-cyan);
-  transform: scale(1.05);
 }
 
 /* 2. UNIFIED TACTICAL DASHBOARD */
@@ -97,17 +96,17 @@ html, body, #root {
   background: rgba(0, 102, 255, 0.1);
   border: 1px solid var(--neon-blue);
   color: var(--neon-blue);
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
   font-size: var(--font-xs);
   cursor: pointer;
   text-transform: uppercase;
-  transition: all 0.2s;
 }
 
 .pause-btn {
-  width: fit-content;
+  width: fit-content; /* FIXED: SHORTER BOX */
+  padding: 4px 12px;
   align-self: flex-start;
 }
 
@@ -117,15 +116,9 @@ html, body, #root {
 .turret-grid-horizontal { display: flex; gap: 10px; align-items: center; }
 
 .slim-turret-card {
-  background: #050505; 
-  border: 1px solid #333;
-  padding: 4px 8px; /* TIGHTER PADDING */
-  display: flex; 
-  align-items: center; 
-  justify-content: center; /* CENTER CONTENT */
-  cursor: pointer; 
-  min-width: 110px; /* REDUCED WIDTH */
-  transition: all 0.2s;
+  background: #050505; border: 1px solid #333;
+  padding: 6px 12px; display: flex; align-items: center; gap: 10px;
+  cursor: pointer; min-width: 150px; transition: all 0.2s;
 }
 
 .slim-turret-card.active { border-color: var(--neon-cyan); background: #111; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); }
@@ -153,124 +146,41 @@ html, body, #root {
   padding: 30px; min-width: 350px;
   display: flex; flex-direction: column; align-items: center; gap: 20px;
   pointer-events: auto; z-index: 50;
-  box-shadow: 0 0 50px rgba(0, 102, 255, 0.2);
 }
-
-.intel-header { font-size: 0.8rem; color: #55aaaa; letter-spacing: 3px; font-weight: bold; }
-.intel-icons { display: flex; gap: 20px; }
-.intel-icon-box { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.intel-label { font-size: 0.5rem; color: var(--neon-cyan); font-weight: bold; }
 
 .game-summary {
-  background: rgba(0, 102, 255, 0.05);
-  border: 1px solid rgba(0, 102, 255, 0.2);
-  padding: 15px;
-  width: 100%;
-  font-size: 0.65rem;
-  color: #aaa;
-  line-height: 1.6;
-  text-align: left;
+  background: rgba(0, 102, 255, 0.05); border: 1px solid rgba(0, 102, 255, 0.2);
+  padding: 15px; width: 100%; font-size: 0.65rem; color: #aaa; line-height: 1.6;
 }
-
-.game-summary p { margin: 4px 0; }
 
 .massive-exec-button {
   background: var(--neon-blue); color: #000;
-  border: none; padding: 12px 20px;
+  border: none; padding: 15px 40px;
   font-family: 'Courier New', Courier, monospace;
-  font-weight: 900; font-size: 0.85rem; /* SMALLER TO FIT ONE LINE */
+  font-weight: 900; font-size: 0.9rem;
   cursor: pointer; text-transform: uppercase;
-  letter-spacing: 1px;
-  width: 100%; /* FULL WIDTH BUT ONE LINE */
-  white-space: nowrap;
+  width: 100%; white-space: nowrap;
 }
 
-/* MINIATURE TURRET ICONS */
-.mini-turret { 
-  position: relative; 
-  width: 32px; height: 32px; 
-  display: flex; justify-content: center; align-items: center; 
-}
-
-.mini-base { 
-  position: absolute; 
-  width: 22px; height: 22px; 
-  background: #1a1a1a; border: 1.5px solid #333; 
-  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); 
-}
-
-.mini-head { 
-  position: relative; 
-  width: 100%; height: 100%; 
-  display: flex; justify-content: center; align-items: center; 
-  z-index: 2; 
-}
-
-.mini-core { 
-  position: absolute; 
-  width: 6px; height: 6px; 
-  border-radius: 50%; 
-  background: var(--turret-color); 
-  box-shadow: 0 0 10px var(--turret-color); 
-}
-
+/* MINIATURE TURRET ICONS (Asset Sync) */
+.mini-turret { position: relative; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; }
+.mini-base { position: absolute; width: 22px; height: 22px; background: #1a1a1a; border: 1.5px solid #333; clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); }
+.mini-head { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 2; }
+.mini-core { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--turret-color); box-shadow: 0 0 8px var(--turret-color); }
 .mini-weapon { position: absolute; width: 100%; height: 100%; }
 
-.turret-card[data-type="0"] .mini-weapon::before, 
-.turret-card[data-type="0"] .mini-weapon::after,
-.slim-turret-card[data-type="0"] .mini-weapon::before,
-.slim-turret-card[data-type="0"] .mini-weapon::after { 
-  content: ''; position: absolute; width: 3px; height: 14px; background: #333; top: 2px; border-top: 3px solid var(--turret-color);
-}
-.turret-card[data-type="0"] .mini-weapon::before, .slim-turret-card[data-type="0"] .mini-weapon::before { left: 10px; }
-.turret-card[data-type="0"] .mini-weapon::after, .slim-turret-card[data-type="0"] .mini-weapon::after { right: 10px; }
-
-.turret-card[data-type="1"] .mini-weapon::before, .slim-turret-card[data-type="1"] .mini-weapon::before { 
-  content: ''; position: absolute; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 18px solid #2c3e50; top: 4px; left: 8px; 
-}
-.turret-card[data-type="1"] .mini-weapon::after, .slim-turret-card[data-type="1"] .mini-weapon::after { 
-  content: ''; position: absolute; width: 2px; height: 22px; background: var(--turret-color); top: 2px; left: 15px; 
-}
-
-.turret-card[data-type="2"] .mini-weapon::before, .slim-turret-card[data-type="2"] .mini-weapon::before { 
-  content: ''; position: absolute; width: 16px; height: 16px; background: #2c3e50; border: 1.5px solid #111; top: 8px; left: 8px; 
-}
-.turret-card[data-type="2"] .mini-weapon::after, .slim-turret-card[data-type="2"] .mini-weapon::after { 
-  content: ''; position: absolute; width: 18px; height: 4px; background: var(--turret-color); top: 14px; left: 7px; 
-}
-
-.turret-card[data-type="3"] .mini-weapon::before, .turret-card[data-type="3"] .mini-weapon::after, .slim-turret-card[data-type="3"] .mini-weapon::before, .slim-turret-card[data-type="3"] .mini-weapon::after { 
-  content: ''; position: absolute; width: 2px; height: 26px; background: #333; top: 0; 
-}
-.turret-card[data-type="3"] .mini-weapon::before, .slim-turret-card[data-type="3"] .mini-weapon::before { left: 10px; }
-.turret-card[data-type="3"] .mini-weapon::after, .slim-turret-card[data-type="3"] .mini-weapon::after { right: 10px; }
-.turret-card[data-type="3"] .mini-head::after, .slim-turret-card[data-type="3"] .mini-head::after {
-  content: ''; position: absolute; width: 10px; height: 12px; background: repeating-linear-gradient(to bottom, var(--turret-color), var(--turret-color) 2px, transparent 2px, transparent 4px); top: 6px; left: 11px;
-}
-
-/* ORIENTATION GATE */
-.orientation-warning {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-  background: #000; color: var(--neon-cyan);
-  z-index: 9999; display: none;
-  flex-direction: column; justify-content: center; align-items: center;
-  text-align: center; padding: 40px;
-}
-@media (orientation: portrait) { .orientation-warning { display: flex; } }
-.warning-icon { font-size: 4rem; margin-bottom: 30px; animation: rotate-studio 3s infinite cubic-bezier(0.4, 0, 0.2, 1); }
-@keyframes rotate-studio { 0% { transform: rotate(0deg) scale(1); opacity: 0.5; } 50% { transform: rotate(90deg) scale(1.1); opacity: 1; } 100% { transform: rotate(0deg) scale(1); opacity: 0.5; } }
-.warning-text { font-family: 'Courier New', Courier, monospace; font-size: 1.1rem; font-weight: bold; letter-spacing: 3px; line-height: 1.6; color: var(--neon-blue); }
-.warning-subtext { font-size: 0.7rem; color: #55aaaa; margin-top: 15px; letter-spacing: 1px; }
+.slim-turret-card[data-type="0"] .mini-weapon::before, .slim-turret-card[data-type="0"] .mini-weapon::after { content: ''; position: absolute; width: 3px; height: 14px; background: #333; border-top: 3px solid var(--turret-color); top: 2px; }
+.slim-turret-card[data-type="0"] .mini-weapon::before { left: 10px; } .slim-turret-card[data-type="0"] .mini-weapon::after { right: 10px; }
+.slim-turret-card[data-type="1"] .mini-weapon::before { content: ''; position: absolute; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 18px solid #2c3e50; top: 4px; left: 8px; }
+.slim-turret-card[data-type="1"] .mini-weapon::after { content: ''; position: absolute; width: 2px; height: 22px; background: var(--turret-color); top: 2px; left: 15px; }
+.slim-turret-card[data-type="2"] .mini-weapon::before { content: ''; position: absolute; width: 16px; height: 16px; background: #2c3e50; border: 1.5px solid #111; top: 8px; left: 8px; }
+.slim-turret-card[data-type="2"] .mini-weapon::after { content: ''; position: absolute; width: 18px; height: 4px; background: var(--turret-color); top: 14px; left: 7px; }
+.slim-turret-card[data-type="3"] .mini-weapon::before, .slim-turret-card[data-type="3"] .mini-weapon::after { content: ''; position: absolute; width: 2px; height: 26px; background: #333; top: 0; }
+.slim-turret-card[data-type="3"] .mini-weapon::before { left: 10px; } .slim-turret-card[data-type="3"] .mini-weapon::after { right: 10px; }
+.slim-turret-card[data-type="3"] .mini-head::after { content: ''; position: absolute; width: 10px; height: 12px; background: repeating-linear-gradient(to bottom, var(--turret-color), var(--turret-color) 2px, transparent 2px, transparent 4px); top: 6px; left: 11px; }
 
 /* MISC */
-.grid-background { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; }
 .grid-lines { position: absolute; width: 100%; height: 100%; background-image: linear-gradient(to right, rgba(0, 102, 255, 0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 102, 255, 0.2) 1px, transparent 1px); background-size: 32px 32px; opacity: 1; }
-.glow-bit { position: absolute; width: 4px; height: 4px; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); border-radius: 50%; opacity: 0; margin-top: -2px; margin-left: -2px; }
-.glow-1 { animation: move-right 12s infinite linear; }
-@keyframes move-right { 0% { opacity: 0; transform: translate(-50px, 128px); } 10% { opacity: 1; } 100% { opacity: 0; transform: translate(100vw, 128px); } }
-.grid-sweep { position: absolute; width: 100%; height: 150px; background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.05), transparent); animation: sweep 15s infinite ease-in-out; pointer-events: none; }
-@keyframes sweep { 0% { transform: translateY(-200px); } 20% { transform: translateY(100vh); } 100% { transform: translateY(100vh); } }
-
 .pause-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 9999; pointer-events: auto; }
 .pause-content { background: #050505; border: 2px solid var(--neon-blue); padding: 40px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 0 30px rgba(0, 102, 255, 0.3); }
 .pause-title { color: var(--neon-blue); font-size: var(--font-md); margin-bottom: 30px; letter-spacing: 4px; }
@@ -278,13 +188,12 @@ html, body, #root {
 .pause-options button { background: rgba(0, 102, 255, 0.1); border: 1px solid var(--neon-blue); color: var(--neon-cyan); padding: 12px 20px; cursor: pointer; font-family: 'Courier New', Courier, monospace; font-size: var(--font-sm); text-transform: uppercase; transition: all 0.2s; }
 .pause-options button:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
 
-.glitch-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 15px 40px; background: rgba(0, 0, 0, 0.9); border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-weight: bold; font-size: var(--font-md); z-index: 100; pointer-events: none; animation: glitch-flash 1s step-end 3; animation-fill-mode: forwards; opacity: 0; white-space: nowrap; letter-spacing: 4px; }
-@keyframes glitch-flash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
-
-.encyclopedia { width: 100vw; height: 100vh; background: #000; color: var(--neon-cyan); padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; overflow-y: auto; z-index: 110; }
-.enc-header { font-size: var(--font-md); border-bottom: 2px solid var(--neon-blue); padding-bottom: 10px; margin-bottom: 20px; width: 100%; text-align: center; }
-.visual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; width: 100%; }
-.visual-card { background: #0a0a0a; border: 1px solid #333; padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.orientation-warning { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: var(--neon-cyan); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; }
+@media (orientation: portrait) { .orientation-warning { display: flex; } }
+.warning-icon { font-size: 4rem; margin-bottom: 30px; animation: rotate-studio 3s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes rotate-studio { 0% { transform: rotate(0deg) scale(1); opacity: 0.5; } 50% { transform: rotate(90deg) scale(1.1); opacity: 1; } 100% { transform: rotate(0deg) scale(1); opacity: 0.5; } }
+.warning-text { font-family: 'Courier New', Courier, monospace; font-size: 1.1rem; font-weight: bold; letter-spacing: 3px; line-height: 1.6; color: var(--neon-blue); }
+.warning-subtext { font-size: 0.7rem; color: #55aaaa; margin-top: 15px; letter-spacing: 1px; }
 
 .shape { width: 24px; height: 24px; margin-bottom: 5px; }
 .shape.circle { border-radius: 50%; }
