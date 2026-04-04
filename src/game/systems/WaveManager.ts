@@ -28,6 +28,12 @@ export class WaveManager {
         this.game.pathManager.generatePath(this.waveNumber);
         this.game.mapManager.setPathFromCells(this.game.pathManager.pathCells);
 
+        // Update Kernel Position
+        if (this.game.kernel) {
+            this.game.kernel.container.x = this.game.pathManager.endNodePos.x;
+            this.game.kernel.container.y = this.game.pathManager.endNodePos.y;
+        }
+
         this.isWaveActive = false;
     }
 
@@ -64,6 +70,10 @@ export class WaveManager {
                 const damage = enemy.type === EnemyType.FRACTAL ? 10 : 
                                enemy.type === EnemyType.BEHEMOTH ? 3 : 1;
                 GameStateManager.getInstance().takeDamage(damage);
+                
+                // FLASH KERNEL ON BREACH
+                if (this.game.kernel) this.game.kernel.triggerFlash();
+                
                 this.removeEnemy(i);
                 continue;
             }

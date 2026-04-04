@@ -4,9 +4,8 @@ import { TextureGenerator } from '../utils/TextureGenerator';
 import type { GridCoord } from './PathManager';
 
 export const TILE_SIZE = 24;
-const MAX_DIM = Math.max(window.screen.width, window.screen.height, 2000);
-export const MAP_COLS = Math.ceil(MAX_DIM / TILE_SIZE);
-export const MAP_ROWS = Math.ceil(MAX_DIM / TILE_SIZE);
+export const MAP_COLS = Math.ceil(2000 / TILE_SIZE); // Internal virtual max
+export const MAP_ROWS = Math.ceil(2000 / TILE_SIZE);
 
 export const TileType = {
     PATH: 0,
@@ -23,6 +22,7 @@ export class MapManager {
     private graphics: PIXI.Graphics;
     private pathMask: PIXI.Graphics;
     private binarySprite: PIXI.TilingSprite | null = null;
+    private gridSprite: PIXI.TilingSprite | null = null; // OPTIMIZED GRID
     private game: GameContainer;
 
     constructor(game: GameContainer) {
@@ -32,11 +32,8 @@ export class MapManager {
         this.updateDimensions();
     }
 
-    /**
-     * Identifies current viewable edges and limits grid to that area.
-     */
     private updateDimensions() {
-        this.cols = Math.ceil(window.innerWidth / TILE_SIZE) + 1; // +1 SAFETY COLUMN
+        this.cols = Math.ceil(window.innerWidth / TILE_SIZE) + 1;
         this.rows = Math.ceil(window.innerHeight / TILE_SIZE) + 1;
         this.initGrid();
     }
@@ -52,9 +49,7 @@ export class MapManager {
     }
 
     public setPathFromCells(cells: GridCoord[]) {
-        // ALWAYS SYNC TO VIEWABLE EDGES ON START WAVE
         this.updateDimensions();
-        
         cells.forEach(cell => {
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
@@ -70,38 +65,43 @@ export class MapManager {
     }
 
     public render() {
-        // RE-CALCULATE ON EVERY RENDER CALL
-        this.cols = Math.ceil(window.innerWidth / TILE_SIZE);
-        this.rows = Math.ceil(window.innerHeight / TILE_SIZE);
-
         this.graphics.clear();
         this.pathMask.clear();
 
-        // ONLY RENDER WITHIN CURRENT VIEWABLE COLS/ROWS
+        // ONLY DRAW THE BLACK PATH HOLES
         for (let x = 0; x < this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
-                const type = this.grid[x][y];
-                const sx = x * TILE_SIZE;
-                const sy = y * TILE_SIZE;
-
-                if (type === TileType.PATH) {
+                if (this.grid[x][y] === TileType.PATH) {
+                    const sx = x * TILE_SIZE;
+                    const sy = y * TILE_SIZE;
                     this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.graphics.fill(0x000000);
                     this.pathMask.rect(sx, sy, TILE_SIZE, TILE_SIZE);
                     this.pathMask.fill(0xffffff);
-                } else {
-                    this.graphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
-                    this.graphics.fill(0x020408);
-                    this.graphics.stroke({ width: 1, color: 0x0066ff, alpha: 0.4 });
                 }
             }
+        }
+
+        // 1. INITIALIZE CACHED GRID SPRITE (One draw call instead of 2000+)
+        if (!this.gridSprite) {
+            const gridCell = new PIXI.Graphics();
+            gridCell.rect(0, 0, TILE_SIZE, TILE_SIZE);
+            gridCell.fill(0x020408);
+            gridCell.stroke({ width: 1, color: 0x0066ff, alpha: 0.3 });
+            const tex = this.game.app.renderer.generateTexture(gridCell);
+            
+            this.gridSprite = new PIXI.TilingSprite({
+                texture: tex,
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+            this.game.groundLayer.addChildAt(this.gridSprite, 0);
         }
 
         if (!this.game.groundLayer.children.includes(this.graphics)) {
             this.game.groundLayer.addChild(this.graphics);
         }
 
-        // RE-SYNC BINARY FLOW TO EXACT VIEWPORT
         if (!this.binarySprite) {
             const tex = TextureGenerator.getInstance().binaryTexture;
             if (tex) {
@@ -110,12 +110,22 @@ export class MapManager {
                     width: window.innerWidth,
                     height: window.innerHeight
                 });
-                this.binarySprite.alpha = 0.5;
+                this.binarySprite.alpha = 0.4;
                 this.game.groundLayer.addChild(this.binarySprite);
                 this.game.groundLayer.addChild(this.pathMask);
                 this.binarySprite.mask = this.pathMask;
             }
-        } else {
+        }
+
+        this.syncToViewport();
+    }
+
+    private syncToViewport() {
+        if (this.gridSprite) {
+            this.gridSprite.width = window.innerWidth;
+            this.gridSprite.height = window.innerHeight;
+        }
+        if (this.binarySprite) {
             this.binarySprite.width = window.innerWidth;
             this.binarySprite.height = window.innerHeight;
         }
@@ -123,8 +133,8 @@ export class MapManager {
 
     public update(delta: number) {
         if (this.binarySprite) {
-            this.binarySprite.tilePosition.x += 0.8 * delta;
-            this.binarySprite.tilePosition.y += 0.4 * delta;
+            this.binarySprite.tilePosition.x += 0.6 * delta;
+            this.binarySprite.tilePosition.y += 0.3 * delta;
         }
     }
 

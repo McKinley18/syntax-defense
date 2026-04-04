@@ -21,6 +21,20 @@ function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [isWaveActive, setIsWaveActive] = useState(false);
 
+  // ATTEMPT ORIENTATION LOCK
+  useEffect(() => {
+    const lockOrientation = async () => {
+      try {
+        if (screen === 'GAME' && (screen as any).orientation?.lock) {
+          await (screen as any).orientation.lock('landscape');
+        }
+      } catch (e) {
+        console.warn("Orientation lock not supported on this device/browser.");
+      }
+    };
+    lockOrientation();
+  }, [screen]);
+
   useEffect(() => {
     if (screen === 'GAME' && !game) {
       async function init() {
@@ -93,7 +107,7 @@ function App() {
             <div className="grid-sweep"></div>
           </div>
         </div>
-        <div className="menu-content">
+        <div className="menu-content-centered">
           <h1 className="menu-title-static">SYNTAX<br/>DEFENSE</h1>
           <div className="menu-options-grid">
             <button onClick={() => startNewGame(false)}>&gt; INITIALIZE_STANDARD</button>
@@ -140,7 +154,7 @@ function App() {
                 )}
                 {infoTab === 'DIAGNOSTICS' && (
                   <div className="diag-text">
-                    <div>BUILD: v1.5.0</div>
+                    <div>BUILD: v1.6.0</div>
                     <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
                     <div className="blink">READY...</div>
                   </div>
@@ -200,25 +214,6 @@ function App() {
           </div>
         )}
 
-        {/* FLOATING TOP BAR */}
-        <div className="floating-top-bar">
-          <div className="hud-corner top-left">
-            <button className="exec-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
-            <div className="wave-label">{waveName} // LVL_{wave}</div>
-          </div>
-          <div className="hud-corner top-right">
-            <div className="stat-row">
-              <span className="label">TOKENS</span>
-              <span className="credits-value">{credits}</span>
-            </div>
-            <div className="integrity-stack">
-              <div className="integrity-bar-small">
-                <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* PRE-WAVE INTEL OVERLAY */}
         {!isWaveActive && !isPaused && (
           <div className="pre-wave-overlay">
@@ -244,25 +239,49 @@ function App() {
           </div>
         )}
 
-        {/* SLIM BOTTOM SELECTOR */}
-        <div className="slim-bottom-selector">
-          <div className="turret-grid-horizontal">
-            {[TowerType.PULSE_MG, TowerType.FROST_RAY, TowerType.BLAST_NOVA, TowerType.RAILGUN].map(type => {
-              const cfg = TOWER_CONFIGS[type];
-              const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : cfg.cost;
-              return (
-                <div key={type} className={`slim-turret-card ${selectedTurret === type ? 'active' : ''}`} onClick={() => selectTurret(type)}>
-                  <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
-                    <div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+        {/* UNIFIED TACTICAL DASHBOARD (BOTTOM ONLY) */}
+        <div className="tactical-dashboard">
+          <div className="dashboard-left">
+            <button className="exec-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
+            <div className="wave-label">{waveName} // LVL_{wave}</div>
+          </div>
+
+          <div className="dashboard-center">
+            <div className="turret-grid-horizontal">
+              {[TowerType.PULSE_MG, TowerType.FROST_RAY, TowerType.BLAST_NOVA, TowerType.RAILGUN].map(type => {
+                const cfg = TOWER_CONFIGS[type];
+                const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : cfg.cost;
+                const canAfford = credits >= cost;
+                return (
+                  <div 
+                    key={type} 
+                    className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''}`} 
+                    onClick={() => selectTurret(type)}
+                  >
+                    <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
+                      <div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+                    </div>
+                    <div className="slim-card-info">
+                      <span className="name">{cfg.name}</span>
+                      <span className="stats">DMG:{cfg.damage}</span>
+                      <span className="cost">{cost}c</span>
+                    </div>
                   </div>
-                  <div className="slim-card-info">
-                    <span className="name">{cfg.name}</span>
-                    <span className="stats">DMG:{cfg.damage}</span>
-                    <span className="cost">{cost}c</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="dashboard-right">
+            <div className="stat-row">
+              <span className="label">TOKENS:</span>
+              <span className="credits-value">{credits}</span>
+            </div>
+            <div className="integrity-stack">
+              <div className="integrity-bar-small">
+                <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

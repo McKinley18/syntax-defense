@@ -6,6 +6,7 @@ import { ParticleManager } from './systems/ParticleManager';
 import { MapManager } from './systems/MapManager';
 import { InputHandler } from './systems/InputHandler';
 import { TextureGenerator } from './utils/TextureGenerator';
+import { Kernel } from './entities/Kernel';
 
 export class GameContainer {
     public app: PIXI.Application;
@@ -24,6 +25,7 @@ export class GameContainer {
     public particleManager!: ParticleManager;
     public mapManager!: MapManager;
     public inputHandler!: InputHandler;
+    public kernel!: Kernel;
 
     public static instance: GameContainer;
 
@@ -77,12 +79,15 @@ export class GameContainer {
         // SYNC INITIAL PATH
         this.mapManager.setPathFromCells(this.pathManager.pathCells);
         
+        // SYNC KERNEL
+        this.kernel = new Kernel(this.pathManager.endNodePos.x, this.pathManager.endNodePos.y);
+        
         // ADD DYNAMIC RESIZE LISTENER
         window.addEventListener('resize', () => {
             if (this.app.renderer) {
                 this.app.renderer.resize(window.innerWidth, window.innerHeight);
                 if (this.mapManager) {
-                    this.mapManager.render(); // Force re-draw to current edges
+                    this.mapManager.render();
                 }
             }
         });
@@ -96,5 +101,6 @@ export class GameContainer {
         this.towerManager.update(delta);
         this.particleManager.update(delta);
         if (this.mapManager) this.mapManager.update(delta);
+        if (this.kernel) this.kernel.update(delta);
     }
 }
