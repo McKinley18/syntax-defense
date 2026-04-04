@@ -33,9 +33,31 @@ html, body, #root {
 /* 1. MAIN MENU (UNCHANGED) */
 .main-menu { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; perspective: 1000px; position: relative; overflow: hidden; z-index: 100; }
 .menu-title-static { font-family: 'Arial Black', sans-serif; font-size: clamp(3rem, 12vw, 6rem); font-weight: 900; line-height: 0.85; text-align: center; color: var(--neon-blue); margin-bottom: 4vh; transform: rotateX(25deg); text-shadow: 0 1px 0 #0044bb, 0 3px 0 #002299, 0 0 20px rgba(0, 102, 255, 0.6); }
-.menu-options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; max-width: 600px; z-index: 20; }
-.menu-options button { background: rgba(0, 0, 0, 0.8); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-size: var(--font-sm); cursor: pointer; padding: 12px; text-transform: uppercase; transition: all 0.2s; }
-.menu-options button:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 20px var(--neon-cyan); }
+.menu-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+  z-index: 20;
+}
+
+.menu-options-grid button {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  padding: 12px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.menu-options-grid button:hover {
+  background: var(--neon-cyan);
+  color: #000;
+  box-shadow: 0 0 20px var(--neon-cyan);
+}
 .menu-content { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; }
 
 /* 2. TACTICAL SIDEBAR */

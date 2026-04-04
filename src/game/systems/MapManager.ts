@@ -4,6 +4,9 @@ import { TextureGenerator } from '../utils/TextureGenerator';
 import type { GridCoord } from './PathManager';
 
 export const TILE_SIZE = 24;
+const MAX_DIM = Math.max(window.screen.width, window.screen.height, 2000);
+export const MAP_COLS = Math.ceil(MAX_DIM / TILE_SIZE);
+export const MAP_ROWS = Math.ceil(MAX_DIM / TILE_SIZE);
 
 export const TileType = {
     PATH: 0,
