@@ -239,11 +239,11 @@ function App() {
         {!isWaveActive && !isPaused && (
           <div className="pre-wave-overlay">
             <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
-            <div className="intel-icons">
+            <div className="intel-grid">
               {game?.waveManager.getUpcomingEnemyTypes().map(type => {
-                const config = VISUAL_REGISTRY[type];
+                const config = VISUAL_REGISTRY[type as EnemyType];
                 return (
-                  <div key={type} className="intel-icon-box">
+                  <div key={type} className="intel-card">
                     <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
                     <span className="intel-label">{config.name}</span>
                   </div>

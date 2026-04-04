@@ -98,14 +98,14 @@ export class WaveManager {
         }
     }
 
-    public getUpcomingEnemyTypes(): number[] {
-        const types: Set<number> = new Set();
+    public getUpcomingEnemyTypes(): EnemyType[] {
+        const types: Set<EnemyType> = new Set();
         if (this.waveNumber % 10 === 0) {
-            types.add(3);
+            types.add(EnemyType.FRACTAL);
         } else {
-            types.add(0);
-            if (this.waveNumber >= 4) types.add(1);
-            if (this.waveNumber >= 8) types.add(2);
+            types.add(EnemyType.GLIDER);
+            if (this.waveNumber >= 4) types.add(EnemyType.STRIDER);
+            if (this.waveNumber >= 8) types.add(EnemyType.BEHEMOTH);
         }
         return Array.from(types);
     }
