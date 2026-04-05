@@ -31,7 +31,8 @@ function App() {
   const [glitchIndex, setGlitchIndex] = useState(-1);
   const [isDistorted, setIsDistorted] = useState(false);
   const [isFlickering, setIsFlickering] = useState(false);
-  const [gamePhase, setGamePhase] = useState<string>("PREP"); // NEW STATE
+  const [gamePhase, setGamePhase] = useState<string>("PREP");
+  const [upcomingEnemies, setUpcomingEnemies] = useState<number[]>([]);
 
   // 2. STABLE EFFECT HOOKS
   useEffect(() => {
@@ -78,10 +79,11 @@ function App() {
           setWaveName(state.getWaveName());
           setRepairCost(state.repairCost);
           setGameMode(state.gameMode);
-          setGamePhase(state.phase); // SYNC PHASE
+          setGamePhase(state.phase); 
           if (g.waveManager) {
             setWave(g.waveManager.waveNumber);
             setIsWaveActive(g.waveManager.isWaveActive);
+            setUpcomingEnemies(g.waveManager.upcomingEnemies); // SYNC ENEMIES
           }
         }, 100);
 
@@ -294,7 +296,7 @@ function App() {
                   </div>
                   <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM_DIAGNOSTICS</h3>
                   <div style={{borderLeft: '4px solid var(--neon-blue)', paddingLeft: '20px', background: 'rgba(0,102,255,0.05)', padding: '20px', marginTop: '20px'}}>
-                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.2.0_ELITE</div>
+                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.3.1_ELITE</div>
                     <div style={{marginBottom: '10px'}}>MAINFRAME_STATUS: {systemStatusText}</div>
                     <div style={{marginBottom: '10px'}}>KERNEL_STABILITY: {((integrity / 20) * 100).toFixed(0)}%</div>
                     <div style={{marginBottom: '10px'}}>LATENCY: 0.04ms</div>
@@ -397,7 +399,7 @@ function App() {
         <div className="game-overlay-active ui-layer">
           {showTutorial && (
             <div className="pause-overlay-locked">
-              <div className="pause-content" style={{padding: '25px'}}>
+              <div className="pause-content" style={{padding: '25px', maxWidth: '400px'}}>
                 <div className="wave-label" style={{marginBottom: '5px', textAlign: 'center'}}>SYSTEM_INITIALIZATION</div>
                 <h2 className="pause-title" style={{marginTop: '0'}}>INSTRUCTIONS</h2>
                 <div className="game-summary">
@@ -420,7 +422,7 @@ function App() {
             <div className="pre-wave-overlay">
               <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
               <div className="intel-grid-horizontal">
-                {game?.waveManager.getUpcomingEnemyTypes().map(type => {
+                {upcomingEnemies.map(type => {
                   const config = (VISUAL_REGISTRY as any)[type];
                   return (
                     <div key={type} className="intel-card-modern">

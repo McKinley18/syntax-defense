@@ -21,6 +21,8 @@ export class WaveManager {
         this.game = game;
     }
 
+    public upcomingEnemies: EnemyType[] = [];
+
     public prepareWave(incrementWave: boolean = true) {
         // PREVENT RE-ENTRY IF ALREADY PREPARING
         if (this.enemies.length > 0 || this.enemiesToSpawn > 0 || this.isWaveActive) return;
@@ -31,6 +33,10 @@ export class WaveManager {
         
         this.waveNumber = GameStateManager.getInstance().currentWave;
         GameStateManager.getInstance().phase = 'PREP'; // LOCK PREP PHASE
+        
+        // PRE-CALCULATE FOR UI
+        this.upcomingEnemies = this.calculateUpcomingTypes();
+        
         this.game.towerManager.clearTowers();
         
         let success = false;
@@ -145,7 +151,7 @@ export class WaveManager {
         }
     }
 
-    public getUpcomingEnemyTypes(): EnemyType[] {
+    public calculateUpcomingTypes(): EnemyType[] {
         const types: Set<EnemyType> = new Set();
         if (this.waveNumber % 10 === 0) {
             types.add(EnemyType.FRACTAL);
