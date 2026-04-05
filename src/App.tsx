@@ -27,7 +27,8 @@ function App() {
     const lockOrientation = async () => {
       try {
         const screenObj = window.screen as any;
-        if (screen === 'GAME' && screenObj.orientation?.lock) {
+        // MANDATORY LANDSCAPE: Lock for ALL screens except MENU
+        if (screen !== 'MENU' && screenObj.orientation?.lock) {
           await screenObj.orientation.lock('landscape');
         }
       } catch (e) { }
@@ -175,7 +176,7 @@ function App() {
 
   if (screen === 'MODES') {
     return (
-      <div className="encyclopedia">
+      <div className="encyclopedia landscape-mode">
         <div className="enc-header">[ SELECT_ADVANCED_PROTOCOL ]</div>
         <div className="menu-options-grid" style={{maxWidth: '800px', marginTop: '20px'}}>
           <button onClick={() => startNewGame('HARDCORE')} style={{color: '#ff3300', borderColor: '#ff3300'}}>&gt; HARDCORE_MODE</button>
@@ -190,7 +191,7 @@ function App() {
 
   if (screen === 'ENEMIES' || screen === 'TURRETS' || screen === 'ABOUT') {
     return (
-      <div className="encyclopedia">
+      <div className="encyclopedia landscape-mode">
         <div className="enc-header">[ MAINFRAME_DATA_ARCHIVE // {screen} ]</div>
         <div className="enc-content">
           {screen === 'ABOUT' && (
