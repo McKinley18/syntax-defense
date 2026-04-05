@@ -7,7 +7,7 @@ import { AudioManager } from './game/systems/AudioManager';
 import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
-type InfoTab = 'LORE' | 'VIRAL_DB' | 'PROTOCOLS' | 'SYSTEM_MODES' | 'THREATS' | 'LOGIC';
+type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC';
 
 function App() {
   const [screen, setScreen] = useState<ScreenState>('MENU');
@@ -326,12 +326,12 @@ function App() {
           </div>
           {tutorialStep === 1 && !showRadiusExplanation && (
             <>
-              {/* TARGET: Pulse MG Card - Matched to box size: 155px wide, 85px high, centered vertically in dashboard. Dashboard center content starts at left: 215px. */}
+              {/* TARGET: Pulse MG Card - Fixed to exactly 190px left, 145px width, 85px height, 12px bottom */}
               <div className="tutorial-highlight" 
-                style={{bottom: '22px', left: '215px', width: '155px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
+                style={{bottom: '12px', left: '190px', width: '145px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
                 onClick={() => selectTurret(0)}
               ></div>
-              <div className="tutorial-pointer" style={{bottom: '115px', left: '215px', width: '155px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
+              <div className="tutorial-pointer" style={{bottom: '105px', left: '190px', width: '145px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
             </>
           )}
           {showRadiusExplanation && (
@@ -364,7 +364,7 @@ function App() {
               </div>
             </>
           )}
-          {tutorialStep === 3 && !showCombatIntel && !isWaveActive && (
+          {tutorialStep === 3 && !showCombatIntel && gamePhase === 'PREP' && (
             <>
               <div className="tutorial-highlight" 
                 style={{
@@ -418,7 +418,7 @@ function App() {
               <button className="cyan-menu-btn primary-btn" onClick={() => startNewGame('STANDARD')}>INITIALIZE STANDARD</button>
               <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setScreen('MODES'); }}>ADVANCED PROTOCOLS</button>
               <button className="cyan-menu-btn" onClick={loadGame}>RESTORE SESSION</button>
-              <button className="cyan-menu-btn" onClick={() => openArchive('VIRAL_DB')}>VIRAL DATABASE</button>
+              <button className="cyan-menu-btn" onClick={() => openArchive('VIRAL DB')}>VIRAL DATABASE</button>
               <button className="cyan-menu-btn" onClick={() => openArchive('PROTOCOLS')}>DEFENSE PROTOCOLS</button>
               <button className="cyan-menu-btn" onClick={() => openArchive('LORE')}>SYSTEM INFO</button>
               <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
@@ -432,9 +432,9 @@ function App() {
           <div className="enc-header">SELECT ADVANCED PROTOCOL</div>
           <div className="menu-options-grid" style={{marginTop: '20px'}}>
             <button className="cyan-menu-btn" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>HARDCORE MODE</button>
-            <button className="cyan-menu-btn" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}>SUDDEN DEATH</button>
+            <button className="cyan-menu-btn" onClick={() => startNewGame('SUDDEN DEATH')} style={{borderColor: '#ffcc00'}}>SUDDEN DEATH</button>
             <button className="cyan-menu-btn" onClick={() => startNewGame('ENDLESS')}>ENDLESS LOOP</button>
-            <button className="cyan-menu-btn" onClick={() => startNewGame('ECO_CHALLENGE')}>ECO CHALLENGE</button>
+            <button className="cyan-menu-btn" onClick={() => startNewGame('ECO CHALLENGE')}>ECO CHALLENGE</button>
           </div>
           <button className="cyan-menu-btn back-btn" onClick={() => setScreen('MENU')}>RETURN TO ROOT</button>
         </div>
@@ -496,9 +496,9 @@ function App() {
             <div className="info-hub">
               <div className="info-tabs">
                 <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
-                <button className={infoTab === 'VIRAL_DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL_DB')}>VIRUSES</button>
+                <button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL DB')}>VIRUSES</button>
                 <button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => setInfoTab('PROTOCOLS')}>TURRETS</button>
-                <button className={infoTab === 'SYSTEM_MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM_MODES')}>MODES</button>
+                <button className={infoTab === 'SYSTEM MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM MODES')}>MODES</button>
                 <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
                 <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
               </div>
@@ -511,7 +511,7 @@ function App() {
                     <p>&gt; YOU ARE THE SYSTEM ARCHITECT. YOUR MISSION IS TO DEPLOY DEFENSE NODES AND PURGE THE SWARMS BEFORE THEY BREACH THE CORE MEMORY BANKS.</p>
                   </div>
                 )}
-                {infoTab === 'VIRAL_DB' && (
+                {infoTab === 'VIRAL DB' && (
                   <div className="visual-grid">
                     {Object.values(VISUAL_REGISTRY).map(v => (
                       <div key={v.name} className="visual-card-large">
@@ -525,7 +525,7 @@ function App() {
                     ))}
                   </div>
                 )}
-                {infoTab === 'SYSTEM_MODES' && (
+                {infoTab === 'SYSTEM MODES' && (
                   <div className="manual-text">
                     <p><span style={{color: 'var(--neon-red)'}}>HARDCORE:</span> NO INTEREST REWARDS. UNIT COSTS INCREASED BY 50%. STARTING CAPITAL REDUCED. ONLY FOR ELITE SYSTEM ARCHITECTS.</p>
                     <p><span style={{color: 'var(--neon-green)'}}>ECO CHALLENGE:</span> VIRUSES PROVIDE ZERO TOKENS UPON DELETION. ALL INCOME IS DERIVED FROM THE 10% INTEREST COMPOUNDING SYSTEM.</p>
