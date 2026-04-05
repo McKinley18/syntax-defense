@@ -322,16 +322,16 @@ function App() {
       {isTutorialActive && (
         <div className="tutorial-mask" style={{ pointerEvents: (tutorialStep === 2 && !showRadiusExplanation && !showCombatIntel) ? 'none' : 'auto' }}>
           <div className="rank-tag" style={{position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0, 255, 204, 0.1)', border: '1px solid rgba(0, 255, 204, 0.4)', color: 'var(--neon-cyan)', padding: '5px 15px', zIndex: 16000, fontSize: '0.6rem'}}>
-            TUTORIAL_MODE_ACTIVE
+            TUTORIAL MODE ACTIVE
           </div>
           {tutorialStep === 1 && !showRadiusExplanation && (
             <>
               {/* TARGET: Pulse MG Card */}
               <div className="tutorial-highlight" 
-                style={{bottom: '15px', left: '215px', width: '150px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
+                style={{bottom: '15px', left: '215px', width: '160px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
                 onClick={() => selectTurret(0)}
               ></div>
-              <div className="tutorial-pointer" style={{bottom: '110px', left: '215px', width: '150px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
+              <div className="tutorial-pointer" style={{bottom: '110px', left: '215px', width: '160px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
             </>
           )}
           {showRadiusExplanation && (
