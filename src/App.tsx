@@ -241,6 +241,7 @@ function App() {
               <button className="cyan-menu-btn" onClick={loadGame}>&gt; RESTORE_SESSION</button>
               <button className="cyan-menu-btn" onClick={() => openArchive('VIRAL_DB')}>&gt; VIRAL_DATABASE</button>
               <button className="cyan-menu-btn" onClick={() => openArchive('PROTOCOLS')}>&gt; DEFENSE_PROTOCOLS</button>
+              <button className="cyan-menu-btn" onClick={() => openArchive('LORE')}>&gt; SYSTEM_INFO</button>
               <button className="cyan-menu-btn" onClick={() => setScreen('SETTINGS')}>&gt; SYSTEM_SETTINGS</button>
             </div>
           </div>
