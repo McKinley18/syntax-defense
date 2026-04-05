@@ -697,20 +697,20 @@ function App() {
               </div>
             </div>
             <div className="dashboard-right">
-              <div className="credits-display" style={{display: 'flex', alignItems: 'baseline', gap: '10px', justifyContent: 'flex-end'}}>
-                <span className="credits-label" style={{fontSize: '0.8rem'}}>TOKENS:</span>
+              <div className="credits-display" style={{display: 'flex', alignItems: 'baseline', gap: '8px', justifyContent: 'flex-end', marginBottom: '4px'}}>
+                <span className="credits-label" style={{fontSize: '0.7rem', fontWeight: 900, color: '#fff'}}>TOKENS:</span>
                 <span className="credits-value">{credits}</span>
               </div>
-              <div className="integrity-stack">
+              <div className="integrity-stack" style={{alignItems: 'flex-end', width: '160px'}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.6rem', color: '#fff', marginBottom: '2px'}}>
-                  <span style={{color: sysStatusColor, fontWeight: 900}}>{systemStatusText}</span>
+                  <span style={{color: sysStatusColor, fontWeight: 900, letterSpacing: '1px'}}>{systemStatusText}</span>
                   <span>{integrity}/20</span>
                 </div>
-                <div className="integrity-bar-small">
+                <div className="integrity-bar-small" style={{width: '160px'}}>
                   <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div>
                 </div>
               </div>
-              <button className="blue-button item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>DATA PURGE: 1000c</button>
+              <button className="blue-button item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive} style={{marginTop: '5px', width: '160px'}}>DATA PURGE: 1000c</button>
             </div>
           </div>
         </div>
