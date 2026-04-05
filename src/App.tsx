@@ -150,23 +150,17 @@ function App() {
   const [isDistorted, setIsDistorted] = useState(false);
 
   useEffect(() => {
-    const triggerGlitch = () => {
-      setGlitchIndex(Math.floor(Math.random() * 13));
-      setIsDistorted(true);
-      setTimeout(() => {
-        setGlitchIndex(-1);
-        setIsDistorted(false);
-      }, 180); // Duration of the "malfunction"
-    };
-
     const interval = setInterval(() => {
-      // 35% CHANCE to malfunction this 4s cycle
-      if (Math.random() < 0.35) {
-        // Trigger 200ms BEFORE the first flicker dip (800ms mark)
-        setTimeout(triggerGlitch, 600);
+      // 20% CHANCE EVERY 6 SECONDS (RARE & PROFESSIONAL)
+      if (Math.random() < 0.2) {
+        setGlitchIndex(Math.floor(Math.random() * 13)); 
+        setIsDistorted(true);
+        setTimeout(() => {
+          setGlitchIndex(-1);
+          setIsDistorted(false);
+        }, 180);
       }
-    }, 4000);
-
+    }, 6000);
     return () => clearInterval(interval);
   }, []);
 
@@ -268,7 +262,7 @@ function App() {
                   )}
                   {infoTab === 'DIAGNOSTICS' && (
                     <div className="diag-text">
-                      <div>BUILD: v1.8.0 [MAIN_EVOLUTION]</div>
+                      <div>BUILD: v1.8.1 [MAIN_EVOLUTION]</div>
                       <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
                       <div className="blink">READY...</div>
                     </div>
