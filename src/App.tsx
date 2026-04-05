@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { GameContainer } from './game/GameContainer';
 import { GameStateManager, type GameMode } from './game/systems/GameStateManager';
 import { TowerType, TOWER_CONFIGS } from './game/entities/Tower';
-import { VISUAL_REGISTRY, EnemyType } from './game/VisualRegistry';
+import { VISUAL_REGISTRY } from './game/VisualRegistry';
 import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ABOUT' | 'ENEMIES' | 'TURRETS' | 'MODES';
