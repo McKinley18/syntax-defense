@@ -122,7 +122,7 @@ html, body, #root {
 .rank-tag { font-size: 0.6rem; color: #55aaaa; font-weight: 900; letter-spacing: 2px; margin-bottom: 5px; background: rgba(0,102,255,0.1); padding: 4px 12px; border: 1px solid rgba(0,102,255,0.3); }
 
 .menu-options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 90vw; max-width: 500px; pointer-events: auto; }
-.menu-options-grid.compact { margin-top: 5px; }
+.menu-options-grid.compact { margin-top: -4vh; /* PHYSICAL PULL-UP */ }
 
 /* MALFUNCTIONS */
 .menu-title-static.glitch-active { animation: glitch-snap 0.1s infinite, rgb-split 0.15s infinite; color: var(--neon-red); }
@@ -248,12 +248,12 @@ html, body, #root {
 
 /* 6. OVERLAYS */
 .pre-wave-overlay {
-  position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.9); border: 2px solid var(--neon-blue); padding: 30px;
-  min-width: 450px; display: flex; flex-direction: column; align-items: center; gap: 20px;
+  position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9); border: 2px solid var(--neon-blue); padding: 20px;
+  min-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 15px;
   pointer-events: auto; z-index: 50;
 }
-.intel-card-modern { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100px; text-align: center; }
+.intel-card-modern { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 80px; text-align: center; }
 .intel-label { font-size: 0.7rem; color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
 .massive-exec-button { width: 100% !important; padding: 15px !important; font-size: 1rem !important; letter-spacing: 3px; }
 

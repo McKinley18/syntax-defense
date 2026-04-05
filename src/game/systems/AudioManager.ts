@@ -124,6 +124,19 @@ export class AudioManager {
         this.playProcedural(1200, 100, 0.15, 'triangle', 0.08);
     }
 
+    public playGlitchBuzz() {
+        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(2500, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(this.masterGain!);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+    }
+
     public toggleSfx() {
         this.isSfxMuted = !this.isSfxMuted;
         localStorage.setItem('syntax_sfx_muted', String(this.isSfxMuted));

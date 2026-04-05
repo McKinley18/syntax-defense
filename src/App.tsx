@@ -32,14 +32,17 @@ function App() {
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
   const [upcomingEnemies, setUpcomingEnemies] = useState<number[]>([]);
-  
-  // META STATE
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
   const [isVictorious, setIsVictorious] = useState(false);
 
+  // SILENT AUDIO WAKE
+  const wakeAudioSystem = async () => {
+    await AudioManager.getInstance().resume();
+  };
+
   useEffect(() => {
     const handleFirstInteraction = () => {
-      AudioManager.getInstance().resume();
+      wakeAudioSystem();
       window.removeEventListener('click', handleFirstInteraction);
       window.removeEventListener('touchstart', handleFirstInteraction);
     };
@@ -115,6 +118,7 @@ function App() {
       if (type < 0.15) {
         setIsDistorted(true);
         setGlitchIndex(Math.floor(Math.random() * 13));
+        AudioManager.getInstance().playGlitchBuzz(); // TRIGGER BUZZ
         AudioManager.getInstance().playBreach();
         setTimeout(() => {
           setIsDistorted(false);
@@ -130,6 +134,7 @@ function App() {
   }, []);
 
   const startNewGame = (mode: GameMode) => {
+    wakeAudioSystem();
     AudioManager.getInstance().playUiClick();
     GameStateManager.getInstance().resetGame(mode);
     setIsVictorious(false);
@@ -137,6 +142,7 @@ function App() {
   };
 
   const loadGame = () => {
+    wakeAudioSystem();
     AudioManager.getInstance().playUiClick();
     if (GameStateManager.getInstance().load()) {
       setIsVictorious(false);
@@ -230,6 +236,7 @@ function App() {
   };
 
   const openArchive = (tab: InfoTab) => {
+    wakeAudioSystem();
     AudioManager.getInstance().playUiClick();
     setInfoTab(tab);
     setScreen('ARCHIVE');
@@ -256,12 +263,12 @@ function App() {
             </h1>
             <div className="menu-options-grid compact">
               <button className="cyan-menu-btn primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
-              <button className="cyan-menu-btn" onClick={() => setScreen('MODES')}>&gt; ADVANCED_PROTOCOLS</button>
+              <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setScreen('MODES'); }}>&gt; ADVANCED_PROTOCOLS</button>
               <button className="cyan-menu-btn" onClick={loadGame}>&gt; RESTORE_SESSION</button>
               <button className="cyan-menu-btn" onClick={() => openArchive('VIRAL_DB')}>&gt; VIRAL_DATABASE</button>
               <button className="cyan-menu-btn" onClick={() => openArchive('PROTOCOLS')}>&gt; DEFENSE_PROTOCOLS</button>
               <button className="cyan-menu-btn" onClick={() => openArchive('LORE')}>&gt; SYSTEM_INFO</button>
-              <button className="cyan-menu-btn" onClick={() => setScreen('SETTINGS')}>&gt; SYSTEM_SETTINGS</button>
+              <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setScreen('SETTINGS'); }}>&gt; SYSTEM_SETTINGS</button>
             </div>
           </div>
         </div>
@@ -306,7 +313,7 @@ function App() {
                   </div>
                   <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM_DIAGNOSTICS</h3>
                   <div style={{borderLeft: '4px solid var(--neon-blue)', paddingLeft: '20px', background: 'rgba(0,102,255,0.05)', padding: '20px', marginTop: '20px'}}>
-                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.3.2_ELITE</div>
+                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.3.3_ELITE</div>
                     <div style={{marginBottom: '10px'}}>MAINFRAME_STATUS: {systemStatusText}</div>
                     <div style={{marginBottom: '10px'}}>KERNEL_STABILITY: {((integrity / 20) * 100).toFixed(0)}%</div>
                     <div style={{marginBottom: '10px'}}>LATENCY: 0.04ms</div>
