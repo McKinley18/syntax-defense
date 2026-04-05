@@ -65,33 +65,14 @@ html, body, #root {
 
 .menu-title-static.glitch-active {
   animation: glitch-mecha 0.15s infinite;
-  text-shadow: 
-    3px 0 0 rgba(255, 51, 0, 0.8), 
-    -3px 0 0 rgba(0, 255, 255, 0.8), 
-    0 0 30px rgba(255, 51, 0, 0.4);
-  filter: contrast(1.5) brightness(1.3);
+  text-shadow: 3px 0 0 rgba(255, 51, 0, 0.8), -3px 0 0 rgba(0, 255, 255, 0.8);
 }
 
 @keyframes glitch-mecha {
   0% { transform: rotateX(45deg) translateZ(65px) skewX(0deg) translateX(0); }
-  20% { transform: rotateX(45deg) translateZ(70px) skewX(-10deg) translateX(-4px); }
-  40% { transform: rotateX(45deg) translateZ(60px) skewX(10deg) translateX(4px); }
-  60% { transform: rotateX(45deg) translateZ(75px) skewX(-5deg) translateX(-2px); }
-  80% { transform: rotateX(45deg) translateZ(65px) skewX(5deg) translateX(2px); }
+  20% { transform: rotateX(45deg) translateZ(70px) skewX(-5deg) translateX(-2px); }
+  40% { transform: rotateX(45deg) translateZ(60px) skewX(5deg) translateX(2px); }
   100% { transform: rotateX(45deg) translateZ(65px) skewX(0deg) translateX(0); }
-}
-
-/* RED GRID FLASH WITH STROBE */
-.grid-background.distorted .grid-lines {
-  background-image: 
-    linear-gradient(to right, rgba(255, 51, 0, 0.3) 1px, transparent 1px), 
-    linear-gradient(to bottom, rgba(255, 51, 0, 0.3) 1px, transparent 1px);
-  animation: grid-strobe 0.05s step-end infinite;
-}
-
-@keyframes grid-strobe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
 }
 
 @keyframes terminal-flicker {
@@ -127,9 +108,13 @@ html, body, #root {
 
 /* 2. GLOW TRAILS - FIXED BACKGROUND POSITIONS */
 .grid-background { 
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+  position: fixed; inset: 0;
   width: 100vw; height: 100vh; 
   pointer-events: none; z-index: 1; 
+}
+
+.grid-background.distorted {
+  background: rgba(255, 51, 0, 0.05);
 }
 
 .grid-lines { 
@@ -211,28 +196,31 @@ html, body, #root {
 }
 
 .repair-button { color: var(--neon-green); border-color: var(--neon-green); }
-.repair-button:disabled { opacity: 0.2; border-color: #333; color: #666; }
 
 .slim-turret-card {
-  background: rgba(10, 10, 15, 0.8); border: 1px solid #333;
-  padding: 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  cursor: pointer; min-width: 90px; transition: all 0.2s;
-  height: 65px; justify-content: center;
+  background: rgba(10, 10, 15, 0.85); border: 1px solid #333;
+  padding: 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; min-width: 100px; transition: all 0.2s;
+  height: 70px; justify-content: center;
+  position: relative;
 }
 
 .slim-turret-card.active { border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.05); }
 .slim-turret-card.dimmed { opacity: 0.25; filter: grayscale(1); }
-.slim-turret-card.locked { opacity: 0.15; border-style: dashed; }
+
+.slim-card-info { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.slim-card-info .name { font-size: 0.6rem; font-weight: 900; color: #fff; text-transform: uppercase; }
+.slim-card-info .stats { font-size: 0.45rem; color: #888; }
+.slim-card-info .cost { font-size: 0.75rem; font-weight: bold; color: var(--neon-cyan); }
 
 .credits-value { color: var(--neon-cyan); font-size: 1.3rem; font-weight: 900; }
 .integrity-stack { width: 140px; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.system-status-label { font-size: 0.5rem; font-weight: bold; }
 .integrity-bar-small { height: 10px; width: 100%; background: #050505; border: 1px solid #333; padding: 2px; }
 .integrity-fill { height: 100%; background: linear-gradient(to right, var(--neon-blue), var(--neon-green)); transition: width 0.4s; }
 
-/* 4. ENCYCLOPEDIA & DATABASES */
+/* 4. ENCYCLOPEDIA & POPUPS */
 .encyclopedia { 
-  position: fixed; top: 0; left: 0;
+  position: fixed; inset: 0;
   width: 100vw; height: 100vh; 
   background: #000; color: var(--neon-cyan); 
   padding: 20px 40px; box-sizing: border-box; 
@@ -241,19 +229,14 @@ html, body, #root {
   pointer-events: auto;
 }
 
-.enc-header { 
-  font-size: var(--font-sm); border-bottom: 2px solid var(--neon-blue); 
-  padding-bottom: 10px; margin-bottom: 20px; width: 100%; 
-  text-align: center; text-transform: uppercase; letter-spacing: 4px; 
-}
-
+.enc-header { font-size: var(--font-sm); border-bottom: 2px solid var(--neon-blue); padding-bottom: 10px; margin-bottom: 20px; width: 100%; text-align: center; text-transform: uppercase; letter-spacing: 4px; }
 .enc-content { width: 100%; max-width: 900px; flex: 1; }
 
 .info-hub { width: 100%; display: flex; flex-direction: column; gap: 15px; }
 .info-tabs { display: flex; gap: 8px; border-bottom: 1px solid #222; padding-bottom: 8px; }
 .info-tabs button { background: none; border: 1px solid #333; color: #666; padding: 6px 12px; cursor: pointer; font-size: 0.6rem; }
 .info-tabs button.active { border-color: var(--neon-blue); color: var(--neon-blue); background: rgba(0, 102, 255, 0.1); }
-.info-body { background: rgba(5, 5, 5, 0.8); border: 1px solid #111; padding: 15px; font-size: 0.7rem; color: #aaa; line-height: 1.5; }
+.info-body { background: rgba(5, 5, 5, 0.8); border: 1px solid #111; padding: 15px; font-size: 0.7rem; color: #fff; line-height: 1.5; } /* WHITE TEXT */
 
 .visual-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; padding-bottom: 40px; }
 .visual-card-large { background: rgba(0, 10, 20, 0.85); border: 1px solid var(--neon-blue); padding: 15px; display: flex; align-items: center; gap: 20px; width: 100%; }
@@ -261,16 +244,19 @@ html, body, #root {
 .card-detail-box { display: flex; flex-direction: column; gap: 4px; }
 .card-detail-box .label { font-size: 1rem; font-weight: 900; color: #fff; text-transform: uppercase; }
 .card-detail-box .stats { font-size: 0.7rem; color: var(--neon-cyan); }
-.card-detail-box .desc { font-size: 0.65rem; color: #888; }
+.card-detail-box .desc { font-size: 0.65rem; color: #aaa; }
 
-.back-btn { margin-top: 20px; background: var(--neon-blue); color: #fff; border: none; padding: 10px 30px; cursor: pointer; font-weight: 900; font-family: inherit; }
-
-/* HIGH-FIDELITY MECHA CSS MODELS */
-.mini-turret { position: relative; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; }
-.mini-base { 
-  position: absolute; width: 24px; height: 24px; background: #1a1a1a; border: 1.5px solid #444; 
-  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); 
+.game-summary {
+  background: rgba(0, 102, 255, 0.05); border: 1px solid rgba(0, 102, 255, 0.2);
+  padding: 15px; width: 100%; font-size: 0.65rem; color: #fff; line-height: 1.6;
+  min-height: 80px; text-align: left;
 }
+
+.intel-label { font-size: 0.6rem; color: #fff; font-weight: 900; text-transform: uppercase; margin-top: 4px; }
+
+/* MECHA MODELS */
+.mini-turret { position: relative; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; margin-bottom: 4px; }
+.mini-base { position: absolute; width: 24px; height: 24px; background: #1a1a1a; border: 1px solid #444; clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); }
 .mini-head { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 2; }
 .mini-core { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--turret-color); box-shadow: 0 0 10px var(--turret-color); }
 .mini-weapon { position: absolute; width: 100%; height: 100%; }
@@ -288,16 +274,9 @@ html, body, #root {
 [data-type="4"] .mini-core { background: #fff !important; width: 4px; height: 4px; }
 
 /* MISC */
-.loading-overlay { 
-  position: fixed; inset: 0; background: #000; color: var(--neon-cyan); 
-  display: flex; justify-content: center; align-items: center; 
-  z-index: 9999; font-weight: 900; letter-spacing: 4px;
-}
-
-.pause-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 5000; pointer-events: auto; }
+.loading-overlay { position: fixed; inset: 0; background: #000; color: var(--neon-cyan); display: flex; justify-content: center; align-items: center; z-index: 9999; font-weight: 900; letter-spacing: 4px; }
+.pause-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 5000; pointer-events: auto; }
 .pause-content { background: #050505; border: 2px solid var(--neon-blue); padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 20px; box-shadow: 0 0 30px rgba(0, 102, 255, 0.3); }
-
-.pre-wave-overlay { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); border: 1px solid var(--neon-blue); padding: 25px; min-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 50; pointer-events: auto; }
 .massive-exec-button { background: var(--neon-blue); color: #fff; border: none; padding: 12px 30px; font-weight: 900; cursor: pointer; width: 100%; }
 
 .shape { width: 24px; height: 24px; }
@@ -306,12 +285,7 @@ html, body, #root {
 .shape.square { border: 1px solid #fff; }
 .shape.hexagon { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
 
-.orientation-warning { 
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-  background: #000; color: var(--neon-blue); 
-  display: none; flex-direction: column; justify-content: center; align-items: center; 
-  z-index: 99999; text-align: center; font-weight: 900; letter-spacing: 2px;
-}
+.orientation-warning { position: fixed; inset: 0; background: #000; color: var(--neon-blue); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; text-align: center; font-weight: 900; letter-spacing: 2px; }
 @media (orientation: portrait) { .orientation-warning { display: flex; } }
 .warning-icon { font-size: 4rem; margin-bottom: 20px; animation: rotate-studio 3s infinite cubic-bezier(0.4, 0, 0.2, 1); }
 @keyframes rotate-studio { 0% { transform: rotate(0deg) scale(1); opacity: 0.5; } 50% { transform: rotate(90deg) scale(1.1); opacity: 1; } 100% { transform: rotate(0deg) scale(1); opacity: 0.5; } }

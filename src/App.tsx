@@ -151,8 +151,8 @@ function App() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // 20% CHANCE EVERY 6 SECONDS (RARE & PROFESSIONAL)
-      if (Math.random() < 0.2) {
+      // 10% CHANCE EVERY 15 SECONDS (HIGH-END STUDIO RARITY)
+      if (Math.random() < 0.1) {
         setGlitchIndex(Math.floor(Math.random() * 13)); 
         setIsDistorted(true);
         setTimeout(() => {
@@ -160,7 +160,7 @@ function App() {
           setIsDistorted(false);
         }, 180);
       }
-    }, 6000);
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -262,7 +262,7 @@ function App() {
                   )}
                   {infoTab === 'DIAGNOSTICS' && (
                     <div className="diag-text">
-                      <div>BUILD: v1.8.1 [MAIN_EVOLUTION]</div>
+                      <div>BUILD: v1.8.3 [MAIN_EVOLUTION]</div>
                       <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
                       <div className="blink">READY...</div>
                     </div>
@@ -391,17 +391,31 @@ function App() {
                 const cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
                 const canAfford = credits >= cost;
                 return (
-                  <div key={type} className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} onClick={() => unlocked && selectTurret(type)}>
-                    {!unlocked ? <div className="lock-icon">🔒</div> : <div className="slim-card-info"><span className="name">{cfg.name}</span><span className="stats">DMG:{cfg.damage}</span><span className="cost">{cost}c</span></div>}
+                  <div key={type} className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} data-type={type} onClick={() => unlocked && selectTurret(type)}>
+                    {!unlocked ? (
+                      <div className="lock-icon">🔒</div>
+                    ) : (
+                      <>
+                        <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
+                          <div className="mini-base"></div>
+                          <div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+                        </div>
+                        <div className="slim-card-info">
+                          <span className="name">{cfg.name}</span>
+                          <span className="stats">DMG:{cfg.damage}</span>
+                          <span className="cost">{cost}c</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })}
             </div>
-            <div className="consumable-bar">
-              <button className="item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>[ DATA_PURGE: 1000c ]</button>
-            </div>
           </div>
           <div className="dashboard-right">
+            <div className="consumable-bar" style={{marginBottom: '8px'}}>
+              <button className="item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>[ DATA_PURGE: 1000c ]</button>
+            </div>
             <div className="stat-row"><span className="label">TOKENS:</span><span className="credits-value">{credits}</span></div>
             <div className="integrity-stack">
               <div className="system-status-label" style={{color: status.color}}>{status.text}</div>
