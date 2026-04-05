@@ -31,12 +31,27 @@ function App() {
   const [glitchIndex, setGlitchIndex] = useState(-1);
   const [isDistorted, setIsDistorted] = useState(false);
   const [isFlickering, setIsFlickering] = useState(false);
+  const [isAudioSuspended, setIsAudioSuspended] = useState(true);
 
   // 2. STABLE EFFECT HOOKS
   useEffect(() => {
+    const checkAudio = () => {
+      setIsAudioSuspended(AudioManager.getInstance().isSuspended());
+    };
+    checkAudio();
+    const interval = setInterval(checkAudio, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const wakeAudio = async () => {
+    await AudioManager.getInstance().resume();
+    setIsAudioSuspended(false);
+    AudioManager.getInstance().playUiClick();
+  };
+
+  useEffect(() => {
     const handleFirstInteraction = () => {
       AudioManager.getInstance().resume();
-      AudioManager.getInstance().startAmbient();
       window.removeEventListener('click', handleFirstInteraction);
     };
     window.addEventListener('click', handleFirstInteraction);
@@ -222,6 +237,20 @@ function App() {
 
   return (
     <div className="game-wrapper">
+      {isAudioSuspended && (
+        <div className="pause-overlay-locked" style={{zIndex: 30000}}>
+          <div className="pause-content" style={{borderStyle: 'dashed'}}>
+            <h2 className="pause-title">SYSTEM_AWAITING_WAKE</h2>
+            <div className="game-summary">
+              <p style={{color: '#fff', fontWeight: 900}}>&gt; AUDIO_CONTEXT IS CURRENTLY OFFLINE.</p>
+              <p style={{color: '#fff', fontWeight: 900}}>&gt; INITIALIZE ENGINE TO ENABLE ACOUSTIC FEEDBACK.</p>
+            </div>
+            <button className="cyan-menu-btn" onClick={wakeAudio} style={{marginTop: '20px', width: '100%'}}>
+              [ INITIALIZE_AUDIO_ENGINE ]
+            </button>
+          </div>
+        </div>
+      )}
       <div className="orientation-warning"><div className="warning-icon">🔄</div><div className="warning-text">Please rotate your device</div></div>
       <div id="game-container"></div>
 
