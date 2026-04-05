@@ -363,25 +363,26 @@ function App() {
                 <span>DEPLOY NODE NEAR PATH</span>
               </div>
             </>
-          )}
-          {tutorialStep === 3 && (
+          {tutorialStep === 3 && !showCombatIntel && (
             <>
-              {!showCombatIntel && (
-                <div className="tutorial-highlight" 
-                  style={{
-                    top: 'calc(35% + 85px)', 
-                    left: '50%', 
-                    transform: 'translate(-50%, -50%)', 
-                    width: '360px', 
-                    height: '50px', 
-                    pointerEvents: 'auto', 
-                    cursor: 'pointer'
-                  }}
-                  onClick={executeWave}
-                ></div>
-              )}
-              {showCombatIntel && (
-                <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
+              <div className="tutorial-highlight" 
+                style={{
+                  top: 'calc(35% + 85px)', 
+                  left: '50%', 
+                  transform: 'translate(-50%, -50%)', 
+                  width: '360px', 
+                  height: '50px', 
+                  pointerEvents: 'auto', 
+                  cursor: 'pointer'
+                }}
+                onClick={executeWave}
+              ></div>
+            </>
+          )}
+          {tutorialStep === 3 && showCombatIntel && (
+            <>
+              <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
+          ...
                   <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
                       <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>SECURITY_BRIEFING</div>
                       <h2 className="pause-title" style={{fontSize: '1.2rem', margin: '8px 0'}}>SYNTAX_MAINFRAME</h2>
