@@ -326,12 +326,12 @@ function App() {
           </div>
           {tutorialStep === 1 && !showRadiusExplanation && (
             <>
-              {/* TARGET: Pulse MG Card - Shifted right by 25px to 215px left. Width 145px, height 85px, bottom 12px. */}
+              {/* TARGET: Pulse MG Card - Top, Left, Bottom are perfect. Extended width to 175px. */}
               <div className="tutorial-highlight" 
-                style={{bottom: '12px', left: '215px', width: '145px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
+                style={{bottom: '12px', left: '215px', width: '175px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
                 onClick={() => selectTurret(0)}
               ></div>
-              <div className="tutorial-pointer" style={{bottom: '105px', left: '215px', width: '145px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
+              <div className="tutorial-pointer" style={{bottom: '105px', left: '215px', width: '175px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
             </>
           )}
           {showRadiusExplanation && (
