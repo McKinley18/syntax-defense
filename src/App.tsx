@@ -150,15 +150,16 @@ function App() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (Math.random() < 0.1) {
+      // 30% CHANCE EVERY 8 SECONDS
+      if (Math.random() < 0.3) {
         setGlitchIndex(Math.floor(Math.random() * 13)); 
         setIsDistorted(true);
         setTimeout(() => {
           setGlitchIndex(-1);
           setIsDistorted(false);
-        }, 180);
+        }, 200);
       }
-    }, 15000);
+    }, 8000);
     return () => clearInterval(interval);
   }, []);
 
@@ -168,7 +169,16 @@ function App() {
       const title2 = "DEFENSE".split('');
       return (
         <div className="main-menu">
-          <div className={`grid-background ${isDistorted ? 'distorted' : ''}`}><div className="grid-lines"></div><div className="grid-glows"><div className="glow-bit comet-right glow-1"></div><div className="glow-bit comet-left glow-2"></div><div className="glow-bit comet-down glow-3"></div><div className="glow-bit comet-up glow-4"></div><div className="grid-sweep"></div></div></div>
+          <div className={`grid-background ${isDistorted ? 'distorted' : ''}`}>
+            <div className="grid-lines"></div>
+            <div className="grid-glows">
+              <div className="glow-bit comet-right glow-1" style={{top: '15%', left: '-5%'}}></div>
+              <div className="glow-bit comet-left glow-2" style={{top: '35%', left: '105%'}}></div>
+              <div className="glow-bit comet-down glow-3" style={{top: '-5%', left: '45%'}}></div>
+              <div className="glow-bit comet-up glow-4" style={{top: '105%', left: '75%'}}></div>
+              <div className="grid-sweep"></div>
+            </div>
+          </div>
           <div className="menu-content-centered">
             <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''}`}>
               {title1.map((c, i) => ( <span key={i} style={{ color: glitchIndex === i ? 'var(--neon-red)' : 'inherit' }}>{c}</span> ))}
@@ -176,12 +186,12 @@ function App() {
               {title2.map((c, i) => ( <span key={i+6} style={{ color: glitchIndex === (i+6) ? 'var(--neon-red)' : 'inherit' }}>{c}</span> ))}
             </h1>
             <div className="menu-options-grid">
-              <button className="primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
-              <button onClick={() => setScreen('MODES')}>&gt; ADVANCED_PROTOCOLS</button>
-              <button onClick={loadGame}>&gt; RESTORE_SESSION</button>
-              <button onClick={() => setScreen('ENEMIES')}>&gt; VIRAL_DATABASE</button>
-              <button onClick={() => setScreen('TURRETS')}>&gt; DEFENSE_PROTOCOLS</button>
-              <button onClick={() => setScreen('ABOUT')}>&gt; SYSTEM_INFO</button>
+              <button className="blue-button primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
+              <button className="blue-button" onClick={() => setScreen('MODES')}>&gt; ADVANCED_PROTOCOLS</button>
+              <button className="blue-button" onClick={loadGame}>&gt; RESTORE_SESSION</button>
+              <button className="blue-button" onClick={() => setScreen('ENEMIES')}>&gt; VIRAL_DATABASE</button>
+              <button className="blue-button" onClick={() => setScreen('TURRETS')}>&gt; DEFENSE_PROTOCOLS</button>
+              <button className="blue-button" onClick={() => setScreen('ABOUT')}>&gt; SYSTEM_INFO</button>
             </div>
           </div>
         </div>
@@ -192,13 +202,13 @@ function App() {
       return (
         <div className="encyclopedia">
           <div className="enc-header">[ SELECT_ADVANCED_PROTOCOL ]</div>
-          <div className="menu-options-grid" style={{maxWidth: '800px', marginTop: '20px'}}>
-            <button onClick={() => startNewGame('HARDCORE')} style={{color: '#ff3300', borderColor: '#ff3300'}}>&gt; HARDCORE_MODE</button>
-            <button onClick={() => startNewGame('SUDDEN_DEATH')} style={{color: '#ffcc00', borderColor: '#ffcc00'}}>&gt; SUDDEN_DEATH</button>
-            <button onClick={() => startNewGame('ENDLESS')}>&gt; ENDLESS_LOOP</button>
-            <button onClick={() => startNewGame('ECO_CHALLENGE')}>&gt; ECO_CHALLENGE</button>
+          <div className="menu-options-grid" style={{marginTop: '20px'}}>
+            <button className="blue-button" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>&gt; HARDCORE_MODE</button>
+            <button className="blue-button" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}>&gt; SUDDEN_DEATH</button>
+            <button className="blue-button" onClick={() => startNewGame('ENDLESS')}>&gt; ENDLESS_LOOP</button>
+            <button className="blue-button" onClick={() => startNewGame('ECO_CHALLENGE')}>&gt; ECO_CHALLENGE</button>
           </div>
-          <button className="back-btn" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button>
+          <button className="blue-button back-btn" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button>
         </div>
       );
     }
@@ -222,7 +232,7 @@ function App() {
                   {infoTab === 'SYSTEM_MODES' && <div className="manual-text"><p>[ SUDDEN_DEATH ]: 1 INTEGRITY. NO REPAIRS.</p><p>[ ECO_CHALLENGE ]: INTEREST ONLY INCOME.</p></div>}
                   {infoTab === 'THREATS' && <div className="manual-text"><p>[ ELITES ]: 3.5x HP MINI-BOSSES.</p><p>[ GHOST_PACKETS ]: INVISIBLE UNLESS REVEALED.</p></div>}
                   {infoTab === 'LOGIC' && <div className="manual-text"><p>[ OVERCLOCKING ]: TAP PLACED TURRETS TO UPGRADE.</p></div>}
-                  {infoTab === 'DIAGNOSTICS' && <div className="manual-text"><div>BUILD: v1.8.5 [PRIME_RESTORE]</div><div>STATUS: {systemStatus.text}</div></div>}
+                  {infoTab === 'DIAGNOSTICS' && <div className="manual-text"><div>BUILD: v1.8.6 [PRIME_HUB]</div><div>STATUS: {systemStatus.text}</div></div>}
                 </div>
               </div>
             )}
@@ -250,7 +260,7 @@ function App() {
               </div>
             )}
           </div>
-          <button className="back-btn" onClick={() => setScreen('MENU')}>[ TERMINATE ]</button>
+          <button className="blue-button back-btn" onClick={() => setScreen('MENU')}>[ TERMINATE ]</button>
         </div>
       );
     }
@@ -258,12 +268,12 @@ function App() {
     if (!game) return <div className="loading-overlay">INITIALIZING_MAINFRAME...</div>;
 
     return (
-      <div className="game-overlay">
+      <div className="game-overlay-active">
         {showTutorial && (
-          <div className="pause-overlay"><div className="pause-content"><h2 className="pause-title">SYSTEM_INITIALIZATION</h2><div className="game-summary"><p>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p><p>&gt; NODES DE-MATERIALIZE AFTER EVERY WAVE.</p></div><div className="pause-options"><button className="blue-button" onClick={() => dismissTutorial(false)}>[ GOT IT ]</button><button className="blue-button" onClick={() => dismissTutorial(true)} style={{fontSize: '0.5rem'}}>[ DON'T SHOW AGAIN ]</button></div></div></div>
+          <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">SYSTEM_INITIALIZATION</h2><div className="game-summary"><p>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p><p>&gt; NODES DE-MATERIALIZE AFTER EVERY WAVE.</p></div><div className="pause-options"><button className="blue-button" onClick={() => dismissTutorial(false)}>[ GOT IT ]</button></div></div></div>
         )}
-        {isGameOver && <div className="pause-overlay"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE: KERNEL_PANIC</h2><button onClick={() => setScreen('MENU')} className="back-btn">[ RETURN_TO_ROOT ]</button></div></div>}
-        {isPaused && !isGameOver && <div className="pause-overlay"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>[ RESUME ]</button><button className="blue-button" onClick={saveAndQuit}>[ SAVE & EXIT ]</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>[ ABANDON ]</button></div></div></div>}
+        {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE</h2><button className="blue-button" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button></div></div>}
+        {isPaused && integrity > 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>[ RESUME ]</button><button className="blue-button" onClick={saveAndQuit}>[ SAVE & EXIT ]</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>[ ABANDON ]</button></div></div></div>}
         
         {!isWaveActive && !isPaused && (
           <div className="pre-wave-overlay">
@@ -279,16 +289,15 @@ function App() {
                 );
               })}
             </div>
-            <div className="game-summary-slim"><p>&gt; LINK IDENTICAL TURRETS FOR +10% DMG SYNERGY.</p></div>
-            <button className="massive-exec-button blue-button" onClick={executeWave}>[ EXECUTE_DEFENSE_PROTOCOL ]</button>
+            <button className="blue-button massive-exec-button" onClick={executeWave}>[ EXECUTE_DEFENSE_PROTOCOL ]</button>
           </div>
         )}
 
         <div className="tactical-dashboard">
           <div className="dashboard-left">
             <button className="blue-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
-            <div className="wave-label">{waveName} // LVL_{wave}</div>
-            <button className="blue-button repair-button" onClick={repairKernel} disabled={credits < repairCost || integrity >= 20 || gameMode === 'SUDDEN_DEATH'}>[ REPAIR: {repairCost}c ]</button>
+            <div className="wave-label">LVL_{wave} // {waveName}</div>
+            <button className="blue-button repair-button" onClick={repairKernel} disabled={credits < repairCost || integrity >= 20}>[ REPAIR: {repairCost}c ]</button>
           </div>
           <div className="dashboard-center">
             <div className="turret-row">
@@ -296,9 +305,8 @@ function App() {
                 const cfg = TOWER_CONFIGS[type as TowerType];
                 const unlocked = isUnlocked(type as TowerType);
                 const cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
-                const canAfford = credits >= cost;
                 return (
-                  <div key={type} className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} data-type={type} onClick={() => unlocked && selectTurret(type)}>
+                  <div key={type} className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} data-type={type} onClick={() => unlocked && selectTurret(type)}>
                     {!unlocked ? <div className="lock-icon">🔒</div> : 
                     <><div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div></div>
                     <div className="protocol-info"><span className="name">{cfg.name}</span><span className="cost">{cost}c</span></div></>}
