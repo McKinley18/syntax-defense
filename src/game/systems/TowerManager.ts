@@ -3,6 +3,7 @@ import { Tower, TowerType, TOWER_CONFIGS } from '../entities/Tower';
 import { GameContainer } from '../GameContainer';
 import { TILE_SIZE } from './MapManager';
 import { GameStateManager } from './GameStateManager';
+import { AudioManager } from './AudioManager';
 
 export class TowerManager {
     public towers: Tower[] = [];
@@ -48,13 +49,18 @@ export class TowerManager {
             const worldPos = this.game.viewport.toLocal(e.global);
             
             if (this.isPlacing) {
-                if (this.game.mapManager.isBuildable(worldPos.x, worldPos.y)) {
+                const gy = Math.floor(worldPos.y / TILE_SIZE);
+                const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
+                const isBoundary = gy <= 0 || gy >= visibleRows - 1;
+
+                if (this.game.mapManager.isBuildable(worldPos.x, worldPos.y) && !isBoundary) {
                     if (!this.getTowerAt(worldPos.x, worldPos.y)) {
                         const cost = this.getAdjustedCost(this.selectedTurretType);
                         if (GameStateManager.getInstance().credits >= cost) {
                             const center = this.game.mapManager.getTileCenter(worldPos.x, worldPos.y);
                             this.placeTower(this.selectedTurretType, center.x, center.y);
                             GameStateManager.getInstance().addCredits(-cost);
+                            AudioManager.getInstance().playPlacement();
                             
                             this.isPlacing = false;
                             this.previewGraphics.clear();
@@ -87,6 +93,7 @@ export class TowerManager {
         
         if (GameStateManager.getInstance().credits >= upgradeCost) {
             if (tower.upgrade()) {
+                AudioManager.getInstance().playUiClick();
                 GameStateManager.getInstance().addCredits(-upgradeCost);
                 this.game.particleManager.spawnFloatingText(tower.container.x, tower.container.y - 20, "UPGRADED!");
                 this.recalculateLinks();
@@ -136,8 +143,10 @@ export class TowerManager {
         const gy = Math.floor(wy / TILE_SIZE);
         const sx = gx * TILE_SIZE;
         const sy = gy * TILE_SIZE;
-
-        const isBuildable = this.game.mapManager.isBuildable(wx, wy) && !this.getTowerAt(wx, wy);
+        const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
+        
+        const isBoundary = gy <= 0 || gy >= visibleRows - 1;
+        const isBuildable = this.game.mapManager.isBuildable(wx, wy) && !this.getTowerAt(wx, wy) && !isBoundary;
         const config = TOWER_CONFIGS[this.selectedTurretType];
 
         // Radius

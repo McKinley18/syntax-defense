@@ -1,6 +1,7 @@
 import { Enemy, EnemyType } from '../entities/Enemy';
 import { GameContainer } from '../GameContainer';
 import { GameStateManager } from './GameStateManager';
+import { AudioManager } from './AudioManager';
 
 type SwarmPattern = 'sustained_stream' | 'bulk_breach' | 'staggered_burst';
 
@@ -14,17 +15,21 @@ export class WaveManager {
     private totalEnemiesThisWave: number = 0;
     private currentPattern: SwarmPattern = 'sustained_stream';
     private game: GameContainer;
+    private hasProcessedEnd: boolean = true; // START IN PROCESSED STATE
 
     constructor(game: GameContainer) {
         this.game = game;
     }
 
-    public prepareWave() {
+    public prepareWave(incrementWave: boolean = true) {
+        // PREVENT RE-ENTRY IF ALREADY PREPARING
         if (this.enemies.length > 0 || this.enemiesToSpawn > 0 || this.isWaveActive) return;
 
-        GameStateManager.getInstance().resetForNextWave();
-        this.waveNumber = GameStateManager.getInstance().currentWave;
+        if (incrementWave) {
+            GameStateManager.getInstance().resetForNextWave();
+        }
         
+        this.waveNumber = GameStateManager.getInstance().currentWave;
         this.game.towerManager.clearTowers();
         
         let success = false;
@@ -54,11 +59,11 @@ export class WaveManager {
     public startWave() {
         if (this.isWaveActive) return;
         this.isWaveActive = true;
+        this.hasProcessedEnd = false; // OPEN THE LATCH
 
         if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
-            // TIGHTER ECONOMY: Balanced spawning
             this.enemiesToSpawn = 8 + Math.floor(this.waveNumber * 3.2);
         }
         this.totalEnemiesThisWave = this.enemiesToSpawn;
@@ -74,10 +79,8 @@ export class WaveManager {
                 this.spawnEnemy();
                 this.enemiesToSpawn--;
 
-                // ADAPTIVE INTELLIGENCE: "Processing Overload"
-                // As wave progresses, spawn faster
                 const waveProgress = 1 - (this.enemiesToSpawn / this.totalEnemiesThisWave);
-                const intensityBoost = 1 - (waveProgress * 0.25); // Up to 25% faster
+                const intensityBoost = 1 - (waveProgress * 0.25);
 
                 if (this.currentPattern === 'bulk_breach') {
                     this.spawnTimer = (15 + Math.random() * 10) * intensityBoost; 
@@ -91,11 +94,19 @@ export class WaveManager {
 
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
-            enemy.update(delta);
+            
+            // ELITE LOGIC: Greed-Reactive Speed (Wave 20+)
+            const state = GameStateManager.getInstance();
+            if (this.waveNumber >= 20 && state.credits > 3000) {
+                enemy.update(delta * 1.15); // +15% Speed Logic Overload
+            } else {
+                enemy.update(delta);
+            }
 
             if (enemy.reachedGoal) {
                 const damage = enemy.type === EnemyType.FRACTAL ? 10 : 1;
                 GameStateManager.getInstance().takeDamage(damage);
+                AudioManager.getInstance().playBreach();
                 if (this.game.kernel) this.game.kernel.triggerFlash();
                 this.removeEnemy(i);
                 continue;
@@ -105,6 +116,7 @@ export class WaveManager {
                 const baseReward = enemy.type === EnemyType.BEHEMOTH ? 25 : enemy.type === EnemyType.FRACTAL ? 100 : 10;
                 const scaledReward = Math.floor(baseReward * Math.pow(1.04, this.waveNumber));
                 
+                AudioManager.getInstance().playPurge();
                 GameStateManager.getInstance().addCredits(scaledReward);
                 this.game.particleManager.spawnExplosion(enemy.container.x, enemy.container.y, 0.8);
                 this.game.particleManager.spawnFloatingText(enemy.container.x, enemy.container.y, `+${scaledReward}c`);
@@ -112,14 +124,15 @@ export class WaveManager {
             }
         }
 
-        if (this.enemiesToSpawn === 0 && this.enemies.length === 0) {
+        // ONE-TIME LATCH TRIGGER
+        if (this.enemiesToSpawn === 0 && this.enemies.length === 0 && !this.hasProcessedEnd) {
+            this.hasProcessedEnd = true; 
             this.isWaveActive = false;
-            this.prepareWave();
+            this.prepareWave(); // THIS WILL NOT RESET hasProcessedEnd
         }
     }
 
     public dataPurge() {
-        // Purge all non-elite, non-boss enemies
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const e = this.enemies[i];
             if (!e.isElite && e.type !== EnemyType.FRACTAL) {

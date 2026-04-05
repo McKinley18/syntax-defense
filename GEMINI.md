@@ -1,41 +1,42 @@
-# Project Mandates: SYNTAX DEFENSE (Checkpoint v1.9.0)
+# Project Mandates: SYNTAX DEFENSE (Checkpoint v2.0.0)
 
-## 1. Core Identity & Visuals
-- **Status**: Mainframe Prime Restored.
-- **Title**: 45-degree 3D tilt with synchronized randomized red-letter glitch and jitter distortion.
+## 1. Core Identity & Elite Visuals
+- **Status**: Mainframe Elite - v2.0 Production Baseline.
+- **Atmospheric Distortion**: Chromatic Aberration (RGB Channel Splitting).
+  - Triggers specifically during "Rare Breach" events to simulate deep hardware failure.
+- **Title**: 45-degree 3D tilt with refined dual-mode malfunction engine.
+  - **Ambient**: Natural electrical flicker (multi-phase shimmer jitter).
+  - **Rare Breach**: 150ms sharp burst (Red-letter flash + technical red grid strobe + glitch-snap jitter + Chromatic Distortion).
 - **Background**: GPU-cached 24px neon-blue grid with high-intensity "Glow Trail" data comets.
-- **Style**: High-fidelity glassmorphism with high-priority interaction layering (z-index 10,000+).
+- **Scan Line**: Subtle atmospheric sweep (0.05 opacity) traversing the grid every 8 seconds.
 
-## 2. Multi-Mode Architecture
+## 2. Multi-Mode & Adaptive Logic
 - **Initialize Standard**: The primary balanced experience.
-- **Advanced Protocols**:
-  - **Hardcore**: 1000c start, 0% interest, +50% protocol costs.
-  - **Endless**: No level cap, aggressive HP scaling.
-  - **Sudden Death**: 1 Integrity, no repairs permitted.
-  - **Eco Challenge**: 0 tokens per kill; income relies strictly on interest compounding.
+- **Elite Difficulty (Wave 20+)**: 
+  - **Greed-Reactive Swarms**: If credits > 3000, swarms gain +15% speed (Logic Overload).
+- **Advanced Protocols**: Hardcore, Endless, Sudden Death, Eco Challenge.
 
 ## 3. The "Mainframe Evolution" Mechanics
 - **Tactical Synergies**: Adjacent identical turrets form "Data Links" for +10% DMG (max +30%).
 - **Kernel Overdrive**: Automatic 360-degree shockwave defense when Integrity < 5.
 - **Elite Signatures**: 3.5x HP mini-bosses appearing every 5 waves.
 - **Ghost Packets**: Invisible viruses targetable only when revealed by Frost Ray/Tesla Link.
-- **Wealth-Reactive Difficulty**: Path complexity (Entropy) increases if credits > 2500.
+- **Cyber-Acoustic Engine**: Native Web Audio API procedural soundscape with independent SFX/Ambient channels.
 
 ## 4. UI/UX Hierarchy
-- **Primary Dashboard**: Three-zone horizontal Flexbox.
-  - Left: Logistics (Pause, Level, Repair).
-  - Center: Arsenal (Strictly horizontal protocol cards).
-  - Right: Status (Tokens, Buffered Integrity bar).
-- **Blue Protocol**: All control inputs use Neon Blue glassmorphism with white text.
-- **Cyan Protocol**: Home screen options use professional Neon Cyan terminal styling.
-- **Executive Scanner**: High-contrast labels for virus shapes and literal names (e.g., [Shape] GLIDER).
+- **System Settings Hub**: Persistent configuration for audio channels and system diagnostics.
+- **System Information Hub (Archive)**: 6-tab navigation (LORE, VIRUSES, TURRETS, MODES, THREATS, LOGIC).
+- **Tactical Dashboard**: 
+  - Anchor Lock: Pulse MG (index 0) always visible.
+  - Permanent Intelligence: ATK, RNG, and COST visible for all units.
+  - Floating Lock: Absolute positioning prevents data obstruction.
 
-## 5. Technical Progression
-- **Unlock Scale**: Nodes materialize at Waves 4, 8, 15, and 20 (Tesla Link).
-- **Overclocking**: Tap placed nodes to upgrade through 3 levels (+DMG, +RNG).
-- **Interest Compounder**: +2% interest rate per "Perfect Wave" (zero leaks), capping at 20%.
+## 5. Technical Optimization (Performance Lock)
+- **Mathematical Scrutiny**: All targeting uses Squared Distance Comparisons (no `Math.sqrt` in update loop).
+- **Memory Integrity**: Explicit ticker removal and renderer guards prevent leaks.
+- **Restoration Logic**: `prepareWave(false)` ensures map-sync without progress skipping.
 
 ## 6. Development Safeguards
-- **Initialization Guard**: Synchronized loading screen prevents blank UI states.
-- **Cleanup Protocol**: Explicit `game.destroy()` on session end to ensure clean re-initialization.
-- **Surgical Grid Snap**: Integer-locked coordinate system prevents partial boxes.
+- **Grid Clearance**: Strict 8-tile bottom margin in PathManager.
+- **Boundary Enforcement**: Top and bottom grid rows are off-limits for unit placement.
+- **Audio Guard**: Context initialization deferred to first user interaction.

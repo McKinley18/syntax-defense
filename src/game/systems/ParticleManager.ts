@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameContainer } from '../GameContainer';
+import { HitMarker } from '../entities/HitMarker';
 
 export interface Particle {
     sprite: PIXI.Graphics | PIXI.Text;
@@ -112,12 +113,31 @@ export class ParticleManager {
             scale: false
         });
     }
+public spawnHitMarker(x: number, y: number, amount: number) {
+    const marker = new HitMarker(x, y, amount);
+    this.game.effectLayer.addChild(marker.container);
+    this.particles.push({
+        sprite: marker.container as any,
+        vx: 0, vy: -0.5, life: 60, maxLife: 60, fade: true, scale: false,
+        marker: marker // CUSTOM FIELD FOR UPDATE
+    } as any);
+}
 
-    public update(delta: number) {
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const p = this.particles[i];
-            p.sprite.x += p.vx * delta;
-            p.sprite.y += p.vy * delta;
+public update(delta: number) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i] as any;
+
+        if (p.marker) {
+            if (!p.marker.update(delta)) {
+                this.game.effectLayer.removeChild(p.sprite);
+                this.particles.splice(i, 1);
+            }
+            continue;
+        }
+
+        p.life -= delta;
+        p.sprite.x += p.vx * delta;
+        p.sprite.y += p.vy * delta;
             p.life -= delta;
 
             if (p.fade) {

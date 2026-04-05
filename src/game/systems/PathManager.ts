@@ -35,9 +35,8 @@ export class PathManager {
         const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
         this.microCols = visibleCols;
 
-        // FIXED: START AT ABSOLUTE LEFT (gx=0)
-        const topMargin = 1; 
-        const bottomMargin = 2; // KEEP BOTTOM ROW CLEAR
+        const topMargin = 2; // TOP BUFFER
+        const bottomMargin = 8; // HUGE BOTTOM BUFFER FOR DASHBOARD
 
         const availCols = visibleCols - 2; 
         const availRows = visibleRows - (topMargin + bottomMargin);

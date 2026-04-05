@@ -172,10 +172,11 @@ export class Tower {
             this.chainFire(target, allEnemies, totalDmg);
         } else if (this.config.damage > 25) { 
             this.drawEffect(target.container.x, target.container.y, 'ring');
+            const impactRSq = 3600; // 60px radius squared
             allEnemies.forEach(e => {
                 const dx = e.container.x - target.container.x;
                 const dy = e.container.y - target.container.y;
-                if (dx*dx + dy*dy < 3600) e.takeDamage(totalDmg);
+                if (dx*dx + dy*dy < impactRSq) e.takeDamage(totalDmg);
             });
         } else {
             target.takeDamage(totalDmg);
@@ -191,13 +192,12 @@ export class Tower {
 
         for (let i = 0; i < 2; i++) {
             let nextTarget: Enemy | null = null;
-            let minDist = 100;
+            let minDSq = 10000; // 100px radius squared
             allEnemies.forEach(e => {
                 if (!hitEnemies.has(e)) {
-                    // Chain to Ghost only if revealed
                     if (e.isGhost && !e.isRevealed) return;
-                    const d = Math.sqrt((e.container.x - target.container.x)**2 + (e.container.y - target.container.y)**2);
-                    if (d < minDist) { minDist = d; nextTarget = e; }
+                    const dSq = (e.container.x - target.container.x)**2 + (e.container.y - target.container.y)**2;
+                    if (dSq < minDSq) { minDSq = dSq; nextTarget = e; }
                 }
             });
             if (nextTarget) {

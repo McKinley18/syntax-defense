@@ -136,21 +136,32 @@ export class Enemy {
 
     private updateHealthBar() {
         this.healthBar.clear();
-        const width = 24;
+        const width = TILE_SIZE * 0.8;
         const height = 4;
         const yOffset = this.isElite ? -25 : -18;
-        
-        this.healthBar.rect(-width/2, yOffset, width, height);
-        this.healthBar.fill(0x000000);
-        this.healthBar.stroke({ width: 1, color: 0x000000 });
+        const pct = Math.max(0, this.health / this.maxHealth);
 
-        const fillWidth = (this.health / this.maxHealth) * width;
-        this.healthBar.rect(-width/2, yOffset, fillWidth, height);
-        this.healthBar.fill(0xff3300);
+        // Background
+        this.healthBar.rect(-width/2, yOffset, width, height);
+        this.healthBar.fill(0x1a1a1a);
+        this.healthBar.stroke({ width: 1, color: 0x333333 });
+
+        // Fill
+        this.healthBar.rect(-width/2, yOffset, width * pct, height);
+        this.healthBar.fill(pct > 0.5 ? 0x00ffcc : pct > 0.25 ? 0xffcc00 : 0xff3300);
     }
 
     public takeDamage(amount: number): boolean {
         this.health -= amount;
+
+        if (GameContainer.instance) {
+            GameContainer.instance.particleManager.spawnHitMarker(this.container.x, this.container.y, amount);
+        }
+
+        if (this.isElite || this.type === 3) {
+            this.updateHealthBar();
+        }
+
         return this.health <= 0;
     }
 
