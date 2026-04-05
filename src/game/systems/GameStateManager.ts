@@ -9,14 +9,20 @@ export class GameStateManager {
     public integrity: number = 20;
     public currentWave: number = 1;
     public gameMode: GameMode = 'STANDARD';
-    public phase: GamePhase = 'PREP'; // EXPLICIT PHASE
+    public phase: GamePhase = 'PREP'; 
     public activeGlitch: GlitchType = 'NONE';
     public interestRate: number = 0.10; 
     public repairCost: number = 500; 
     
+    // META-PROGRESSION
+    public totalXP: number = 0;
+    public architectRank: string = "INITIATE";
+
     private integrityLostThisWave: boolean = false;
 
-    private constructor() {}
+    private constructor() {
+        this.loadXP();
+    }
 
     public static getInstance(): GameStateManager {
         if (!GameStateManager.instance) {
@@ -35,6 +41,40 @@ export class GameStateManager {
         this.integrityLostThisWave = true;
     }
 
+    public calculateRank(): string {
+        const xp = this.totalXP;
+        if (xp > 100000) return "GOD_MOD_ADMIN";
+        if (xp > 50000) return "CORE_GUARDIAN";
+        if (xp > 25000) return "ELITE_ARCHITECT";
+        if (xp > 10000) return "SENIOR_ENGR";
+        if (xp > 5000) return "SYS_ARCHITECT";
+        if (xp > 1000) return "SCRIPTER";
+        return "INITIATE";
+    }
+
+    public getRankBonus(): number {
+        const rank = this.calculateRank();
+        if (rank === "GOD_MOD_ADMIN") return 500;
+        if (rank === "CORE_GUARDIAN") return 300;
+        if (rank === "ELITE_ARCHITECT") return 200;
+        if (rank === "SENIOR_ENGR") return 150;
+        if (rank === "SYS_ARCHITECT") return 100;
+        if (rank === "SCRIPTER") return 50;
+        return 0;
+    }
+
+    public saveXP() {
+        localStorage.setItem('syntax_total_xp', String(this.totalXP));
+    }
+
+    public loadXP() {
+        const xp = localStorage.getItem('syntax_total_xp');
+        if (xp) {
+            this.totalXP = parseInt(xp);
+            this.architectRank = this.calculateRank();
+        }
+    }
+
     public repairKernel(): boolean {
         if (this.gameMode === 'SUDDEN_DEATH') return false; 
         if (this.credits >= this.repairCost && this.integrity < 20) {
@@ -50,16 +90,22 @@ export class GameStateManager {
     public resetForNextWave() {
         if (this.integrity <= 0) return;
 
+        // META XP GRANT
+        const waveXP = this.currentWave * 50 * (this.gameMode === 'HARDCORE' ? 2 : 1);
+        this.totalXP += waveXP;
+        this.saveXP();
+        this.architectRank = this.calculateRank();
+
         // PERFECT WAVE BONUS
         if (!this.integrityLostThisWave && this.gameMode !== 'HARDCORE') {
-            this.addCredits(150); // EXTRA 150c FOR ZERO LEAKS
+            this.addCredits(150); 
             this.interestRate = Math.min(0.20, this.interestRate + 0.02);
         } else if (this.integrityLostThisWave) {
             this.interestRate = 0.10; 
         }
 
         if (this.gameMode !== 'HARDCORE') {
-            const interest = Math.ceil(this.credits * this.interestRate); // ROUND UP
+            const interest = Math.ceil(this.credits * this.interestRate); 
             this.credits += interest;
         }
 
@@ -80,7 +126,8 @@ export class GameStateManager {
 
     public resetGame(mode: GameMode) {
         this.gameMode = mode;
-        this.credits = (mode === 'HARDCORE' || mode === 'ECO_CHALLENGE') ? 1000 : 850;
+        const bonus = this.getRankBonus();
+        this.credits = (mode === 'HARDCORE' || mode === 'ECO_CHALLENGE') ? 1000 : (850 + bonus);
         this.integrity = mode === 'SUDDEN_DEATH' ? 1 : 20;
         this.currentWave = 1;
         this.repairCost = 500;
@@ -110,6 +157,7 @@ export class GameStateManager {
             this.gameMode = data.gameMode || 'STANDARD';
             this.repairCost = data.repairCost || 500;
             this.interestRate = data.interestRate || 0.10;
+            this.loadXP();
             return true;
         }
         return false;

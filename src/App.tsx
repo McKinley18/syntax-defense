@@ -10,7 +10,6 @@ type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
 type InfoTab = 'LORE' | 'VIRAL_DB' | 'PROTOCOLS' | 'SYSTEM_MODES' | 'THREATS' | 'LOGIC';
 
 function App() {
-  // 1. STABLE STATE HOOKS (TOP LEVEL)
   const [screen, setScreen] = useState<ScreenState>('MENU');
   const [infoTab, setInfoTab] = useState<InfoTab>('LORE');
   const [credits, setCredits] = useState(850);
@@ -33,12 +32,14 @@ function App() {
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
   const [upcomingEnemies, setUpcomingEnemies] = useState<number[]>([]);
+  
+  // META STATE
+  const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
+  const [isVictorious, setIsVictorious] = useState(false);
 
-  // 2. STABLE EFFECT HOOKS
   useEffect(() => {
     const handleFirstInteraction = () => {
       AudioManager.getInstance().resume();
-      AudioManager.getInstance().startAmbient();
       window.removeEventListener('click', handleFirstInteraction);
       window.removeEventListener('touchstart', handleFirstInteraction);
     };
@@ -80,10 +81,17 @@ function App() {
           setRepairCost(state.repairCost);
           setGameMode(state.gameMode);
           setGamePhase(state.phase); 
+          setRank(state.architectRank);
+
+          if (state.currentWave > 50 && state.gameMode === 'STANDARD') {
+            setIsVictorious(true);
+            setIsPaused(true);
+          }
+
           if (g.waveManager) {
             setWave(g.waveManager.waveNumber);
             setIsWaveActive(g.waveManager.isWaveActive);
-            setUpcomingEnemies(g.waveManager.upcomingEnemies); // SYNC ENEMIES
+            setUpcomingEnemies(g.waveManager.upcomingEnemies);
           }
         }, 100);
 
@@ -121,16 +129,17 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // 3. CORE ACTION HANDLERS
   const startNewGame = (mode: GameMode) => {
     AudioManager.getInstance().playUiClick();
     GameStateManager.getInstance().resetGame(mode);
+    setIsVictorious(false);
     setScreen('GAME');
   };
 
   const loadGame = () => {
     AudioManager.getInstance().playUiClick();
     if (GameStateManager.getInstance().load()) {
+      setIsVictorious(false);
       setScreen('GAME');
     } else {
       alert("CRITICAL_ERROR: NO SAVED_DATA ON LOCAL_MOUNT.");
@@ -239,12 +248,13 @@ function App() {
         <div className="main-menu ui-layer">
           <div className={`grid-background ${isDistorted ? 'distorted' : ''}`}><div className="grid-lines"></div><div className="grid-glows"><div className="glow-bit comet-right glow-1" style={{top: '15%'}}></div><div className="glow-bit comet-left glow-2" style={{top: '40%'}}></div><div className="glow-bit comet-down glow-3" style={{left: '30%'}}></div><div className="glow-bit comet-up glow-4" style={{left: '70%'}}></div><div className="grid-sweep"></div></div></div>
           <div className="menu-content-centered">
+            <div className="rank-tag">RANK: {rank}</div>
             <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''} ${isFlickering ? 'flicker-active' : ''}`}>
               {"SYNTAX".split('').map((c, i) => ( <span key={i} style={{ color: glitchIndex === i ? 'var(--neon-red)' : 'inherit' }}>{c}</span> ))}
               <br/>
               {"DEFENSE".split('').map((c, i) => ( <span key={i+6} style={{ color: glitchIndex === (i+6) ? 'var(--neon-red)' : 'inherit' }}>{c}</span> ))}
             </h1>
-            <div className="menu-options-grid">
+            <div className="menu-options-grid compact">
               <button className="cyan-menu-btn primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
               <button className="cyan-menu-btn" onClick={() => setScreen('MODES')}>&gt; ADVANCED_PROTOCOLS</button>
               <button className="cyan-menu-btn" onClick={loadGame}>&gt; RESTORE_SESSION</button>
@@ -296,7 +306,7 @@ function App() {
                   </div>
                   <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM_DIAGNOSTICS</h3>
                   <div style={{borderLeft: '4px solid var(--neon-blue)', paddingLeft: '20px', background: 'rgba(0,102,255,0.05)', padding: '20px', marginTop: '20px'}}>
-                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.3.1_ELITE</div>
+                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.3.2_ELITE</div>
                     <div style={{marginBottom: '10px'}}>MAINFRAME_STATUS: {systemStatusText}</div>
                     <div style={{marginBottom: '10px'}}>KERNEL_STABILITY: {((integrity / 20) * 100).toFixed(0)}%</div>
                     <div style={{marginBottom: '10px'}}>LATENCY: 0.04ms</div>
@@ -397,7 +407,20 @@ function App() {
 
       {screen === 'GAME' && game && (
         <div className="game-overlay-active ui-layer">
-          {showTutorial && (
+          {isVictorious && (
+            <div className="pause-overlay-locked" style={{zIndex: 40000}}>
+              <div className="pause-content" style={{borderColor: 'var(--neon-green)'}}>
+                <h2 className="pause-title" style={{color: 'var(--neon-green)'}}>SYSTEM_SECURED</h2>
+                <div className="game-summary">
+                  <p style={{color: '#fff', fontWeight: 900}}>&gt; ALL HOSTILE DATA PACKETS PURGED.</p>
+                  <p style={{color: '#fff', fontWeight: 900}}>&gt; KERNEL INTEGRITY: {integrity}/20</p>
+                  <p style={{color: '#fff', fontWeight: 900}}>&gt; FINAL TOKENS: {credits}</p>
+                </div>
+                <button className="cyan-menu-btn" onClick={quitToMenu} style={{marginTop: '20px'}}>[ RETURN_TO_ROOT ]</button>
+              </div>
+            </div>
+          )}
+          {showTutorial && !isVictorious && (
             <div className="pause-overlay-locked">
               <div className="pause-content" style={{padding: '25px', maxWidth: '400px'}}>
                 <div className="wave-label" style={{marginBottom: '5px', textAlign: 'center'}}>SYSTEM_INITIALIZATION</div>
@@ -416,7 +439,7 @@ function App() {
             </div>
           )}
           {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE</h2><button className="blue-button" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button></div></div>}
-          {isPaused && integrity > 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>[ RESUME ]</button><button className="blue-button" onClick={saveAndQuit}>[ SAVE & EXIT ]</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>[ ABANDON ]</button></div></div></div>}
+          {isPaused && integrity > 0 && !isVictorious && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>[ RESUME ]</button><button className="blue-button" onClick={saveAndQuit}>[ SAVE & EXIT ]</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>[ ABANDON ]</button></div></div></div>}
           
           {gamePhase === 'PREP' && !isPaused && integrity > 0 && (
             <div className="pre-wave-overlay">
