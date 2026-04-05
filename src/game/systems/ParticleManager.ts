@@ -40,7 +40,7 @@ export class ParticleManager {
     }
 
     public spawnExplosion(x: number, y: number, scale: number = 1) {
-        if (this.particles.length > 150) return; // PERFORMANCE CAP
+        if (this.particles.length > 150) return; 
         for (let i = 0; i < 8; i++) {
             const graphics = new PIXI.Graphics();
             graphics.circle(0, 0, (4 + Math.random() * 8) * scale);
@@ -53,57 +53,59 @@ export class ParticleManager {
             this.game.effectLayer.addChild(graphics);
             this.particles.push({
                 sprite: graphics,
-                vx: (Math.random() - 0.5) * 6 * scale,
-                vy: (Math.random() - 0.5) * 6 * scale,
+                vx: (Math.random() - 0.5) * 4 * scale,
+                vy: (Math.random() - 0.5) * 4 * scale,
                 life: 15 + Math.random() * 15,
                 maxLife: 30,
                 fade: true,
                 scale: true
             });
         }
+        // HIGH-INTELLIGENCE: Data bit harvester
+        this.spawnDataBit(x, y);
     }
 
-    public spawnDebris(x: number, y: number, color: number) {
-        for (let i = 0; i < 3; i++) {
-            const graphics = new PIXI.Graphics();
-            graphics.poly([-2, -2, 2, -2, 0, 3]);
-            graphics.fill({ color, alpha: 0.9 });
-            
-            graphics.x = x;
-            graphics.y = y;
-            
-            this.game.effectLayer.addChild(graphics);
-            this.particles.push({
-                sprite: graphics,
-                vx: (Math.random() - 0.5) * 4,
-                vy: (Math.random() - 0.5) * 4,
-                life: 10 + Math.random() * 10,
-                maxLife: 20,
-                fade: true,
-                scale: false
-            });
-        }
+    private spawnDataBit(x: number, y: number) {
+        const p = new PIXI.Graphics();
+        p.rect(0, 0, 4, 4);
+        p.fill(0x00ffff);
+        p.x = x; p.y = y;
+        this.game.effectLayer.addChild(p);
+
+        const tx = window.innerWidth - 100;
+        const ty = window.innerHeight - 50;
+        
+        let t = 0;
+        const anim = () => {
+            t += 0.02;
+            p.x += (tx - p.x) * 0.08;
+            p.y += (ty - p.y) * 0.08;
+            p.alpha = 1 - t;
+            if (t < 1) requestAnimationFrame(anim);
+            else p.destroy();
+        };
+        anim();
     }
 
-    public spawnFloatingText(x: number, y: number, text: string, color: number = 0x00ffcc) {
+    public spawnFloatingText(x: number, y: number, text: string) {
         const style = new PIXI.TextStyle({
             fontFamily: 'Courier New',
             fontSize: 14,
             fontWeight: 'bold',
-            fill: color,
-            dropShadow: { color: 0x000000, alpha: 0.8, blur: 2, distance: 1 }
+            fill: '#ffffff',
+            stroke: { color: '#000000', width: 2 }
         });
         
-        const textSprite = new PIXI.Text({ text, style });
-        textSprite.anchor.set(0.5);
-        textSprite.x = x;
-        textSprite.y = y - 10;
+        const pixiText = new PIXI.Text({ text, style });
+        pixiText.x = x;
+        pixiText.y = y;
+        pixiText.anchor.set(0.5);
         
-        this.game.effectLayer.addChild(textSprite);
+        this.game.effectLayer.addChild(pixiText);
         this.particles.push({
-            sprite: textSprite,
+            sprite: pixiText,
             vx: 0,
-            vy: -1.5, // Float straight up
+            vy: -0.8,
             life: 40,
             maxLife: 40,
             fade: true,
@@ -114,17 +116,20 @@ export class ParticleManager {
     public update(delta: number) {
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
-            p.life -= delta;
-            
             p.sprite.x += p.vx * delta;
             p.sprite.y += p.vy * delta;
-            
-            const lifeRatio = Math.max(0, p.life / p.maxLife);
-            
-            if (p.fade) p.sprite.alpha = lifeRatio;
-            if (p.scale && p.sprite instanceof PIXI.Graphics) p.sprite.scale.set(lifeRatio);
-            
+            p.life -= delta;
+
+            if (p.fade) {
+                p.sprite.alpha = p.life / p.maxLife;
+            }
+            if (p.scale) {
+                const s = p.life / p.maxLife;
+                p.sprite.scale.set(s);
+            }
+
             if (p.life <= 0) {
+                this.game.effectLayer.removeChild(p.sprite);
                 p.sprite.destroy();
                 this.particles.splice(i, 1);
             }

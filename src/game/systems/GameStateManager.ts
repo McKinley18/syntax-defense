@@ -5,23 +5,11 @@ export class GameStateManager {
     
     public credits: number = 500;
     public integrity: number = 20;
-    public currentWave: number = 1; // START AT LEVEL 1
+    public currentWave: number = 1;
     public isHardcore: boolean = false;
     public activeGlitch: GlitchType = 'NONE';
-    
-    private readonly WAVE_ERRORS: string[] = [
-        "BOOT_SECTOR_INIT",
-        "SEGMENTATION_FAULT",
-        "STACK_OVERFLOW",
-        "NULL_POINTER_EXCEPTION",
-        "INFINITE_LOOP",
-        "MEMORY_LEAK",
-        "BUFFER_OVERRUN",
-        "CONCURRENCY_CONFLICT",
-        "RACE_CONDITION",
-        "DEADLOCK_DETECTED",
-        "KERNEL_PANIC"
-    ];
+    public interestRate: number = 0.10; // BASE 10%
+    public repairCost: number = 500; // INITIAL REPAIR COST
 
     private constructor() {}
 
@@ -32,57 +20,61 @@ export class GameStateManager {
         return GameStateManager.instance;
     }
 
-    public getWaveName(): string {
-        const index = Math.max(0, Math.min(this.currentWave - 1, this.WAVE_ERRORS.length - 1));
-        let name = this.WAVE_ERRORS[index];
-        if (this.activeGlitch !== 'NONE') {
-            name += ` // GLITCH: ${this.activeGlitch}`;
-        }
-        return name;
-    }
-
     public addCredits(amount: number) {
         this.credits += amount;
     }
 
-    public spendCredits(amount: number): boolean {
-        if (this.credits >= amount) {
-            this.credits -= amount;
+    public takeDamage(amount: number) {
+        this.integrity = Math.max(0, this.integrity - amount);
+    }
+
+    // HIGH-INTELLIGENCE: Repair Kernel with scaling costs
+    public repairKernel(): boolean {
+        if (this.credits >= this.repairCost && this.integrity < 20) {
+            this.credits -= this.repairCost;
+            this.integrity = Math.min(20, this.integrity + 1);
+            this.repairCost += 150; // SCALING FRICTION
+            this.save();
             return true;
         }
         return false;
     }
 
-    public takeDamage(amount: number = 1) {
-        this.integrity -= amount;
-        if (this.integrity <= 0) this.integrity = 0;
-    }
-
     public resetForNextWave() {
+        if (this.integrity <= 0) return;
+
+        // SMART LOGIC: Interest Rate Progression
+        // (In future we can check if integrity was lost this wave)
+        
+        if (!this.isHardcore) {
+            const interest = Math.floor(this.credits * this.interestRate);
+            this.credits += interest;
+        }
+
         this.currentWave++;
         this.activeGlitch = 'NONE';
-        
-        // Random Glitch Chance (20%)
-        if (Math.random() > 0.8) {
+
+        // 20% GLITCH CHANCE
+        if (Math.random() < 0.2) {
             const glitches: GlitchType[] = ['OVERCLOCK', 'LAG_SPIKE', 'SYSTEM_DRAIN'];
             this.activeGlitch = glitches[Math.floor(Math.random() * glitches.length)];
         }
-
-        // Standard Mode: 10% Interest on unspent credits
-        if (!this.isHardcore) {
-            const interest = Math.floor(this.credits * 0.10);
-            this.credits += interest;
-        }
-        this.save();
     }
 
-    public resetGame(hardcore: boolean = false) {
-        this.isHardcore = hardcore;
+    public getWaveName(): string {
+        const names = ["CORP_SIG", "ALPHA_PROCESS", "ROOT_SCAN", "NODE_BREACH", "GRID_FAULT", "KERNEL_INIT"];
+        return names[this.currentWave % names.length] + "_" + (100 + this.currentWave);
+    }
+
+    public resetGame(hardcore: boolean) {
         this.credits = hardcore ? 1000 : 500;
         this.integrity = 20;
-        this.currentWave = 1; // RESET TO LEVEL 1
+        this.currentWave = 1;
+        this.isHardcore = hardcore;
         this.activeGlitch = 'NONE';
-        localStorage.removeItem('syntax_defense_save');
+        this.repairCost = 500;
+        this.interestRate = 0.10;
+        this.save();
     }
 
     public save() {
@@ -90,20 +82,23 @@ export class GameStateManager {
             credits: this.credits,
             integrity: this.integrity,
             currentWave: this.currentWave,
-            isHardcore: this.isHardcore
+            isHardcore: this.isHardcore,
+            repairCost: this.repairCost,
+            interestRate: this.interestRate
         };
-        localStorage.setItem('syntax_defense_save', JSON.stringify(data));
+        localStorage.setItem('syntax_defense_session', JSON.stringify(data));
     }
 
     public load(): boolean {
-        const data = localStorage.getItem('syntax_defense_save');
-        if (data) {
-            const parsed = JSON.parse(data);
-            this.credits = parsed.credits;
-            this.integrity = parsed.integrity;
-            this.currentWave = parsed.currentWave;
-            this.isHardcore = parsed.isHardcore || false;
-            this.activeGlitch = 'NONE';
+        const raw = localStorage.getItem('syntax_defense_session');
+        if (raw) {
+            const data = JSON.parse(raw);
+            this.credits = data.credits;
+            this.integrity = data.integrity;
+            this.currentWave = data.currentWave;
+            this.isHardcore = data.isHardcore;
+            this.repairCost = data.repairCost || 500;
+            this.interestRate = data.interestRate || 0.10;
             return true;
         }
         return false;

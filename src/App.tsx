@@ -20,6 +20,7 @@ function App() {
   const [isHardcore, setIsHardcore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isWaveActive, setIsWaveActive] = useState(false);
+  const [repairCost, setRepairCost] = useState(500);
 
   useEffect(() => {
     const lockOrientation = async () => {
@@ -44,6 +45,7 @@ function App() {
           setIntegrity(state.integrity);
           setWaveName(state.getWaveName());
           setIsHardcore(state.isHardcore);
+          setRepairCost(state.repairCost);
           if (g.waveManager) {
             setWave(g.waveManager.waveNumber);
             setIsWaveActive(g.waveManager.isWaveActive);
@@ -110,6 +112,10 @@ function App() {
     game?.waveManager.startWave();
   };
 
+  const repairKernel = () => {
+    GameStateManager.getInstance().repairKernel();
+  };
+
   const isUnlocked = (type: TowerType) => {
     if (type === TowerType.PULSE_MG) return true;
     if (type === TowerType.FROST_RAY) return wave >= 4;
@@ -117,6 +123,12 @@ function App() {
     if (type === TowerType.RAILGUN) return wave >= 15;
     if (type === TowerType.TESLA_LINK) return wave >= 20;
     return false;
+  };
+
+  const getSystemStatus = () => {
+    if (integrity > 15) return { text: "STATUS: STABLE", color: "#00ffcc" };
+    if (integrity > 5) return { text: "STATUS: DEGRADED", color: "#ffcc00" };
+    return { text: "STATUS: CRITICAL", color: "#ff3300" };
   };
 
   if (screen === 'MENU') {
@@ -163,10 +175,10 @@ function App() {
                 {infoTab === 'LORE' && (
                   <div className="lore-text">
                     <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p>
-                    <p>&gt;&gt; NEW PROTOCOLS MATERIALIZING EVERY 5 WAVES.</p>
-                    <p>1. [ OVERCLOCK ]: TURRET FIRE RATES +50%.</p>
+                    <p>&gt;&gt; SYSTEM_EVOLUTION V1.7.0 DETECTED.</p>
+                    <p>1. [ REPAIR_KERNEL ]: BUY REPAIRS AT SCALING COSTS.</p>
                     <p>2. [ DATA_LINKS ]: ADJACENT IDENTICAL TURRETS GAIN +10% DMG.</p>
-                    <p>3. [ KERNEL_OVERDRIVE ]: GOAL RELEASES SHOCKWAVE WHEN INTEGRITY &lt; 5.</p>
+                    <p>3. [ ADAPTIVE_DIFFICULTY ]: SYSTEM REACTS TO TOKEN HOARDING.</p>
                   </div>
                 )}
                 {infoTab === 'LOGIC' && (
@@ -178,7 +190,7 @@ function App() {
                 )}
                 {infoTab === 'DIAGNOSTICS' && (
                   <div className="diag-text">
-                    <div>BUILD: v1.7.0 [EVOLUTION]</div>
+                    <div>BUILD: v1.7.5 [HIGH_INTELLIGENCE]</div>
                     <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
                     <div className="blink">READY...</div>
                   </div>
@@ -223,6 +235,8 @@ function App() {
       </div>
     );
   }
+
+  const status = getSystemStatus();
 
   return (
     <div className="game-wrapper">
@@ -282,6 +296,13 @@ function App() {
           <div className="dashboard-left">
             <button className="exec-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
             <div className="wave-label">{waveName} // LVL_{wave}</div>
+            <button 
+              className="repair-button" 
+              onClick={repairKernel} 
+              disabled={credits < repairCost || integrity >= 20}
+            >
+              [ REPAIR_KERNEL: {repairCost}c ]
+            </button>
           </div>
 
           <div className="dashboard-center">
@@ -319,6 +340,7 @@ function App() {
               <span className="credits-value">{credits}</span>
             </div>
             <div className="integrity-stack">
+              <div className="system-status-label" style={{color: status.color}}>{status.text}</div>
               <div className="integrity-bar-small">
                 <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div>
               </div>

@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { TILE_SIZE } from './MapManager';
+import { GameStateManager } from './GameStateManager';
 
 export interface GridCoord {
     x: number;
@@ -54,7 +55,10 @@ export class PathManager {
         let visited = new Set<string>();
         
         // ADAPTIVE INTEREST: Length increases by 10% per wave
-        const baseTarget = Math.floor(macroCols * macroRows * 0.35);
+        const state = GameStateManager.getInstance();
+        const wealthMult = state.credits > 2500 ? 1.4 : 1.0; // WEALTH REACTIVE DIFFICULTY
+        
+        const baseTarget = Math.floor(macroCols * macroRows * 0.35 * wealthMult);
         const waveBonus = Math.floor(waveNumber * 1.2);
         const targetLength = Math.min(macroCols * macroRows * 0.8, baseTarget + waveBonus);
 
