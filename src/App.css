@@ -260,6 +260,47 @@ html, body, #root {
 }
 .intel-card-modern { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 80px; text-align: center; }
 .intel-label { font-size: 0.7rem; color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+/* TUTORIAL SYSTEM */
+.tutorial-mask {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 15000;
+  pointer-events: none;
+  transition: all 0.3s;
+}
+.tutorial-highlight {
+  position: absolute;
+  border: 2px solid var(--neon-cyan);
+  box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 10px var(--neon-cyan);
+  border-radius: 4px;
+  z-index: 15001;
+  pointer-events: none;
+  animation: tutorial-pulse 1s infinite alternate;
+}
+@keyframes tutorial-pulse {
+  from { opacity: 0.4; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1.02); }
+}
+.tutorial-pointer {
+  position: absolute;
+  color: var(--neon-cyan);
+  font-weight: 900;
+  font-size: 0.8rem;
+  z-index: 15002;
+  text-shadow: 0 0 10px var(--neon-cyan);
+  pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+.tutorial-pointer::after {
+  content: '▼';
+  font-size: 1.2rem;
+  animation: bounce-down 0.5s infinite alternate;
+}
+@keyframes bounce-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(5px); }
+}
+
 .massive-exec-button { width: 100% !important; padding: 15px !important; font-size: 1rem !important; letter-spacing: 3px; }
 
 .pause-overlay-locked { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 20000; pointer-events: auto; }

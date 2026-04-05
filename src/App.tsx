@@ -36,7 +36,10 @@ function App() {
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
   const [isVictorious, setIsVictorious] = useState(false);
 
-  // SILENT AUDIO WAKE
+  // INTERACTIVE TUTORIAL STATE
+  const [tutorialStep, setTutorialStep] = useState(0); // 0: Off, 1: Select MG, 2: Place MG, 3: Execute
+  const [isTutorialActive, setIsTutorialActive] = useState(false);
+
   const wakeAudioSystem = async () => {
     await AudioManager.getInstance().resume();
   };
@@ -75,7 +78,16 @@ function App() {
         setGame(g);
         setIsInitializing(false);
         const tutorialDone = localStorage.getItem('syntax_tutorial_done');
-        if (!tutorialDone) setShowTutorial(true);
+        if (!tutorialDone) {
+          setShowTutorial(true);
+        }
+
+        // TIE TUTORIAL CALLBACK
+        if (g.towerManager) {
+          g.towerManager.onTowerPlaced = () => {
+            setTutorialStep(prev => prev === 2 ? 3 : prev);
+          };
+        }
 
         const interval = setInterval(() => {
           const state = GameStateManager.getInstance();
@@ -120,7 +132,7 @@ function App() {
       if (type < 0.15) {
         setIsDistorted(true);
         setGlitchIndex(Math.floor(Math.random() * 13));
-        AudioManager.getInstance().playGlitchBuzz(); // TRIGGER BUZZ
+        AudioManager.getInstance().playGlitchBuzz();
         AudioManager.getInstance().playBreach();
         setTimeout(() => {
           setIsDistorted(false);
@@ -189,24 +201,22 @@ function App() {
     if (game?.towerManager) {
       game.towerManager.startPlacement(type as any);
     }
+    if (isTutorialActive && tutorialStep === 1 && type === 0) {
+      setTutorialStep(2);
+    }
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (screen !== 'GAME' || isPaused && e.key !== ' ') return;
-      
-      if (e.key === ' ') {
-        setIsPaused(p => !p);
-        AudioManager.getInstance().playUiClick();
-      } else if (e.key.toLowerCase() === 'f') {
-        toggleFastForward();
-      } else if (e.key === '1') selectTurret(0);
+      if (e.key === ' ') { setIsPaused(p => !p); AudioManager.getInstance().playUiClick(); }
+      else if (e.key.toLowerCase() === 'f') toggleFastForward();
+      else if (e.key === '1') selectTurret(0);
       else if (e.key === '2' && isUnlocked(1)) selectTurret(1);
       else if (e.key === '3' && isUnlocked(2)) selectTurret(2);
       else if (e.key === '4' && isUnlocked(3)) selectTurret(3);
       else if (e.key === '5' && isUnlocked(4)) selectTurret(4);
     };
-    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [screen, isPaused, wave]);
@@ -214,6 +224,11 @@ function App() {
   const executeWave = () => {
     AudioManager.getInstance().playUiClick();
     game?.waveManager.startWave();
+    if (isTutorialActive && tutorialStep === 3) {
+      setIsTutorialActive(false);
+      setTutorialStep(0);
+      localStorage.setItem('syntax_tutorial_done', 'true');
+    }
   };
 
   const repairKernel = () => {
@@ -232,8 +247,10 @@ function App() {
 
   const dismissTutorial = (permanent: boolean) => {
     AudioManager.getInstance().playUiClick();
-    if (permanent) localStorage.setItem('syntax_tutorial_done', 'true');
     setShowTutorial(false);
+    setIsTutorialActive(true);
+    setTutorialStep(1);
+    if (permanent) localStorage.setItem('syntax_tutorial_done', 'true');
   };
 
   const isUnlocked = (type: number) => {
@@ -271,6 +288,30 @@ function App() {
     <div className="game-wrapper">
       <div className="orientation-warning"><div className="warning-icon">🔄</div><div className="warning-text">Please rotate your device</div></div>
       <div id="game-container"></div>
+
+      {/* INTERACTIVE TUTORIAL OVERLAYS */}
+      {isTutorialActive && (
+        <div className="tutorial-mask">
+          {tutorialStep === 1 && (
+            <>
+              <div className="tutorial-highlight" style={{bottom: '15px', left: 'calc(50% - 210px)', width: '140px', height: '95px'}}></div>
+              <div className="tutorial-pointer" style={{bottom: '120px', left: 'calc(50% - 140px)'}}>SELECT PULSE MG</div>
+            </>
+          )}
+          {tutorialStep === 2 && (
+            <>
+              <div className="tutorial-highlight" style={{top: '40%', left: '20%', width: '48px', height: '48px'}}></div>
+              <div className="tutorial-pointer" style={{top: '30%', left: '20%'}}>DEPLOY NODE ON GRID</div>
+            </>
+          )}
+          {tutorialStep === 3 && (
+            <>
+              <div className="tutorial-highlight" style={{top: 'calc(35% + 130px)', left: '50%', transform: 'translateX(-50%)', width: '380px', height: '60px'}}></div>
+              <div className="tutorial-pointer" style={{top: 'calc(35% + 100px)', left: '50%', transform: 'translateX(-50%)'}}>EXECUTE DEFENSE PROTOCOL</div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* --- HOME MENU --- */}
       {screen === 'MENU' && (
@@ -335,7 +376,7 @@ function App() {
                   </div>
                   <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM_DIAGNOSTICS</h3>
                   <div style={{borderLeft: '4px solid var(--neon-blue)', paddingLeft: '20px', background: 'rgba(0,102,255,0.05)', padding: '20px', marginTop: '20px'}}>
-                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.3.3_ELITE</div>
+                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.4.3_ELITE</div>
                     <div style={{marginBottom: '10px'}}>MAINFRAME_STATUS: {systemStatusText}</div>
                     <div style={{marginBottom: '10px'}}>KERNEL_STABILITY: {((integrity / 20) * 100).toFixed(0)}%</div>
                     <div style={{marginBottom: '10px'}}>LATENCY: 0.04ms</div>
@@ -455,10 +496,12 @@ function App() {
                 <div className="wave-label" style={{marginBottom: '5px', textAlign: 'center'}}>SYSTEM_INITIALIZATION</div>
                 <h2 className="pause-title" style={{marginTop: '0'}}>INSTRUCTIONS</h2>
                 <div className="game-summary">
-                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; NODES DE-MATERIALIZE AFTER EVERY SWARM.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; GHOSTS ARE INVISIBLE. USE FROST OR TESLA TO REVEAL.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; ELITES WILL MASSIVELY CHALLENGE THE GRID.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '6px 0', fontSize: '0.65rem'}}>&gt; [DEPLOYMENT]: SELECT A NODE AND TAP A GRID TILE TO BUILD.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '6px 0', fontSize: '0.65rem'}}>&gt; [OVERCLOCK]: TAP PLACED NODES TO UPGRADE CORE SYSTEMS.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '6px 0', fontSize: '0.65rem'}}>&gt; [RECLAMATION]: NODES DE-MATERIALIZE AFTER EVERY SWARM.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '6px 0', fontSize: '0.65rem'}}>&gt; [SIGNATURES]: USE FROST OR TESLA TO REVEAL INVISIBLE GHOSTS.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '6px 0', fontSize: '0.65rem'}}>&gt; [SYNERGY]: BUILD IDENTICAL NODES NEARBY FOR +10% DMG LINKS.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '6px 0', fontSize: '0.65rem'}}>&gt; [ECONOMY]: EARN 10% INTEREST BY SAVING YOUR TOKENS.</p>
                 </div>
                 <div className="pause-options row" style={{marginTop: '15px'}}>
                   <button className="blue-button" onClick={() => dismissTutorial(false)}>[ GOT IT ]</button>
@@ -527,7 +570,6 @@ function App() {
                   
                   let cost = cfg.cost;
                   if (game?.towerManager) {
-                    // Use exact logic from TowerManager
                     const count = game.towerManager.getTowerCount(type as TowerType);
                     const supplyMultiplier = count >= 4 ? 1.15 : 1.0;
                     cost = Math.floor(cfg.cost * supplyMultiplier);

@@ -9,6 +9,7 @@ export class TowerManager {
     public towers: Tower[] = [];
     public isPlacing: boolean = false;
     public selectedTurretType: TowerType = TowerType.PULSE_MG;
+    public onTowerPlaced: (() => void) | null = null;
     
     private previewGraphics: PIXI.Graphics;
     private linkGraphics: PIXI.Graphics;
@@ -61,6 +62,8 @@ export class TowerManager {
                             this.placeTower(this.selectedTurretType, center.x, center.y);
                             GameStateManager.getInstance().addCredits(-cost);
                             AudioManager.getInstance().playPlacement();
+                            
+                            if (this.onTowerPlaced) this.onTowerPlaced(); // TRIGGER TUTORIAL
                             
                             this.isPlacing = false;
                             this.previewGraphics.clear();
