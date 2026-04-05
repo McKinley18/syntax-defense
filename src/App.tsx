@@ -21,7 +21,6 @@ function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [isWaveActive, setIsWaveActive] = useState(false);
 
-  // STUDIO-GRADE ORIENTATION LOCK
   useEffect(() => {
     const lockOrientation = async () => {
       try {
@@ -29,7 +28,7 @@ function App() {
         if (screen === 'GAME' && screenObj.orientation?.lock) {
           await screenObj.orientation.lock('landscape');
         }
-      } catch (e) { /* Browser restriction catch */ }
+      } catch (e) { }
     };
     lockOrientation();
   }, [screen]);
@@ -57,9 +56,7 @@ function App() {
   }, [screen, game]);
 
   useEffect(() => {
-    if (game) {
-      game.isPaused = isPaused;
-    }
+    if (game) game.isPaused = isPaused;
   }, [isPaused, game]);
 
   const isGameOver = integrity <= 0;
@@ -113,6 +110,15 @@ function App() {
     game?.waveManager.startWave();
   };
 
+  const isUnlocked = (type: TowerType) => {
+    if (type === TowerType.PULSE_MG) return true;
+    if (type === TowerType.FROST_RAY) return wave >= 4;
+    if (type === TowerType.BLAST_NOVA) return wave >= 8;
+    if (type === TowerType.RAILGUN) return wave >= 15;
+    if (type === TowerType.TESLA_LINK) return wave >= 20;
+    return false;
+  };
+
   if (screen === 'MENU') {
     return (
       <div className="main-menu">
@@ -156,24 +162,23 @@ function App() {
               <div className="info-body">
                 {infoTab === 'LORE' && (
                   <div className="lore-text">
-                    <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0. VIRAL GEOMETRY PROPAGATING THROUGH DATA LANES.</p>
-                    <p>&gt;&gt; SYSTEM_ANOMALIES_DETECTED:</p>
-                    <p>1. [ OVERCLOCK ]: TURRET FIRE RATES INCREASED BY 50%.</p>
-                    <p>2. [ LAG_SPIKE ]: VIRAL PROPAGATION SPEEDS REDUCED BY 30%.</p>
-                    <p>3. [ SYSTEM_DRAIN ]: TURRET RANGE EFFICIENCY REDUCED BY 20%.</p>
-                    <p>&gt;&gt; DIRECTIVE: PROTECT THE ROOT AT ALL COSTS.</p>
+                    <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p>
+                    <p>&gt;&gt; NEW PROTOCOLS MATERIALIZING EVERY 5 WAVES.</p>
+                    <p>1. [ OVERCLOCK ]: TURRET FIRE RATES +50%.</p>
+                    <p>2. [ DATA_LINKS ]: ADJACENT IDENTICAL TURRETS GAIN +10% DMG.</p>
+                    <p>3. [ KERNEL_OVERDRIVE ]: GOAL RELEASES SHOCKWAVE WHEN INTEGRITY &lt; 5.</p>
                   </div>
                 )}
                 {infoTab === 'LOGIC' && (
                   <div className="logic-text">
-                    <p>[ WAVE_SHIFT ]: RECONFIGURING DATA LANES TO TRAP VIRAL LOADS.</p>
-                    <p>[ BUDGET_RECYCLE ]: NO CREDITS ARE RETURNED ON NODE DISSOLUTION. EARN INTEREST ON UNSPENT CREDITS.</p>
-                    <p>[ HARDCORE_MODE ]: 1000c START. NO INTEREST. +50% PROTOCOL COSTS.</p>
+                    <p>[ WAVE_SHIFT ]: PATHS RECONFIGURE PER WAVE.</p>
+                    <p>[ OVERCLOCKING ]: TAP PLACED TURRETS TO UPGRADE (MAX LVL 3).</p>
+                    <p>[ INTEREST ]: 10% BASE. +2% PER PERFECT WAVE (MAX 20%).</p>
                   </div>
                 )}
                 {infoTab === 'DIAGNOSTICS' && (
                   <div className="diag-text">
-                    <div>BUILD: v1.6.0</div>
+                    <div>BUILD: v1.7.0 [EVOLUTION]</div>
                     <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
                     <div className="blink">READY...</div>
                   </div>
@@ -185,13 +190,11 @@ function App() {
             <div className="visual-grid">
               {Object.values(VISUAL_REGISTRY).map(config => (
                 <div key={config.name} className="visual-card-large">
-                  <div className="card-visual-box">
-                    <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
-                  </div>
+                  <div className="card-visual-box"><div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div></div>
                   <div className="card-detail-box">
                     <div className="label">{config.name}</div>
-                    <div className="stats">HP: {config.baseHp} // SPEED: {config.speed}</div>
-                    <div className="desc">{config.priority === 'LOW' ? 'SWARM_UNIT: HIGH_QUANTITY_LOW_RESISTANCE' : config.priority === 'MED' ? 'BALANCED_NODE: STANDARD_THREAT_SIGNATURE' : config.priority === 'HIGH' ? 'HEAVY_DATA_LOAD: ARMORED_CORE_DENSITY' : 'BOSS_PROCESS: CRITICAL_SYSTEM_THREAT'}</div>
+                    <div className="stats">HP: {config.baseHp} // REWARD: {config.reward}c</div>
+                    <div className="desc">{config.priority === 'LOW' ? 'SWARM_UNIT' : config.priority === 'MED' ? 'STANDARD_THREAT' : 'HEAVY_DATA_LOAD'}</div>
                   </div>
                 </div>
               ))}
@@ -199,25 +202,20 @@ function App() {
           )}
           {screen === 'TURRETS' && (
             <div className="visual-grid">
-              {[0, 1, 2, 3].map(id => {
-                const type = id as TowerType;
-                const cfg = TOWER_CONFIGS[type];
-                return (
-                  <div key={cfg.name} className="visual-card-large">
-                    <div className="card-visual-box">
-                      <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
-                        <div className="mini-base"></div>
-                        <div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
-                      </div>
-                    </div>
-                    <div className="card-detail-box">
-                      <div className="label">{cfg.name}</div>
-                      <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div>
-                      <div className="desc">{type === 0 ? 'RAPID_SUPPRESSION: DUAL_BARREL_AUTO_CANON' : type === 1 ? 'CRYOGENIC_DISH: TEMPORARY_DATA_FREEZE' : type === 2 ? 'RADIUS_DISCHARGE: HEAVY_AOE_FRAGMENTATION' : 'MAGNETIC_ACCELERATOR: MASSIVE_SINGLE_TARGET_PENETRATION'}</div>
+              {Object.values(TOWER_CONFIGS).map((cfg, idx) => (
+                <div key={cfg.name} className="visual-card-large" data-type={idx}>
+                  <div className="card-visual-box">
+                    <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
+                      <div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
                     </div>
                   </div>
-                );
-              })}
+                  <div className="card-detail-box">
+                    <div className="label">{cfg.name}</div>
+                    <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div>
+                    <div className="desc">{cfg.cost}c INITIAL // LVL 3 MAX</div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -236,14 +234,11 @@ function App() {
       <div id="game-container"></div>
       
       <div className="game-overlay">
-        {/* GAME OVER OVERLAY */}
         {isGameOver && (
           <div className="pause-overlay game-over">
             <div className="pause-content">
               <h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE: KERNEL_PANIC</h2>
-              <div className="pause-options">
-                <button onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT_MENU ]</button>
-              </div>
+              <button onClick={() => setScreen('MENU')} className="back-btn">[ RETURN_TO_ROOT_MENU ]</button>
             </div>
           </div>
         )}
@@ -255,13 +250,12 @@ function App() {
               <div className="pause-options">
                 <button onClick={() => setIsPaused(false)}>[ RESUME ]</button>
                 <button onClick={saveAndQuit}>[ SAVE & EXIT ]</button>
-                <button onClick={quitToMenu} style={{color: '#ff3300', borderColor: '#ff3300'}}>[ ABANDON ]</button>
+                <button onClick={quitToMenu} style={{color: '#ff3300'}}>[ ABANDON ]</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* PRE-WAVE INTEL OVERLAY */}
         {!isWaveActive && !isPaused && (
           <div className="pre-wave-overlay">
             <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
@@ -276,24 +270,14 @@ function App() {
                 );
               })}
             </div>
-            
             <div className="game-summary">
-              <p>&gt; DEPLOY DEFENSIVE PROTOCOLS TO PROTECT THE CORE KERNEL.</p>
-              <p>&gt; EARN TOKENS BY NEUTRALIZING VIRAL GEOMETRY.</p>
-              <p>&gt; NOTE: NODES DE-MATERIALIZE AFTER EVERY SWARM.</p>
+              <p>&gt; TAP PLACED TURRETS TO UPGRADE (LVL 1-3).</p>
+              <p>&gt; LINK IDENTICAL TURRETS FOR +10% DMG SYNERGY.</p>
             </div>
-
             <button className="massive-exec-button" onClick={executeWave}>[ EXECUTE_PROTOCOL ]</button>
           </div>
         )}
 
-        {GameStateManager.getInstance().activeGlitch !== 'NONE' && (
-          <div className={`glitch-banner ${GameStateManager.getInstance().activeGlitch}`}>
-            GLITCH: {GameStateManager.getInstance().activeGlitch}
-          </div>
-        )}
-
-        {/* UNIFIED TACTICAL DASHBOARD (BOTTOM ONLY) */}
         <div className="tactical-dashboard">
           <div className="dashboard-left">
             <button className="exec-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
@@ -302,31 +286,27 @@ function App() {
 
           <div className="dashboard-center">
             <div className="turret-grid-horizontal">
-              {[TowerType.PULSE_MG, TowerType.FROST_RAY, TowerType.BLAST_NOVA, TowerType.RAILGUN].map(type => {
+              {[0, 1, 2, 3, 4].map(type => {
                 const cfg = TOWER_CONFIGS[type];
-                const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : cfg.cost;
+                const unlocked = isUnlocked(type as TowerType);
+                const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
                 const canAfford = credits >= cost;
+                
                 return (
                   <div 
                     key={type} 
-                    className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''}`} 
-                    data-type={type}
-                    onClick={() => selectTurret(type)}
+                    className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} 
+                    onClick={() => unlocked && selectTurret(type)}
                   >
-                    <div className="turret-visual-box">
-                      <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
-                        <div className="mini-base"></div>
-                        <div className="mini-head">
-                          <div className="mini-weapon"></div>
-                          <div className="mini-core"></div>
-                        </div>
+                    {!unlocked ? (
+                      <div className="lock-icon">🔒</div>
+                    ) : (
+                      <div className="slim-card-info">
+                        <span className="name">{cfg.name}</span>
+                        <span className="stats">DMG:{cfg.damage}</span>
+                        <span className="cost">{cost}c</span>
                       </div>
-                    </div>
-                    <div className="slim-card-info">
-                      <span className="name">{cfg.name}</span>
-                      <span className="stats">DMG:{cfg.damage} // RNG:{cfg.range}sq</span>
-                      <span className="cost">{cost}c</span>
-                    </div>
+                    )}
                   </div>
                 );
               })}

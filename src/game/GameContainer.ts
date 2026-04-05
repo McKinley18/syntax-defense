@@ -95,10 +95,12 @@ export class GameContainer {
         if (this.isPaused) return; // FREEZE ENGINE
         
         const delta = ticker.deltaTime;
+        const enemies = this.waveManager.enemies;
+        
         this.waveManager.update(delta);
         this.towerManager.update(delta);
         this.particleManager.update(delta);
         if (this.mapManager) this.mapManager.update(delta);
-        if (this.kernel) this.kernel.update(delta);
+        if (this.kernel) this.kernel.update(delta, enemies);
     }
 }

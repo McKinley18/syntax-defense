@@ -7,7 +7,8 @@ export const TowerType = {
     PULSE_MG: 0,
     FROST_RAY: 1,
     BLAST_NOVA: 2,
-    RAILGUN: 3
+    RAILGUN: 3,
+    TESLA_LINK: 4
 } as const;
 
 export type TowerType = typeof TowerType[keyof typeof TowerType];
@@ -16,23 +17,26 @@ interface TowerConfig {
     name: string; range: number; damage: number; rate: number; cost: number; color: number;
 }
 
-export const TOWER_CONFIGS: Record<TowerType, TowerConfig> = {
+export const TOWER_CONFIGS: Record<number, TowerConfig> = {
     [TowerType.PULSE_MG]: { name: 'Pulse MG', range: 4, damage: 10, rate: 12, cost: 150, color: 0x00ffcc },
     [TowerType.FROST_RAY]: { name: 'Frost Ray', range: 5, damage: 2, rate: 60, cost: 250, color: 0x00ffff },
     [TowerType.BLAST_NOVA]: { name: 'Blast Nova', range: 3, damage: 30, rate: 80, cost: 350, color: 0xffcc00 },
-    [TowerType.RAILGUN]: { name: 'Railgun', range: 10, damage: 250, rate: 120, cost: 500, color: 0xff3300 }
+    [TowerType.RAILGUN]: { name: 'Railgun', range: 10, damage: 250, rate: 120, cost: 500, color: 0xff3300 },
+    [TowerType.TESLA_LINK]: { name: 'Tesla Link', range: 5, damage: 45, rate: 45, cost: 750, color: 0xaa00ff }
 };
 
 export class Tower {
     public container: PIXI.Container;
     public type: TowerType;
     public config: TowerConfig;
+    public level: number = 1;
+    public linkBonus: number = 0;
     
     private fireTimer: number = 0;
     private turretHead: PIXI.Container;
     private muzzleFlash: PIXI.Graphics;
     private energyCore: PIXI.Graphics;
-    private deploymentTimer: number = 30; // 0.5s materialization
+    private deploymentTimer: number = 30;
 
     constructor(type: TowerType, x: number, y: number) {
         this.type = type;
@@ -40,20 +44,14 @@ export class Tower {
         this.container = new PIXI.Container();
         this.container.x = x;
         this.container.y = y;
-        this.container.alpha = 0.3; // Start for materialization
+        this.container.alpha = 0.3;
 
-        // 1. OCTAGONAL DOCKING BASE (IMPLANTED)
+        // 1. OCTAGONAL DOCKING BASE
         const base = new PIXI.Graphics();
         const s = TILE_SIZE / 2 - 1;
-        // Octagon shape for industrial feel
         base.poly([-s, -s/2, -s/2, -s, s/2, -s, s, -s/2, s, s/2, s/2, s, -s/2, s, -s, s/2]);
         base.fill(0x151515);
         base.stroke({ width: 1.5, color: 0x333333 });
-        
-        // Internal panel lines
-        base.moveTo(-s/2, -s).lineTo(-s/2, s);
-        base.moveTo(s/2, -s).lineTo(s/2, s);
-        base.stroke({ width: 0.5, color: 0x222222 });
         this.container.addChild(base);
 
         this.turretHead = new PIXI.Container();
@@ -66,14 +64,11 @@ export class Tower {
         chassis.stroke({ width: 1, color: 0x444444 });
         this.turretHead.addChild(chassis);
 
-        // 3. SPECIALIZED WEAPONRY
         this.createWeaponry();
 
-        // 4. GLOWING ENERGY CORE
         this.energyCore = new PIXI.Graphics();
         this.energyCore.circle(0, 0, 3.5);
         this.energyCore.fill({ color: this.config.color, alpha: 0.8 });
-        this.energyCore.stroke({ width: 1, color: 0xffffff, alpha: 0.4 });
         this.turretHead.addChild(this.energyCore);
 
         this.muzzleFlash = new PIXI.Graphics();
@@ -84,30 +79,20 @@ export class Tower {
     private createWeaponry() {
         const g = new PIXI.Graphics();
         const c = this.config.color;
-        const s = 10;
-
         if (this.type === TowerType.PULSE_MG) {
-            // Dual Oscillating Barrels
-            g.rect(-5, -16, 3, 14).fill(0x252525).stroke({width:1, color:0x333333});
-            g.rect(2, -16, 3, 14).fill(0x252525).stroke({width:1, color:0x333333});
+            g.rect(-5, -16, 3, 14).fill(0x252525); g.rect(2, -16, 3, 14).fill(0x252525);
             g.rect(-5, -18, 3, 3).fill(c); g.rect(2, -18, 3, 3).fill(c);
         } else if (this.type === TowerType.FROST_RAY) {
-            // Cryogenic Dish
-            g.poly([-s, 0, 0, -20, s, 0]).fill(0x1a2a3a).stroke({width:1, color:c});
-            g.circle(0, -10, 4).fill(0x050505).stroke({width:1, color:c});
+            g.poly([-10, 0, 0, -20, 10, 0]).fill(0x1a2a3a).stroke({width:1, color:c});
             g.moveTo(0, -10).lineTo(0, -24).stroke({width:2, color:c});
         } else if (this.type === TowerType.BLAST_NOVA) {
-            // Heavy Radius Discharger
-            g.rect(-8, -8, 16, 16).fill(0x252525).stroke({width:2, color:0x111111});
-            g.rect(-9, -4, 18, 4).fill(c);
-            g.rect(-4, -9, 4, 18).fill(c);
+            g.rect(-8, -8, 16, 16).fill(0x252525); g.rect(-9, -4, 18, 4).fill(c);
         } else if (this.type === TowerType.RAILGUN) {
-            // Magnetic Rails
             g.rect(-6, -28, 2, 26).fill(0x333333); g.rect(4, -28, 2, 26).fill(0x333333);
-            for(let i=0; i<4; i++) {
-                g.rect(-5, -24 + (i*6), 10, 1.5).fill(c);
-            }
-            g.rect(-8, -4, 16, 12).fill(0x202020).stroke({width:1, color:0x444444});
+            for(let i=0; i<4; i++) g.rect(-5, -24 + (i*6), 10, 1.5).fill(c);
+        } else if (this.type === TowerType.TESLA_LINK) {
+            g.circle(0, -12, 6).fill(0x202020).stroke({width:2, color:c});
+            g.circle(0, -12, 2).fill(0xffffff);
         }
         this.turretHead.addChild(g);
     }
@@ -116,25 +101,21 @@ export class Tower {
         if (this.deploymentTimer > 0) {
             this.deploymentTimer -= delta;
             this.container.alpha = 0.3 + (1 - this.deploymentTimer / 30) * 0.7;
-            this.container.scale.set(0.8 + (1 - this.deploymentTimer / 30) * 0.2);
             return;
         }
         this.container.alpha = 1;
-        this.container.scale.set(1);
-        
         this.fireTimer -= delta;
         if (this.muzzleFlash.alpha > 0) this.muzzleFlash.alpha -= 0.1 * delta;
 
-        // Core Pulse
-        this.energyCore.alpha = 0.5 + Math.sin(Date.now() * 0.01) * 0.3;
+        // ENERGY CORE PULSE
+        const pulse = 0.5 + Math.sin(Date.now() * 0.01) * 0.2;
+        this.energyCore.alpha = pulse;
 
         const target = this.findTarget(enemies);
         if (target) {
             const dx = target.container.x - this.container.x;
             const dy = target.container.y - this.container.y;
             const targetRot = Math.atan2(dy, dx) + Math.PI/2;
-            
-            // Smooth Rotation
             let diff = targetRot - this.turretHead.rotation;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
@@ -149,16 +130,24 @@ export class Tower {
 
     private findTarget(enemies: Enemy[]): Enemy | null {
         let bestTarget: Enemy | null = null;
-        let maxProgress = -1;
-        const range = this.config.range * TILE_SIZE;
+        let maxWeight = -1;
+        const range = (this.config.range + (this.level === 3 ? 1 : 0)) * TILE_SIZE;
         const rSq = range * range;
+
         for (const enemy of enemies) {
             const dx = enemy.container.x - this.container.x;
             const dy = enemy.container.y - this.container.y;
             const dSq = dx*dx + dy*dy;
-            if (dSq <= rSq && enemy.totalProgress > maxProgress) {
-                maxProgress = enemy.totalProgress;
-                bestTarget = enemy;
+            if (dSq <= rSq) {
+                // SMART TARGETING: Fractal > Elite > Progress
+                let weight = enemy.totalProgress;
+                if (enemy.isElite) weight += 1000;
+                if (enemy.type === 3) weight += 5000; 
+
+                if (weight > maxWeight) {
+                    maxWeight = weight;
+                    bestTarget = enemy;
+                }
             }
         }
         return bestTarget;
@@ -166,16 +155,45 @@ export class Tower {
 
     private fire(target: Enemy, allEnemies: Enemy[]) {
         this.showMuzzleFlash();
-        if (this.config.damage > 50) { 
+        // Stat Multipliers
+        const levelMult = this.level === 2 ? 1.25 : this.level === 3 ? 1.5 : 1;
+        const totalDmg = this.config.damage * levelMult * (1 + this.linkBonus);
+
+        if (this.type === TowerType.TESLA_LINK) {
+            this.chainFire(target, allEnemies, totalDmg);
+        } else if (this.config.damage > 25) { 
             this.drawEffect(target.container.x, target.container.y, 'ring');
             allEnemies.forEach(e => {
                 const dx = e.container.x - target.container.x;
                 const dy = e.container.y - target.container.y;
-                if (dx*dx + dy*dy < 3600) e.takeDamage(this.config.damage);
+                if (dx*dx + dy*dy < 3600) e.takeDamage(totalDmg);
             });
         } else {
-            target.takeDamage(this.config.damage);
+            target.takeDamage(totalDmg);
             this.drawEffect(target.container.x, target.container.y, 'line');
+        }
+    }
+
+    private chainFire(target: Enemy, allEnemies: Enemy[], dmg: number) {
+        let currentSource = { x: this.container.x, y: this.container.y };
+        let hitEnemies = new Set([target]);
+        target.takeDamage(dmg);
+        this.drawLightning(currentSource.x, currentSource.y, target.container.x, target.container.y);
+
+        for (let i = 0; i < 2; i++) {
+            let nextTarget: Enemy | null = null;
+            let minDist = 100;
+            allEnemies.forEach(e => {
+                if (!hitEnemies.has(e)) {
+                    const d = Math.sqrt((e.container.x - target.container.x)**2 + (e.container.y - target.container.y)**2);
+                    if (d < minDist) { minDist = d; nextTarget = e; }
+                }
+            });
+            if (nextTarget) {
+                (nextTarget as Enemy).takeDamage(dmg * 0.7);
+                this.drawLightning(target.container.x, target.container.y, (nextTarget as Enemy).container.x, (nextTarget as Enemy).container.y);
+                hitEnemies.add(nextTarget);
+            }
         }
     }
 
@@ -188,18 +206,31 @@ export class Tower {
 
     private drawEffect(tx: number, ty: number, style: 'line' | 'ring') {
         const g = new PIXI.Graphics();
-        const startX = this.container.x;
-        const startY = this.container.y;
-        
         if (style === 'line') {
-            g.moveTo(startX, startY).lineTo(tx, ty);
+            g.moveTo(this.container.x, this.container.y).lineTo(tx, ty);
             g.stroke({ width: 2, color: this.config.color, alpha: 0.8 });
         } else {
-            const r = this.type === 3 ? 15 : 60;
-            g.circle(tx, ty, r);
+            g.circle(tx, ty, 60);
             g.stroke({ width: 3, color: this.config.color, alpha: 0.6 });
         }
         GameContainer.instance.effectLayer.addChild(g);
         setTimeout(() => g.destroy(), 60);
+    }
+
+    private drawLightning(x1: number, y1: number, x2: number, y2: number) {
+        const g = new PIXI.Graphics();
+        g.moveTo(x1, y1).lineTo(x2, y2);
+        g.stroke({ width: 3, color: 0xffffff, alpha: 0.8 });
+        g.stroke({ width: 6, color: this.config.color, alpha: 0.3 });
+        GameContainer.instance.effectLayer.addChild(g);
+        setTimeout(() => g.destroy(), 80);
+    }
+
+    public upgrade(): boolean {
+        if (this.level < 3) {
+            this.level++;
+            return true;
+        }
+        return false;
     }
 }

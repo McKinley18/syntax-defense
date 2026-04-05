@@ -53,7 +53,10 @@ export class PathManager {
         let path: GridCoord[] = [];
         let visited = new Set<string>();
         
-        let targetLength = Math.floor(macroCols * macroRows * 0.4) + Math.min(waveNumber, 5);
+        // ADAPTIVE INTEREST: Length increases by 10% per wave
+        const baseTarget = Math.floor(macroCols * macroRows * 0.35);
+        const waveBonus = Math.floor(waveNumber * 1.2);
+        const targetLength = Math.min(macroCols * macroRows * 0.8, baseTarget + waveBonus);
 
         const dfs = (mx: number, my: number): boolean => {
             if (mx === macroCols - 1) {

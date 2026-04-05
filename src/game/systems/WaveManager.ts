@@ -11,6 +11,7 @@ export class WaveManager {
     
     private spawnTimer: number = 0;
     private enemiesToSpawn: number = 0;
+    private totalEnemiesThisWave: number = 0;
     private currentPattern: SwarmPattern = 'sustained_stream';
     private game: GameContainer;
 
@@ -26,12 +27,10 @@ export class WaveManager {
         
         this.game.towerManager.clearTowers();
         
-        // FAIL-SAFE PATH GEN WITH COMPLEXITY CHECK
         let success = false;
         let attempts = 0;
         while (!success && attempts < 100) {
             this.game.pathManager.generatePath(this.waveNumber);
-            // Verify complexity (at least 4 nodes in macro path)
             if (this.game.pathManager.macroPath.length >= 4) {
                 success = true;
             }
@@ -49,7 +48,7 @@ export class WaveManager {
         this.currentPattern = patterns[Math.floor(Math.random() * patterns.length)];
 
         this.isWaveActive = false;
-        GameStateManager.getInstance().save(); // Persistent sync
+        GameStateManager.getInstance().save();
     }
 
     public startWave() {
@@ -59,8 +58,10 @@ export class WaveManager {
         if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
-            this.enemiesToSpawn = 10 + Math.floor(this.waveNumber * 2.5);
+            // TIGHTER ECONOMY: Balanced spawning
+            this.enemiesToSpawn = 8 + Math.floor(this.waveNumber * 3.2);
         }
+        this.totalEnemiesThisWave = this.enemiesToSpawn;
         this.spawnTimer = 0;
     }
 
@@ -73,12 +74,17 @@ export class WaveManager {
                 this.spawnEnemy();
                 this.enemiesToSpawn--;
 
+                // ADAPTIVE INTELLIGENCE: "Processing Overload"
+                // As wave progresses, spawn faster
+                const waveProgress = 1 - (this.enemiesToSpawn / this.totalEnemiesThisWave);
+                const intensityBoost = 1 - (waveProgress * 0.25); // Up to 25% faster
+
                 if (this.currentPattern === 'bulk_breach') {
-                    this.spawnTimer = 15 + Math.random() * 10; 
+                    this.spawnTimer = (15 + Math.random() * 10) * intensityBoost; 
                 } else if (this.currentPattern === 'staggered_burst') {
-                    this.spawnTimer = (this.enemiesToSpawn % 5 === 0) ? 150 : 25; 
+                    this.spawnTimer = ((this.enemiesToSpawn % 5 === 0) ? 150 : 25) * intensityBoost; 
                 } else {
-                    this.spawnTimer = Math.max(30, 60 - (this.waveNumber * 1.2)); 
+                    this.spawnTimer = Math.max(25, 60 - (this.waveNumber * 1.5)) * intensityBoost; 
                 }
             }
         }
@@ -96,7 +102,6 @@ export class WaveManager {
             }
 
             if (enemy.health <= 0) {
-                // DYNAMIC REWARD ENGINE: Scales with HP growth
                 const baseReward = enemy.type === EnemyType.BEHEMOTH ? 25 : enemy.type === EnemyType.FRACTAL ? 100 : 10;
                 const scaledReward = Math.floor(baseReward * Math.pow(1.04, this.waveNumber));
                 
