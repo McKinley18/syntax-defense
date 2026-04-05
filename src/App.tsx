@@ -13,7 +13,7 @@ function App() {
   // 1. STABLE STATE HOOKS (TOP LEVEL)
   const [screen, setScreen] = useState<ScreenState>('MENU');
   const [infoTab, setInfoTab] = useState<InfoTab>('LORE');
-  const [credits, setCredits] = useState(500);
+  const [credits, setCredits] = useState(850);
   const [integrity, setIntegrity] = useState(20);
   const [wave, setWave] = useState(1);
   const [waveName, setWaveName] = useState("");
@@ -31,31 +31,21 @@ function App() {
   const [glitchIndex, setGlitchIndex] = useState(-1);
   const [isDistorted, setIsDistorted] = useState(false);
   const [isFlickering, setIsFlickering] = useState(false);
-  const [isAudioSuspended, setIsAudioSuspended] = useState(true);
 
   // 2. STABLE EFFECT HOOKS
   useEffect(() => {
-    const checkAudio = () => {
-      setIsAudioSuspended(AudioManager.getInstance().isSuspended());
-    };
-    checkAudio();
-    const interval = setInterval(checkAudio, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const wakeAudio = async () => {
-    await AudioManager.getInstance().resume();
-    setIsAudioSuspended(false);
-    AudioManager.getInstance().playUiClick();
-  };
-
-  useEffect(() => {
     const handleFirstInteraction = () => {
       AudioManager.getInstance().resume();
+      AudioManager.getInstance().startAmbient();
       window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
     };
     window.addEventListener('click', handleFirstInteraction);
-    return () => window.removeEventListener('click', handleFirstInteraction);
+    window.addEventListener('touchstart', handleFirstInteraction);
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+    };
   }, []);
 
   useEffect(() => {
@@ -237,20 +227,6 @@ function App() {
 
   return (
     <div className="game-wrapper">
-      {isAudioSuspended && (
-        <div className="pause-overlay-locked" style={{zIndex: 30000}}>
-          <div className="pause-content" style={{borderStyle: 'dashed'}}>
-            <h2 className="pause-title">SYSTEM_AWAITING_WAKE</h2>
-            <div className="game-summary">
-              <p style={{color: '#fff', fontWeight: 900}}>&gt; AUDIO_CONTEXT IS CURRENTLY OFFLINE.</p>
-              <p style={{color: '#fff', fontWeight: 900}}>&gt; INITIALIZE ENGINE TO ENABLE ACOUSTIC FEEDBACK.</p>
-            </div>
-            <button className="cyan-menu-btn" onClick={wakeAudio} style={{marginTop: '20px', width: '100%'}}>
-              [ INITIALIZE_AUDIO_ENGINE ]
-            </button>
-          </div>
-        </div>
-      )}
       <div className="orientation-warning"><div className="warning-icon">🔄</div><div className="warning-text">Please rotate your device</div></div>
       <div id="game-container"></div>
 
@@ -316,7 +292,7 @@ function App() {
                   </div>
                   <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM_DIAGNOSTICS</h3>
                   <div style={{borderLeft: '4px solid var(--neon-blue)', paddingLeft: '20px', background: 'rgba(0,102,255,0.05)', padding: '20px', marginTop: '20px'}}>
-                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.1.0_ELITE</div>
+                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.2.0_ELITE</div>
                     <div style={{marginBottom: '10px'}}>MAINFRAME_STATUS: {systemStatusText}</div>
                     <div style={{marginBottom: '10px'}}>KERNEL_STABILITY: {((integrity / 20) * 100).toFixed(0)}%</div>
                     <div style={{marginBottom: '10px'}}>LATENCY: 0.04ms</div>

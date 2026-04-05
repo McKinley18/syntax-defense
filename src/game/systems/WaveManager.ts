@@ -113,8 +113,8 @@ export class WaveManager {
             }
 
             if (enemy.health <= 0) {
-                const baseReward = enemy.type === EnemyType.BEHEMOTH ? 25 : enemy.type === EnemyType.FRACTAL ? 100 : 10;
-                const scaledReward = Math.floor(baseReward * Math.pow(1.04, this.waveNumber));
+                const baseReward = enemy.type === EnemyType.BEHEMOTH ? 40 : enemy.type === EnemyType.FRACTAL ? 150 : 15;
+                const scaledReward = Math.floor(baseReward * Math.pow(1.05, this.waveNumber));
                 
                 AudioManager.getInstance().playPurge();
                 GameStateManager.getInstance().addCredits(scaledReward);

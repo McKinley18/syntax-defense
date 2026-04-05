@@ -101,8 +101,8 @@ html, body, #root {
 /* 3. LOGO & MALFUNCTION */
 .main-menu { 
   width: 100vw; height: 100vh; 
-  display: flex; flex-direction: column; /* VERTICAL STACK */
-  justify-content: center; align-items: center; /* CENTER BOTH AXES */
+  display: flex; flex-direction: column; 
+  justify-content: center; align-items: center; 
   perspective: 1500px; 
 }
 .menu-content-centered { 
@@ -197,7 +197,7 @@ html, body, #root {
 /* 5. COMPACT ENCYCLOPEDIA & INFO HUB */
 .encyclopedia { 
   position: fixed; inset: 0; background: #000; color: var(--neon-cyan); 
-  padding: 20px; /* REDUCED PADDING */
+  padding: 20px; 
   display: flex; flex-direction: column; align-items: center; 
   overflow-y: auto; z-index: 1000; pointer-events: auto;
 }
@@ -282,7 +282,7 @@ html, body, #root {
 [data-type="0"] .mini-weapon::before, [data-type="0"] .mini-weapon::after { content: ''; position: absolute; width: 3px; height: 14px; background: #333; top: 4px; }
 [data-type="0"] .mini-weapon::before { left: 15px; border-top: 3px solid #00ffcc; } [data-type="0"] .mini-weapon::after { right: 15px; border-top: 3px solid #00ffcc; }
 
-[data-type="1"] .mini-weapon::before { content: ''; position: absolute; width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 20px solid #2c3e50; top: 6px; left: 11px; }
+[data-type="1"] .mini-weapon::before { content: ''; position: absolute; width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-bottom: 22px solid #2c3e50; top: 6px; left: 11px; }
 [data-type="1"] .mini-weapon::after { content: ''; position: absolute; width: 3px; height: 24px; background: #00ffff; top: 2px; left: 20px; }
 
 [data-type="2"] .mini-weapon::before { content: ''; position: absolute; width: 18px; height: 18px; background: #2c3e50; border: 2px solid #111; top: 11px; left: 11px; }

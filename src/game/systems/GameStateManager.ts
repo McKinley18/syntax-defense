@@ -4,7 +4,7 @@ export type GameMode = 'STANDARD' | 'HARDCORE' | 'ENDLESS' | 'SUDDEN_DEATH' | 'E
 export class GameStateManager {
     private static instance: GameStateManager;
     
-    public credits: number = 500;
+    public credits: number = 850; // BOOSTED FROM 500
     public integrity: number = 20;
     public currentWave: number = 1;
     public gameMode: GameMode = 'STANDARD';
@@ -24,7 +24,7 @@ export class GameStateManager {
     }
 
     public addCredits(amount: number) {
-        if (this.gameMode === 'ECO_CHALLENGE' && amount > 0) return; // NO KILL REWARDS
+        if (this.gameMode === 'ECO_CHALLENGE' && amount > 0) return; 
         this.credits += amount;
     }
 
@@ -34,7 +34,7 @@ export class GameStateManager {
     }
 
     public repairKernel(): boolean {
-        if (this.gameMode === 'SUDDEN_DEATH') return false; // NO REPAIRS
+        if (this.gameMode === 'SUDDEN_DEATH') return false; 
         if (this.credits >= this.repairCost && this.integrity < 20) {
             this.credits -= this.repairCost;
             this.integrity = Math.min(20, this.integrity + 1);
@@ -48,15 +48,16 @@ export class GameStateManager {
     public resetForNextWave() {
         if (this.integrity <= 0) return;
 
-        // ADAPTIVE PROFICIENCY: Perfect Wave Bonus
+        // PERFECT WAVE BONUS
         if (!this.integrityLostThisWave && this.gameMode !== 'HARDCORE') {
+            this.addCredits(150); // EXTRA 150c FOR ZERO LEAKS
             this.interestRate = Math.min(0.20, this.interestRate + 0.02);
         } else if (this.integrityLostThisWave) {
-            this.interestRate = 0.10; // Reset on damage
+            this.interestRate = 0.10; 
         }
 
         if (this.gameMode !== 'HARDCORE') {
-            const interest = Math.floor(this.credits * this.interestRate);
+            const interest = Math.ceil(this.credits * this.interestRate); // ROUND UP
             this.credits += interest;
         }
 
@@ -77,13 +78,11 @@ export class GameStateManager {
 
     public resetGame(mode: GameMode) {
         this.gameMode = mode;
-        this.credits = (mode === 'HARDCORE' || mode === 'ECO_CHALLENGE') ? 1000 : 500;
-        this.integrity = (mode === 'SUDDEN_DEATH') ? 1 : 20;
+        this.credits = (mode === 'HARDCORE' || mode === 'ECO_CHALLENGE') ? 1000 : 850;
+        this.integrity = mode === 'SUDDEN_DEATH' ? 1 : 20;
         this.currentWave = 1;
-        this.activeGlitch = 'NONE';
         this.repairCost = 500;
-        this.interestRate = 0.10;
-        this.integrityLostThisWave = false;
+        this.interestRate = mode === 'HARDCORE' ? 0 : 0.10;
         this.save();
     }
 
@@ -96,11 +95,11 @@ export class GameStateManager {
             repairCost: this.repairCost,
             interestRate: this.interestRate
         };
-        localStorage.setItem('syntax_defense_session_v2', JSON.stringify(data));
+        localStorage.setItem('syntax_defense_save', JSON.stringify(data));
     }
 
     public load(): boolean {
-        const raw = localStorage.getItem('syntax_defense_session_v2');
+        const raw = localStorage.getItem('syntax_defense_save');
         if (raw) {
             const data = JSON.parse(raw);
             this.credits = data.credits;
