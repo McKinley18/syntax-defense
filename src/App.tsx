@@ -56,9 +56,11 @@ function App() {
     const waveNum = game?.waveManager.waveNumber || 1;
     if (isTutorialActive && gamePhase === 'PREP' && tutorialStep === 3 && waveNum === 2 && !isWaveActive) {
        // Wave 1 finished (the single enemy) and incremented to 2
-       setShowTutorialComplete(true);
-       setIsTutorialActive(false);
-       setTutorialStep(0);
+       setTimeout(() => {
+         setShowTutorialComplete(true);
+         setIsTutorialActive(false);
+         setTutorialStep(0);
+       }, 1500); // 1.5s delay to see the destruction
     }
   }, [isTutorialActive, gamePhase, tutorialStep, isWaveActive, game]);
 
@@ -100,9 +102,7 @@ function App() {
         setGame(g);
         setIsInitializing(false);
         const tutorialDone = localStorage.getItem('syntax_tutorial_done');
-        console.log("DEBUG: Initializing game. tutorialDone:", tutorialDone, "waveNumber:", g.waveManager.waveNumber);
         if (!tutorialDone && g.waveManager.waveNumber === 1) {
-          console.log("DEBUG: Setting showTutorial to true");
           setShowTutorial(true);
         }
 
@@ -187,7 +187,7 @@ function App() {
       setIsVictorious(false);
       setScreen('GAME');
     } else {
-      setResetStatus("CRITICAL_ERROR: NO SAVED_DATA ON LOCAL_MOUNT.");
+      setResetStatus("CRITICAL ERROR: NO SAVED DATA ON LOCAL MOUNT.");
       setTimeout(() => setResetStatus(""), 4000);
       setScreen('SETTINGS');
     }
@@ -326,21 +326,21 @@ function App() {
           </div>
           {tutorialStep === 1 && !showRadiusExplanation && (
             <>
-              {/* TARGET: Pulse MG Card */}
+              {/* TARGET: Pulse MG Card - Widened to 215px */}
               <div className="tutorial-highlight" 
-                style={{bottom: '15px', left: '215px', width: '160px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
+                style={{bottom: '15px', left: '215px', width: '215px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
                 onClick={() => selectTurret(0)}
               ></div>
-              <div className="tutorial-pointer" style={{bottom: '110px', left: '215px', width: '160px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
+              <div className="tutorial-pointer" style={{bottom: '110px', left: '215px', width: '215px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
             </>
           )}
           {showRadiusExplanation && (
             <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
                <div className="pause-content" style={{width: '320px', padding: '15px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
-                  <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.5rem'}}>TACTICAL_INTEL</div>
-                  <h2 className="pause-title" style={{fontSize: '1rem', margin: '5px 0'}}>RADIUS_ENGAGEMENT</h2>
+                  <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.5rem'}}>TACTICAL INTEL</div>
+                  <h2 className="pause-title" style={{fontSize: '1rem', margin: '5px 0'}}>RADIUS ENGAGEMENT</h2>
                   <div className="manual-text" style={{fontSize: '0.65rem', lineHeight: '1.4'}}>
-                    <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '5px'}}>&gt; THE CYAN_CIRCLE INDICATES ENGAGEMENT RANGE.</p>
+                    <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '5px'}}>&gt; THE CYAN CIRCLE INDICATES ENGAGEMENT RANGE.</p>
                     <div style={{marginTop: '10px', display: 'grid', gridTemplateColumns: '60px 1fr', gap: '5px'}}>
                       <span style={{color: 'var(--neon-cyan)'}}>LVL 4:</span> <span>FROST RAY</span>
                       <span style={{color: 'var(--neon-cyan)'}}>LVL 8:</span> <span>TESLA LINK</span>
@@ -351,7 +351,7 @@ function App() {
                   <button className="blue-button" onClick={() => {
                     setShowRadiusExplanation(false);
                     setTutorialStep(2);
-                  }} style={{marginTop: '15px', padding: '8px 15px', fontSize: '0.6rem'}}>INITIALIZE_PLACEMENT</button>
+                  }} style={{marginTop: '15px', padding: '8px 15px', fontSize: '0.6rem'}}>INITIALIZE PLACEMENT</button>
                </div>
             </div>
           )}
@@ -364,7 +364,7 @@ function App() {
               </div>
             </>
           )}
-          {tutorialStep === 3 && !showCombatIntel && (
+          {tutorialStep === 3 && !showCombatIntel && !isWaveActive && (
             <>
               <div className="tutorial-highlight" 
                 style={{
@@ -384,8 +384,8 @@ function App() {
             <>
               <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
                   <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
-                      <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>SECURITY_BRIEFING</div>
-                      <h2 className="pause-title" style={{fontSize: '1.2rem', margin: '8px 0'}}>SYNTAX_MAINFRAME</h2>
+                      <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>SECURITY BRIEFING</div>
+                      <h2 className="pause-title" style={{fontSize: '1.2rem', margin: '8px 0'}}>SYNTAX MAINFRAME</h2>
                       <div className="manual-text" style={{fontSize: '0.7rem', lineHeight: '1.5'}}>
                         <p style={{margin: '8px 0'}}>&gt; HOSTILE VIRAL PACKETS ATTEMPT TO BREACH THE MAINFRAME BY TRAVERSING FROM LEFT TO RIGHT.</p>
                         <p style={{margin: '8px 0'}}>&gt; THE SYNTAX IS THE CORE OF YOUR SYSTEM. EACH BREACH CAUSES PERMANENT INTEGRITY LOSS.</p>
@@ -395,7 +395,7 @@ function App() {
                         setShowCombatIntel(false);
                         AudioManager.getInstance().playUiClick();
                         game?.waveManager.startWave();
-                      }} style={{marginTop: '15px', padding: '10px 20px', fontSize: '0.7rem'}}>COMMENCE_DEFENSE</button>
+                      }} style={{marginTop: '15px', padding: '10px 20px', fontSize: '0.7rem'}}>COMMENCE DEFENSE</button>
                   </div>
                 </div>
             </>
@@ -415,13 +415,13 @@ function App() {
               {"DEFENSE".split('').map((c, i) => ( <span key={i+6} style={{ color: glitchIndex === (i+6) ? 'var(--neon-red)' : 'inherit' }}>{c}</span> ))}
             </h1>
             <div className="menu-options-grid compact">
-              <button className="cyan-menu-btn primary-btn" onClick={() => startNewGame('STANDARD')}>INITIALIZE_STANDARD</button>
-              <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setScreen('MODES'); }}>ADVANCED_PROTOCOLS</button>
-              <button className="cyan-menu-btn" onClick={loadGame}>RESTORE_SESSION</button>
-              <button className="cyan-menu-btn" onClick={() => openArchive('VIRAL_DB')}>VIRAL_DATABASE</button>
-              <button className="cyan-menu-btn" onClick={() => openArchive('PROTOCOLS')}>DEFENSE_PROTOCOLS</button>
-              <button className="cyan-menu-btn" onClick={() => openArchive('LORE')}>SYSTEM_INFO</button>
-              <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setScreen('SETTINGS'); }}>SYSTEM_SETTINGS</button>
+              <button className="cyan-menu-btn primary-btn" onClick={() => startNewGame('STANDARD')}>INITIALIZE STANDARD</button>
+              <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setScreen('MODES'); }}>ADVANCED PROTOCOLS</button>
+              <button className="cyan-menu-btn" onClick={loadGame}>RESTORE SESSION</button>
+              <button className="cyan-menu-btn" onClick={() => openArchive('VIRAL_DB')}>VIRAL DATABASE</button>
+              <button className="cyan-menu-btn" onClick={() => openArchive('PROTOCOLS')}>DEFENSE PROTOCOLS</button>
+              <button className="cyan-menu-btn" onClick={() => openArchive('LORE')}>SYSTEM INFO</button>
+              <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
             </div>
           </div>
         </div>
@@ -429,69 +429,69 @@ function App() {
 
       {screen === 'MODES' && (
         <div className="encyclopedia ui-layer">
-          <div className="enc-header">SELECT_ADVANCED_PROTOCOL</div>
+          <div className="enc-header">SELECT ADVANCED PROTOCOL</div>
           <div className="menu-options-grid" style={{marginTop: '20px'}}>
-            <button className="cyan-menu-btn" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>HARDCORE_MODE</button>
-            <button className="cyan-menu-btn" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}>SUDDEN_DEATH</button>
-            <button className="cyan-menu-btn" onClick={() => startNewGame('ENDLESS')}>ENDLESS_LOOP</button>
-            <button className="cyan-menu-btn" onClick={() => startNewGame('ECO_CHALLENGE')}>ECO_CHALLENGE</button>
+            <button className="cyan-menu-btn" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>HARDCORE MODE</button>
+            <button className="cyan-menu-btn" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}>SUDDEN DEATH</button>
+            <button className="cyan-menu-btn" onClick={() => startNewGame('ENDLESS')}>ENDLESS LOOP</button>
+            <button className="cyan-menu-btn" onClick={() => startNewGame('ECO_CHALLENGE')}>ECO CHALLENGE</button>
           </div>
-          <button className="cyan-menu-btn back-btn" onClick={() => setScreen('MENU')}>RETURN_TO_ROOT</button>
+          <button className="cyan-menu-btn back-btn" onClick={() => setScreen('MENU')}>RETURN TO ROOT</button>
         </div>
       )}
 
       {screen === 'SETTINGS' && (
         <div className="encyclopedia ui-layer">
-          <div className="enc-header">SYSTEM_CONFIGURATION_CENTER</div>
+          <div className="enc-header">SYSTEM CONFIGURATION CENTER</div>
           <div className="enc-content">
             <div className="info-hub">
               <div className="info-body">
                 <div className="manual-text">
-                  <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px'}}>AUDIO_CHANNELS</h3>
+                  <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px'}}>AUDIO CHANNELS</h3>
                   <div style={{display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px'}}>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
                       <div>
-                        <div style={{color: '#fff', fontWeight: 900}}>SFX_ENGINE</div>
+                        <div style={{color: '#fff', fontWeight: 900}}>SFX ENGINE</div>
                         <div style={{fontSize: '0.6rem', color: '#888'}}>UI Beeps, Tactical SFX, Breaches</div>
                       </div>
                       <button className="blue-button" onClick={toggleSfx} style={{width: '120px'}}>{sfxMuted ? 'DISABLED' : 'ENABLED'}</button>
                     </div>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
                       <div>
-                        <div style={{color: '#fff', fontWeight: 900}}>MUSIC_ENGINE</div>
+                        <div style={{color: '#fff', fontWeight: 900}}>MUSIC ENGINE</div>
                         <div style={{fontSize: '0.6rem', color: '#888'}}>Rhythmic Cyber-Soundtrack</div>
                       </div>
                       <button className="blue-button" onClick={toggleAmbient} style={{width: '120px'}}>{ambientMuted ? 'DISABLED' : 'ENABLED'}</button>
                     </div>
                   </div>
-                  <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM_DIAGNOSTICS</h3>
+                  <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM DIAGNOSTICS</h3>
                   <div style={{borderLeft: '4px solid var(--neon-blue)', paddingLeft: '20px', background: 'rgba(0,102,255,0.05)', padding: '20px', marginTop: '20px'}}>
-                    <div style={{marginBottom: '10px'}}>BUILD_ID: v2.4.3_ELITE</div>
-                    <div style={{marginBottom: '10px'}}>MAINFRAME_STATUS: {systemStatusText}</div>
-                    <div style={{marginBottom: '10px'}}>KERNEL_STABILITY: {((integrity / 20) * 100).toFixed(0)}%</div>
+                    <div style={{marginBottom: '10px'}}>BUILD ID: v2.4.3 ELITE</div>
+                    <div style={{marginBottom: '10px'}}>MAINFRAME STATUS: {systemStatusText}</div>
+                    <div style={{marginBottom: '10px'}}>KERNEL STABILITY: {((integrity / 20) * 100).toFixed(0)}%</div>
                     <div style={{marginBottom: '10px'}}>LATENCY: 0.04ms</div>
-                    <div>LOCAL_CACHE: ACTIVE</div>
+                    <div>LOCAL CACHE: ACTIVE</div>
                   </div>
-                  <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>DEBUG_TOOLS</h3>
+                  <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>DEBUG TOOLS</h3>
                   <div style={{marginTop: '20px', display: 'flex', alignItems: 'center', gap: '15px'}}>
                     <button className="blue-button" onClick={() => {
                        localStorage.removeItem('syntax_tutorial_done');
-                       setResetStatus("TUTORIAL_DATA_PURGED. START NEW GAME TO RE-INITIALIZE.");
+                       setResetStatus("TUTORIAL DATA PURGED. START NEW GAME TO RE-INITIALIZE.");
                        setTimeout(() => setResetStatus(""), 4000);
-                    }} style={{width: '200px', borderColor: 'var(--neon-cyan)'}}>RESET_TUTORIAL</button>
+                    }} style={{width: '200px', borderColor: 'var(--neon-cyan)'}}>RESET TUTORIAL</button>
                     {resetStatus && <span style={{color: 'var(--neon-green)', fontSize: '0.65rem', fontWeight: 900}}>&gt; {resetStatus}</span>}
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <button className="cyan-menu-btn back-btn" onClick={() => setScreen('MENU')}>RETURN_TO_ROOT</button>
+          <button className="cyan-menu-btn back-btn" onClick={() => setScreen('MENU')}>RETURN TO ROOT</button>
         </div>
       )}
 
       {screen === 'ARCHIVE' && (
         <div className="encyclopedia ui-layer">
-          <div className="enc-header">MAINFRAME_DATA_ARCHIVE // {infoTab}</div>
+          <div className="enc-header">MAINFRAME DATA ARCHIVE // {infoTab}</div>
           <div className="enc-content">
             <div className="info-hub">
               <div className="info-tabs">
@@ -505,7 +505,7 @@ function App() {
               <div className="info-body">
                 {infoTab === 'LORE' && (
                   <div className="manual-text">
-                    <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG_ENTRY: THE SYNTAX COLLAPSE</p>
+                    <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p>
                     <p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p>
                     <p>&gt; THE KERNEL IS THE LAST REMAINING BASTION OF PURE LOGIC. IF IT FALLS, THE DIGITAL UNIVERSE WILL DESCEND INTO PERMANENT ENTROPY.</p>
                     <p>&gt; YOU ARE THE SYSTEM ARCHITECT. YOUR MISSION IS TO DEPLOY DEFENSE NODES AND PURGE THE SWARMS BEFORE THEY BREACH THE CORE MEMORY BANKS.</p>
@@ -528,24 +528,24 @@ function App() {
                 {infoTab === 'SYSTEM_MODES' && (
                   <div className="manual-text">
                     <p><span style={{color: 'var(--neon-red)'}}>HARDCORE:</span> NO INTEREST REWARDS. UNIT COSTS INCREASED BY 50%. STARTING CAPITAL REDUCED. ONLY FOR ELITE SYSTEM ARCHITECTS.</p>
-                    <p><span style={{color: 'var(--neon-green)'}}>ECO_CHALLENGE:</span> VIRUSES PROVIDE ZERO TOKENS UPON DELETION. ALL INCOME IS DERIVED FROM THE 10% INTEREST COMPOUNDING SYSTEM.</p>
-                    <p><span style={{color: 'var(--neon-cyan)'}}>SUDDEN_DEATH:</span> SYSTEM INTEGRITY SET TO 1. A SINGLE VIRAL BREACH WILL TERMINATE THE SESSION IMMEDIATELY.</p>
-                    <p><span style={{color: '#fff'}}>ENDLESS_LOOP:</span> NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS AS THE LOOP CONTINUES.</p>
+                    <p><span style={{color: 'var(--neon-green)'}}>ECO CHALLENGE:</span> VIRUSES PROVIDE ZERO TOKENS UPON DELETION. ALL INCOME IS DERIVED FROM THE 10% INTEREST COMPOUNDING SYSTEM.</p>
+                    <p><span style={{color: 'var(--neon-cyan)'}}>SUDDEN DEATH:</span> SYSTEM INTEGRITY SET TO 1. A SINGLE VIRAL BREACH WILL TERMINATE THE SESSION IMMEDIATELY.</p>
+                    <p><span style={{color: '#fff'}}>ENDLESS LOOP:</span> NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS AS THE LOOP CONTINUES.</p>
                   </div>
                 )}
                 {infoTab === 'THREATS' && (
                   <div className="manual-text">
                     <p><span style={{color: 'var(--neon-red)'}}>ELITE SIGNATURES:</span> EVERY 5 SWARMS, MINI-BOSSES WITH 3.5x HP MATERIALIZE. THEY REQUIRE FOCUSED FIRE-POWER.</p>
                     <p><span style={{color: 'var(--neon-cyan)'}}>GHOST PACKETS:</span> INVISIBLE ON THE GRID SENSOR. THEY CAN ONLY BE TARGETED WHEN REVEALED BY FROST RAY OR TESLA LINK RADIUS.</p>
-                    <p><span style={{color: '#fff'}}>BOSS_CORE:</span> FRACTAL VIRUSES ARE EXCEPTIONALLY DANGEROUS, DEALING 10 UNITS OF DAMAGE TO KERNEL INTEGRITY UPON BREACH.</p>
+                    <p><span style={{color: '#fff'}}>BOSS CORE:</span> FRACTAL VIRUSES ARE EXCEPTIONALLY DANGEROUS, DEALING 10 UNITS OF DAMAGE TO KERNEL INTEGRITY UPON BREACH.</p>
                   </div>
                 )}
                 {infoTab === 'LOGIC' && (
                   <div className="manual-text">
-                    <p>&gt; <span style={{color: 'var(--neon-blue)'}}>DATA_LINKS:</span> PLACING IDENTICAL TURRETS ADJACENT TO EACH OTHER FORMS A SYNERGY LINK, GRANTING +10% DAMAGE PER LINK (MAX +30%).</p>
+                    <p>&gt; <span style={{color: 'var(--neon-blue)'}}>DATA LINKS:</span> PLACING IDENTICAL TURRETS ADJACENT TO EACH OTHER FORMS A SYNERGY LINK, GRANTING +10% DAMAGE PER LINK (MAX +30%).</p>
                     <p>&gt; <span style={{color: 'var(--neon-blue)'}}>OVERCLOCKING:</span> TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS. EACH UNIT HAS 3 PROGRESSION LEVELS.</p>
                     <p>&gt; <span style={{color: 'var(--neon-blue)'}}>INTEREST:</span> MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST AT THE END OF EVERY SWARM.</p>
-                    <p>&gt; <span style={{color: 'var(--neon-blue)'}}>KERNEL_OVERDRIVE:</span> THE CORE HAS AN AUTOMATIC EMERGENCY SHOCKWAVE THAT PURGES ALL NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</p>
+                    <p>&gt; <span style={{color: 'var(--neon-blue)'}}>KERNEL OVERDRIVE:</span> THE CORE HAS AN AUTOMATIC EMERGENCY SHOCKWAVE THAT PURGES ALL NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</p>
                   </div>
                 )}
               </div>
@@ -555,27 +555,27 @@ function App() {
         </div>
       )}
 
-      {screen === 'GAME' && !game && <div className="loading-overlay">INITIALIZING_MAINFRAME...</div>}
+      {screen === 'GAME' && !game && <div className="loading-overlay">INITIALIZING MAINFRAME...</div>}
 
       {screen === 'GAME' && game && (
         <div className="game-overlay-active ui-layer">
           {isVictorious && (
             <div className="pause-overlay-locked" style={{zIndex: 40000}}>
               <div className="pause-content" style={{borderColor: 'var(--neon-green)'}}>
-                <h2 className="pause-title" style={{color: 'var(--neon-green)'}}>SYSTEM_SECURED</h2>
+                <h2 className="pause-title" style={{color: 'var(--neon-green)'}}>SYSTEM SECURED</h2>
                 <div className="game-summary">
                   <p style={{color: '#fff', fontWeight: 900}}>&gt; ALL HOSTILE DATA PACKETS PURGED.</p>
                   <p style={{color: '#fff', fontWeight: 900}}>&gt; KERNEL INTEGRITY: {integrity}/20</p>
                   <p style={{color: '#fff', fontWeight: 900}}>&gt; FINAL TOKENS: {credits}</p>
                 </div>
-                <button className="cyan-menu-btn" onClick={quitToMenu} style={{marginTop: '20px'}}>RETURN_TO_ROOT</button>
+                <button className="cyan-menu-btn" onClick={quitToMenu} style={{marginTop: '20px'}}>RETURN TO ROOT</button>
               </div>
             </div>
           )}
           {showTutorial && !isVictorious && (
             <div className="pause-overlay-locked">
               <div className="pause-content" style={{padding: '15px 25px', maxWidth: '450px', gap: '5px'}}>
-                <div className="rank-tag" style={{marginBottom: '0'}}>SYSTEM_INITIALIZATION</div>
+                <div className="rank-tag" style={{marginBottom: '0'}}>SYSTEM INITIALIZATION</div>
                 <h2 className="pause-title" style={{margin: '0', fontSize: '1.3rem'}}>INSTRUCTIONS</h2>
                 <div className="game-summary" style={{marginTop: '2px'}}>
                   <p style={{color: '#fff', fontWeight: 900, margin: '5px 0', fontSize: '0.75rem'}}>&gt; DEPLOYMENT: SELECT A NODE AND TAP A GRID TILE TO BUILD.</p>
@@ -595,8 +595,8 @@ function App() {
           {showTutorialComplete && (
             <div className="pause-overlay-locked">
               <div className="pause-content" style={{width: '450px', padding: '25px', border: '2px solid var(--neon-cyan)'}}>
-                <div className="rank-tag" style={{background: 'var(--neon-cyan)', color: '#000'}}>INITIALIZATION_COMPLETE</div>
-                <h2 className="pause-title" style={{marginTop: '10px'}}>MISSION_OBJECTIVE</h2>
+                <div className="rank-tag" style={{background: 'var(--neon-cyan)', color: '#000'}}>INITIALIZATION COMPLETE</div>
+                <h2 className="pause-title" style={{marginTop: '10px'}}>MISSION OBJECTIVE</h2>
                 <div className="manual-text" style={{fontSize: '0.75rem', lineHeight: '1.6'}}>
                   <p style={{margin: '10px 0'}}>&gt; YOU HAVE SUCCESSFULLY SECURED THE GRID FOR THIS INITIAL SWARM.</p>
                   <p style={{margin: '10px 0'}}>&gt; WARNING: SUBSEQUENT VIRAL PACKETS WILL BE FASTER AND MORE NUMEROUS.</p>
@@ -608,25 +608,25 @@ function App() {
                   setShowTutorialComplete(false);
                   quitToMenu(); 
                   startNewGame('STANDARD');
-                }} style={{marginTop: '20px', width: '100%', padding: '12px'}}>EXIT_TUTORIAL_&_START_REAL_GAME</button>
+                }} style={{marginTop: '20px', width: '100%', padding: '12px'}}>EXIT TUTORIAL & START REAL GAME</button>
               </div>
             </div>
           )}
-          {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE</h2><button className="blue-button" onClick={() => setScreen('MENU')}>RETURN_TO_ROOT</button></div></div>}
+          {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={() => setScreen('MENU')}>RETURN TO ROOT</button></div></div>}
           {isPaused && integrity > 0 && !isVictorious && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>RESUME</button><button className="blue-button" onClick={saveAndQuit}>SAVE & EXIT</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>ABANDON</button></div></div></div>}
           
           {gamePhase === 'PREP' && !isPaused && integrity > 0 && (!isTutorialActive || tutorialStep === 3) && (
             <div className="pre-wave-overlay">
               {wave > 1 && (
                 <div className="wave-summary-ledger" style={{width: '100%', marginBottom: '10px', borderBottom: '1px solid #333', paddingBottom: '15px'}}>
-                  <div style={{fontSize: '0.7rem', color: 'var(--neon-cyan)', marginBottom: '8px', textAlign: 'center', letterSpacing: '2px'}}>PREVIOUS_WAVE_ANALYSIS</div>
+                  <div style={{fontSize: '0.7rem', color: 'var(--neon-cyan)', marginBottom: '8px', textAlign: 'center', letterSpacing: '2px'}}>PREVIOUS WAVE ANALYSIS</div>
                   <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>KILLS:</span> <span style={{color: 'var(--neon-green)'}}>+{waveSummary.kills}c</span></div>
                   <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>INTEREST:</span> <span style={{color: 'var(--neon-green)'}}>+{waveSummary.interest}c</span></div>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>PERFECT_BONUS:</span> <span style={{color: waveSummary.perfectBonus > 0 ? 'var(--neon-green)' : '#666'}}>{waveSummary.perfectBonus > 0 ? `+${waveSummary.perfectBonus}c` : '0c'}</span></div>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 900, color: 'var(--neon-blue)', marginTop: '8px', borderTop: '1px dashed #333', paddingTop: '8px'}}><span>TOTAL_INCOME:</span> <span>+{waveSummary.total}c</span></div>
+                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>PERFECT BONUS:</span> <span style={{color: waveSummary.perfectBonus > 0 ? 'var(--neon-green)' : '#666'}}>{waveSummary.perfectBonus > 0 ? `+${waveSummary.perfectBonus}c` : '0c'}</span></div>
+                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 900, color: 'var(--neon-blue)', marginTop: '8px', borderTop: '1px dashed #333', paddingTop: '8px'}}><span>TOTAL INCOME:</span> <span>+{waveSummary.total}c</span></div>
                 </div>
               )}
-              <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
+              <div className="intel-header">SWARM SIGNATURES DETECTED</div>
               <div className="intel-grid-horizontal">
                 {upcomingEnemies.map(type => {
                   const config = VISUAL_REGISTRY[type as keyof typeof VISUAL_REGISTRY];
@@ -639,23 +639,23 @@ function App() {
                 })}
               </div>
               <div className="game-summary-slim"><p style={{color: '#fff', fontWeight: 900}}>&gt; LINK IDENTICAL TURRETS FOR +10% DMG SYNERGY.</p></div>
-              <button className="blue-button massive-exec-button" onClick={executeWave}>EXECUTE_DEFENSE_PROTOCOL</button>
+              <button className="blue-button massive-exec-button" onClick={executeWave}>EXECUTE DEFENSE PROTOCOL</button>
             </div>
           )}
 
           <div className="tactical-dashboard">
             <div className="dashboard-left">
               <div style={{display: 'flex', gap: '5px'}}>
-                <button className="blue-button pause-btn" onClick={() => setIsPaused(true)} style={{flexDirection: 'column'}} disabled={isTutorialActive}>
+                <button className="blue-button pause-btn" onClick={() => setIsPaused(true)} style={{flexDirection: 'column'}}>
                   <span>PAUSE</span>
                   <span className="hotkey-hint">SPACE</span>
                 </button>
-                <button className={`blue-button pause-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? 'var(--neon-green)' : '', flexDirection: 'column'}} disabled={isTutorialActive}>
+                <button className={`blue-button pause-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? 'var(--neon-green)' : '', flexDirection: 'column'}}>
                   <span>{isFastForward ? '2X' : '>>'}</span>
                   <span className="hotkey-hint">F</span>
                 </button>
               </div>
-              <div className="wave-label">LVL_{isTutorialActive ? 0 : wave} // {isTutorialActive ? 'INIT_SEQUENCE' : waveName}</div>
+              <div className="wave-label">LVL {isTutorialActive ? 0 : wave} // {isTutorialActive ? 'INIT SEQUENCE' : waveName}</div>
               <button 
                 className={`blue-button repair-button ${integrity <= 5 && credits >= repairCost ? 'critical-repair' : ''}`} 
                 onClick={repairKernel} 
@@ -697,20 +697,20 @@ function App() {
               </div>
             </div>
             <div className="dashboard-right">
-              <div className="credits-display">
-                <span className="credits-label">TOKENS:</span>
+              <div className="credits-display" style={{display: 'flex', alignItems: 'baseline', gap: '10px', justifyContent: 'flex-end'}}>
+                <span className="credits-label" style={{fontSize: '0.8rem'}}>TOKENS:</span>
                 <span className="credits-value">{credits}</span>
               </div>
               <div className="integrity-stack">
-                <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.6rem', color: '#fff'}}>
-                  <span>INTEGRITY</span>
+                <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.6rem', color: '#fff', marginBottom: '2px'}}>
+                  <span style={{color: sysStatusColor, fontWeight: 900}}>{systemStatusText}</span>
                   <span>{integrity}/20</span>
                 </div>
                 <div className="integrity-bar-small">
                   <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div>
                 </div>
               </div>
-              <button className="blue-button item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>DATA_PURGE: 1000c</button>
+              <button className="blue-button item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>DATA PURGE: 1000c</button>
             </div>
           </div>
         </div>

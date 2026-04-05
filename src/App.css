@@ -2,7 +2,7 @@
 :root {
   --neon-blue: #0066ff;
   --neon-cyan: #00ffff;
-  --neon-green: #00ffcc;
+  --neon-green: #00ccff;
   --neon-red: #ff3300;
   --bg-deep: #000000;
   --dashboard-height: clamp(110px, 20vh, 150px);

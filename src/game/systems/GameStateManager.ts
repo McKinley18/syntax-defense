@@ -130,8 +130,8 @@ export class GameStateManager {
     }
 
     public getWaveName(): string {
-        const names = ["CORP_SIG", "ALPHA_PROCESS", "ROOT_SCAN", "NODE_BREACH", "GRID_FAULT", "KERNEL_INIT"];
-        return names[this.currentWave % names.length] + "_" + (100 + this.currentWave);
+        const names = ["CORP SIG", "ALPHA PROCESS", "ROOT SCAN", "NODE BREACH", "GRID FAULT", "KERNEL INIT"];
+        return names[this.currentWave % names.length] + " " + (100 + this.currentWave);
     }
 
     public resetGame(mode: GameMode) {

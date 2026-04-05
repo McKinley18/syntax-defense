@@ -172,8 +172,8 @@ export class TowerManager {
         this.previewGraphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
         if (isBuildable) {
             const pulse = 0.2 + Math.abs(Math.sin(Date.now() / 200)) * 0.3;
-            this.previewGraphics.fill({ color: 0x00ffcc, alpha: pulse });
-            this.previewGraphics.stroke({ width: 2, color: 0x00ffcc, alpha: 0.8 });
+            this.previewGraphics.fill({ color: 0x00ffff, alpha: pulse });
+            this.previewGraphics.stroke({ width: 2, color: 0x00ffff, alpha: 0.8 });
         } else {
             this.previewGraphics.fill({ color: 0xff3300, alpha: 0.3 });
             this.previewGraphics.stroke({ width: 2, color: 0xff3300, alpha: 0.8 });
