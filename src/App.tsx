@@ -326,12 +326,12 @@ function App() {
           </div>
           {tutorialStep === 1 && !showRadiusExplanation && (
             <>
-              {/* TARGET: Pulse MG Card - Widened to 215px */}
+              {/* TARGET: Pulse MG Card - Matched to box size: 155px wide, 85px high, centered vertically in dashboard. Dashboard center content starts at left: 215px. */}
               <div className="tutorial-highlight" 
-                style={{bottom: '15px', left: '215px', width: '215px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
+                style={{bottom: '22px', left: '215px', width: '155px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
                 onClick={() => selectTurret(0)}
               ></div>
-              <div className="tutorial-pointer" style={{bottom: '110px', left: '215px', width: '215px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
+              <div className="tutorial-pointer" style={{bottom: '115px', left: '215px', width: '155px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
             </>
           )}
           {showRadiusExplanation && (
