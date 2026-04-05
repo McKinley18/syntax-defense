@@ -43,7 +43,6 @@ function App() {
         const g = await GameContainer.getInstance();
         setGame(g);
         setIsInitializing(false);
-        
         const tutorialDone = localStorage.getItem('syntax_tutorial_done');
         if (!tutorialDone) setShowTutorial(true);
 
@@ -142,16 +141,15 @@ function App() {
     return false;
   };
 
-  const status = integrity > 15 ? { text: "STATUS: STABLE", color: "#00ffcc" } : 
-                 integrity > 5 ? { text: "STATUS: DEGRADED", color: "#ffcc00" } : 
-                 { text: "STATUS: CRITICAL", color: "#ff3300" };
+  const systemStatus = integrity > 15 ? { text: "STATUS: STABLE", color: "#00ffcc" } : 
+                       integrity > 5 ? { text: "STATUS: DEGRADED", color: "#ffcc00" } : 
+                       { text: "STATUS: CRITICAL", color: "#ff3300" };
 
   const [glitchIndex, setGlitchIndex] = useState(-1);
   const [isDistorted, setIsDistorted] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // 10% CHANCE EVERY 15 SECONDS (HIGH-END STUDIO RARITY)
       if (Math.random() < 0.1) {
         setGlitchIndex(Math.floor(Math.random() * 13)); 
         setIsDistorted(true);
@@ -173,22 +171,18 @@ function App() {
           <div className={`grid-background ${isDistorted ? 'distorted' : ''}`}>
             <div className="grid-lines"></div>
             <div className="grid-glows">
-              <div className="glow-bit comet-right glow-1" style={{top: '15%', left: '-10%'}}></div>
-              <div className="glow-bit comet-left glow-2" style={{top: '40%', left: '110%'}}></div>
-              <div className="glow-bit comet-down glow-3" style={{top: '-10%', left: '45%'}}></div>
-              <div className="glow-bit comet-up glow-4" style={{top: '110%', left: '75%'}}></div>
+              <div className="glow-bit comet-right glow-1"></div>
+              <div className="glow-bit comet-left glow-2"></div>
+              <div className="glow-bit comet-down glow-3"></div>
+              <div className="glow-bit comet-up glow-4"></div>
               <div className="grid-sweep"></div>
             </div>
           </div>
           <div className="menu-content-centered">
             <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''}`}>
-              {title1.map((c, i) => (
-                <span key={i} style={{ color: glitchIndex === i ? 'var(--neon-red)' : 'inherit' }}>{c}</span>
-              ))}
+              {title1.map((c, i) => ( <span key={i} style={{ color: glitchIndex === i ? 'var(--neon-red)' : 'inherit' }}>{c}</span> ))}
               <br/>
-              {title2.map((c, i) => (
-                <span key={i+6} style={{ color: glitchIndex === (i+6) ? 'var(--neon-red)' : 'inherit' }}>{c}</span>
-              ))}
+              {title2.map((c, i) => ( <span key={i+6} style={{ color: glitchIndex === (i+6) ? 'var(--neon-red)' : 'inherit' }}>{c}</span> ))}
             </h1>
             <div className="menu-options-grid">
               <button className="primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
@@ -233,40 +227,11 @@ function App() {
                   <button className={infoTab === 'DIAGNOSTICS' ? 'active' : ''} onClick={() => setInfoTab('DIAGNOSTICS')}>DATA</button>
                 </div>
                 <div className="info-body">
-                  {infoTab === 'LORE' && (
-                    <div className="lore-text">
-                      <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p>
-                      <p>1. [ REPAIR_KERNEL ]: BUY REPAIRS AT SCALING COSTS.</p>
-                      <p>2. [ DATA_LINKS ]: ADJACENT IDENTICAL TURRETS GAIN +10% DMG.</p>
-                      <p>3. [ PERFECT_WAVE ]: +2% INTEREST FOR ZERO LEAKS.</p>
-                    </div>
-                  )}
-                  {infoTab === 'SYSTEM_MODES' && (
-                    <div className="modes-text">
-                      <p>[ SUDDEN_DEATH ]: 1 INTEGRITY. NO REPAIRS.</p>
-                      <p>[ ECO_CHALLENGE ]: 0 TOKENS PER KILL. INTEREST ONLY.</p>
-                      <p>[ ENDLESS ]: NO LEVEL CAP. MAX SCALING.</p>
-                    </div>
-                  )}
-                  {infoTab === 'THREATS' && (
-                    <div className="threats-text">
-                      <p>[ ELITES ]: 3.5x HP MINI-BOSSES. 2.5x REWARD.</p>
-                      <p>[ GHOST_PACKETS ]: INVISIBLE UNLESS REVEALED BY FROST/TESLA.</p>
-                    </div>
-                  )}
-                  {infoTab === 'LOGIC' && (
-                    <div className="logic-text">
-                      <p>[ OVERCLOCKING ]: TAP PLACED TURRETS TO UPGRADE (MAX LVL 3).</p>
-                      <p>[ INTEREST ]: 10% BASE. +2% PER PERFECT WAVE (MAX 20%).</p>
-                    </div>
-                  )}
-                  {infoTab === 'DIAGNOSTICS' && (
-                    <div className="diag-text">
-                      <div>BUILD: v1.8.3 [MAIN_EVOLUTION]</div>
-                      <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
-                      <div className="blink">READY...</div>
-                    </div>
-                  )}
+                  {infoTab === 'LORE' && <div className="manual-text"><p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p><p>1. [ REPAIR_KERNEL ]: BUY REPAIRS AT SCALING COSTS.</p><p>2. [ DATA_LINKS ]: ADJACENT IDENTICAL TURRETS GAIN +10% DMG.</p></div>}
+                  {infoTab === 'SYSTEM_MODES' && <div className="manual-text"><p>[ SUDDEN_DEATH ]: 1 INTEGRITY. NO REPAIRS.</p><p>[ ECO_CHALLENGE ]: INTEREST ONLY INCOME.</p></div>}
+                  {infoTab === 'THREATS' && <div className="manual-text"><p>[ ELITES ]: 3.5x HP MINI-BOSSES.</p><p>[ GHOST_PACKETS ]: INVISIBLE UNLESS REVEALED.</p></div>}
+                  {infoTab === 'LOGIC' && <div className="manual-text"><p>[ OVERCLOCKING ]: TAP PLACED TURRETS TO UPGRADE.</p></div>}
+                  {infoTab === 'DIAGNOSTICS' && <div className="manual-text"><div>BUILD: v1.8.4 [FINAL_RESTORE]</div><div>STATUS: {systemStatus.text}</div></div>}
                 </div>
               </div>
             )}
@@ -275,33 +240,19 @@ function App() {
                 {Object.values(VISUAL_REGISTRY).map(config => (
                   <div key={config.name} className="visual-card-large">
                     <div className="card-visual-box"><div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div></div>
-                    <div className="card-detail-box">
-                      <div className="label">{config.name}</div>
-                      <div className="stats">HP: {config.baseHp} // REWARD: {config.reward}c</div>
-                      <div className="desc">{config.priority === 'LOW' ? 'SWARM_UNIT' : config.priority === 'MED' ? 'STANDARD_THREAT' : 'HEAVY_DATA_LOAD'}</div>
-                    </div>
+                    <div className="card-detail-box"><div className="label">{config.name}</div><div className="stats">HP: {config.baseHp} // REWARD: {config.reward}c</div></div>
                   </div>
                 ))}
               </div>
             )}
             {screen === 'TURRETS' && (
               <div className="visual-grid">
-                {[0, 1, 2, 3, 4].map(id => {
-                  const type = id as TowerType;
-                  const cfg = TOWER_CONFIGS[type];
+                {[0, 1, 2, 3, 4].map(type => {
+                  const cfg = TOWER_CONFIGS[type as TowerType];
                   return (
                     <div key={cfg.name} className="visual-card-large" data-type={type}>
-                      <div className="card-visual-box">
-                        <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
-                          <div className="mini-base"></div>
-                          <div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
-                        </div>
-                      </div>
-                      <div className="card-detail-box">
-                        <div className="label">{cfg.name}</div>
-                        <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div>
-                        <div className="desc">{type === 0 ? 'RAPID_SUPPRESSION' : type === 1 ? 'DATA_FREEZE' : type === 2 ? 'AOE_DISCHARGE' : type === 3 ? 'MASSIVE_PENETRATION' : 'LIGHTNING_CHAIN'}</div>
-                      </div>
+                      <div className="card-visual-box"><div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div></div></div>
+                      <div className="card-detail-box"><div className="label">{cfg.name}</div><div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div></div>
                     </div>
                   );
                 })}
@@ -318,42 +269,20 @@ function App() {
     return (
       <div className="game-overlay">
         {showTutorial && (
-          <div className="pause-overlay tutorial-popup">
+          <div className="pause-overlay">
             <div className="pause-content">
               <h2 className="pause-title">SYSTEM_INITIALIZATION</h2>
               <div className="game-summary">
                 <p>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p>
                 <p>&gt; NODES DE-MATERIALIZE AFTER EVERY WAVE.</p>
                 <p>&gt; TAP PLACED NODES TO OVERCLOCK (UPGRADE).</p>
-                <p>&gt; ELITES AND GHOSTS WILL CHALLENGE THE GRID.</p>
               </div>
-              <div className="pause-options" style={{marginTop: '20px'}}>
-                <button onClick={() => dismissTutorial(false)}>[ GOT IT ]</button>
-                <button onClick={() => dismissTutorial(true)} style={{fontSize: '0.5rem'}}>[ DON'T SHOW AGAIN ]</button>
-              </div>
+              <div className="pause-options"><button onClick={() => dismissTutorial(false)}>[ GOT IT ]</button><button onClick={() => dismissTutorial(true)} style={{fontSize: '0.5rem'}}>[ DON'T SHOW AGAIN ]</button></div>
             </div>
           </div>
         )}
-        {isGameOver && (
-          <div className="pause-overlay game-over">
-            <div className="pause-content">
-              <h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE: KERNEL_PANIC</h2>
-              <button onClick={() => setScreen('MENU')} className="back-btn">[ RETURN_TO_ROOT_MENU ]</button>
-            </div>
-          </div>
-        )}
-        {isPaused && !isGameOver && (
-          <div className="pause-overlay">
-            <div className="pause-content">
-              <h2 className="pause-title">PAUSED</h2>
-              <div className="pause-options">
-                <button onClick={() => setIsPaused(false)}>[ RESUME ]</button>
-                <button onClick={saveAndQuit}>[ SAVE & EXIT ]</button>
-                <button onClick={quitToMenu} style={{color: '#ff3300'}}>[ ABANDON ]</button>
-              </div>
-            </div>
-          </div>
-        )}
+        {isGameOver && <div className="pause-overlay"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE: KERNEL_PANIC</h2><button onClick={() => setScreen('MENU')} className="back-btn">[ RETURN_TO_ROOT ]</button></div></div>}
+        {isPaused && !isGameOver && <div className="pause-overlay"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button onClick={() => setIsPaused(false)}>[ RESUME ]</button><button onClick={saveAndQuit}>[ SAVE & EXIT ]</button><button onClick={quitToMenu} style={{color: '#ff3300'}}>[ ABANDON ]</button></div></div></div>}
         {!isWaveActive && !isPaused && (
           <div className="pre-wave-overlay">
             <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
@@ -368,10 +297,6 @@ function App() {
                 );
               })}
             </div>
-            <div className="game-summary">
-              <p>&gt; LINK IDENTICAL TURRETS FOR +10% DMG SYNERGY.</p>
-              <p>&gt; CURRENT MODE: {gameMode}</p>
-            </div>
             <button className="massive-exec-button" onClick={executeWave}>[ EXECUTE_PROTOCOL ]</button>
           </div>
         )}
@@ -379,46 +304,30 @@ function App() {
           <div className="dashboard-left">
             <button className="exec-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
             <div className="wave-label">{waveName} // LVL_{wave}</div>
-            <button className="repair-button" onClick={repairKernel} disabled={credits < repairCost || integrity >= 20 || gameMode === 'SUDDEN_DEATH'}>
-              [ REPAIR: {repairCost}c ]
-            </button>
+            <button className="repair-button" onClick={repairKernel} disabled={credits < repairCost || integrity >= 20 || gameMode === 'SUDDEN_DEATH'}>[ REPAIR: {repairCost}c ]</button>
           </div>
           <div className="dashboard-center">
             <div className="turret-grid-horizontal">
               {[0, 1, 2, 3, 4].map(type => {
-                const cfg = TOWER_CONFIGS[type];
+                const cfg = TOWER_CONFIGS[type as TowerType];
                 const unlocked = isUnlocked(type as TowerType);
                 const cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
                 const canAfford = credits >= cost;
                 return (
                   <div key={type} className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} data-type={type} onClick={() => unlocked && selectTurret(type)}>
-                    {!unlocked ? (
-                      <div className="lock-icon">🔒</div>
-                    ) : (
-                      <>
-                        <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
-                          <div className="mini-base"></div>
-                          <div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
-                        </div>
-                        <div className="slim-card-info">
-                          <span className="name">{cfg.name}</span>
-                          <span className="stats">DMG:{cfg.damage}</span>
-                          <span className="cost">{cost}c</span>
-                        </div>
-                      </>
-                    )}
+                    {!unlocked ? <div className="lock-icon">🔒</div> : 
+                    <><div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div></div>
+                    <div className="slim-card-info"><span className="name">{cfg.name}</span><span className="stats">DMG:{cfg.damage}</span><span className="cost">{cost}c</span></div></>}
                   </div>
                 );
               })}
             </div>
           </div>
           <div className="dashboard-right">
-            <div className="consumable-bar" style={{marginBottom: '8px'}}>
-              <button className="item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>[ DATA_PURGE: 1000c ]</button>
-            </div>
+            <button className="item-btn" style={{marginBottom: '8px'}} onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>[ DATA_PURGE: 1000c ]</button>
             <div className="stat-row"><span className="label">TOKENS:</span><span className="credits-value">{credits}</span></div>
             <div className="integrity-stack">
-              <div className="system-status-label" style={{color: status.color}}>{status.text}</div>
+              <div className="system-status-label" style={{color: systemStatus.color}}>{systemStatus.text}</div>
               <div className="integrity-bar-small"><div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div></div>
             </div>
           </div>
@@ -429,10 +338,7 @@ function App() {
 
   return (
     <div className="game-wrapper">
-      <div className="orientation-warning">
-        <div className="warning-icon">🔄</div>
-        <div className="warning-text">Please rotate your device</div>
-      </div>
+      <div className="orientation-warning"><div className="warning-icon">🔄</div><div className="warning-text">Please rotate your device</div></div>
       <div id="game-container"></div>
       {renderContent()}
     </div>
