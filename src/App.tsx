@@ -403,8 +403,8 @@ function App() {
 
                         <div style={{margin: '8px 0'}}>
                           <p style={{margin: '4px 0'}}>&gt; IF INTEGRITY DROPS TO ZERO, THE SYSTEM COLLAPSES. NEUTRALIZE ALL SIGNATURES IMMEDIATELY.</p>
-                          <div className="integrity-bar-small" style={{width: '100%', height: '8px', marginTop: '5px'}}>
-                            <div className="integrity-fill" style={{ width: '100%', background: 'linear-gradient(to right, #ff3300, #00ffcc)' }}></div>
+                          <div className="integrity-bar-small" style={{width: '100%', height: '10px', marginTop: '5px'}}>
+                            <div className="integrity-fill" style={{ width: '100%', background: sysStatusColor }}></div>
                           </div>
                         </div>
                       </div>
