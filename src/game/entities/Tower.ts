@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameContainer } from '../GameContainer';
 import { Enemy } from './Enemy';
 import { TILE_SIZE } from '../systems/MapManager';
+import { AudioManager } from '../systems/AudioManager';
 
 export const TowerType = {
     PULSE_MG: 0,
