@@ -16,6 +16,8 @@ export class Enemy {
     public totalProgress: number = 0;
     public reachedGoal: boolean = false;
     public isElite: boolean = false;
+    public isGhost: boolean = false; // NEW: GHOST STATUS
+    public isRevealed: boolean = false; // NEW: VISIBILITY
     
     private pathPoints: PIXI.Point[];
     private currentPointIndex: number = 0;
@@ -30,9 +32,13 @@ export class Enemy {
         
         const config = VISUAL_REGISTRY[type];
         
-        // ELITE SIGNATURE LOGIC (10% chance every 5 waves)
         if (waveNumber % 5 === 0 && Math.random() < 0.15) {
             this.isElite = true;
+        }
+
+        // GHOST PACKET LOGIC: 15% chance after Wave 10
+        if (waveNumber >= 10 && Math.random() < 0.15) {
+            this.isGhost = true;
         }
 
         const hpMult = Math.pow(1.15, waveNumber) * (this.isElite ? 3.5 : 1);
@@ -52,6 +58,10 @@ export class Enemy {
             glow.circle(0, 0, (TILE_SIZE / 2) * 1.6);
             glow.stroke({ width: 2, color: 0xffffff, alpha: 0.4 });
             this.container.addChild(glow);
+        }
+
+        if (this.isGhost) {
+            this.container.alpha = 0.15; // Nearly invisible
         }
 
         this.healthBar = new PIXI.Graphics();
@@ -90,6 +100,12 @@ export class Enemy {
         }
         this.visual.tint = 0xffffff;
 
+        // Visibility Check
+        if (this.isGhost) {
+            this.container.alpha = this.isRevealed ? 1.0 : 0.15;
+            this.healthBar.visible = this.isRevealed;
+        }
+
         if (this.currentPointIndex >= this.pathPoints.length - 1) {
             this.reachedGoal = true;
             return;
@@ -114,6 +130,8 @@ export class Enemy {
         this.totalProgress += moveStep;
         this.visual.rotation += 0.05 * delta;
         this.updateHealthBar();
+        
+        this.isRevealed = false; // Reset for next frame
     }
 
     private updateHealthBar() {

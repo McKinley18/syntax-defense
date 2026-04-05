@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { GameContainer } from './game/GameContainer';
 import { GameStateManager } from './game/systems/GameStateManager';
+import type { GameMode } from './game/systems/GameStateManager';
 import { TowerType, TOWER_CONFIGS } from './game/entities/Tower';
 import { VISUAL_REGISTRY } from './game/VisualRegistry';
 import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ABOUT' | 'ENEMIES' | 'TURRETS';
-type InfoTab = 'LORE' | 'LOGIC' | 'DIAGNOSTICS';
+type InfoTab = 'LORE' | 'LOGIC' | 'DIAGNOSTICS' | 'MODES' | 'THREATS';
 
 function App() {
   const [screen, setScreen] = useState<ScreenState>('MENU');
@@ -17,10 +18,11 @@ function App() {
   const [waveName, setWaveName] = useState("");
   const [selectedTurret, setSelectedTurret] = useState(0);
   const [game, setGame] = useState<GameContainer | null>(null);
-  const [isHardcore, setIsHardcore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isWaveActive, setIsWaveActive] = useState(false);
   const [repairCost, setRepairCost] = useState(500);
+  const [gameMode, setGameMode] = useState<GameMode>('STANDARD');
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     const lockOrientation = async () => {
@@ -39,13 +41,18 @@ function App() {
       async function init() {
         const g = await GameContainer.getInstance();
         setGame(g);
+        
+        // CHECK TUTORIAL STATUS
+        const tutorialDone = localStorage.getItem('syntax_tutorial_done');
+        if (!tutorialDone) setShowTutorial(true);
+
         const interval = setInterval(() => {
           const state = GameStateManager.getInstance();
           setCredits(state.credits);
           setIntegrity(state.integrity);
           setWaveName(state.getWaveName());
-          setIsHardcore(state.isHardcore);
           setRepairCost(state.repairCost);
+          setGameMode(state.gameMode);
           if (g.waveManager) {
             setWave(g.waveManager.waveNumber);
             setIsWaveActive(g.waveManager.isWaveActive);
@@ -63,15 +70,13 @@ function App() {
 
   const isGameOver = integrity <= 0;
 
-  const startNewGame = (hardcore: boolean = false) => {
-    GameStateManager.getInstance().resetGame(hardcore);
-    setIsHardcore(hardcore);
+  const startNewGame = (mode: GameMode) => {
+    GameStateManager.getInstance().resetGame(mode);
     setScreen('GAME');
   };
 
   const loadGame = () => {
     if (GameStateManager.getInstance().load()) {
-      setIsHardcore(GameStateManager.getInstance().isHardcore);
       setScreen('GAME');
     } else {
       alert("CRITICAL_ERROR: NO SAVED_DATA ON LOCAL_MOUNT.");
@@ -116,6 +121,18 @@ function App() {
     GameStateManager.getInstance().repairKernel();
   };
 
+  const useDataPurge = () => {
+    if (credits >= 1000 && game?.waveManager) {
+      GameStateManager.getInstance().addCredits(-1000);
+      game.waveManager.dataPurge();
+    }
+  };
+
+  const dismissTutorial = (permanent: boolean) => {
+    if (permanent) localStorage.setItem('syntax_tutorial_done', 'true');
+    setShowTutorial(false);
+  };
+
   const isUnlocked = (type: TowerType) => {
     if (type === TowerType.PULSE_MG) return true;
     if (type === TowerType.FROST_RAY) return wave >= 4;
@@ -137,18 +154,21 @@ function App() {
         <div className="grid-background">
           <div className="grid-lines"></div>
           <div className="grid-glows">
-            <div className="glow-bit comet-right glow-1"></div>
-            <div className="glow-bit comet-left glow-2"></div>
-            <div className="glow-bit comet-down glow-3"></div>
-            <div className="glow-bit comet-up glow-4"></div>
+            <div className="glow-bit comet-right glow-1" style={{top: '10%', left: '-5%'}}></div>
+            <div className="glow-bit comet-left glow-2" style={{top: '30%', left: '105%'}}></div>
+            <div className="glow-bit comet-down glow-3" style={{top: '-5%', left: '50%'}}></div>
+            <div className="glow-bit comet-up glow-4" style={{top: '105%', left: '80%'}}></div>
             <div className="grid-sweep"></div>
           </div>
         </div>
         <div className="menu-content-centered">
           <h1 className="menu-title-static">SYNTAX<br/>DEFENSE</h1>
           <div className="menu-options-grid">
-            <button onClick={() => startNewGame(false)}>&gt; INITIALIZE_STANDARD</button>
-            <button onClick={() => startNewGame(true)} style={{color: '#ff3300', borderColor: '#ff3300'}}>&gt; INITIALIZE_HARDCORE</button>
+            <button onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
+            <button onClick={() => startNewGame('HARDCORE')} style={{color: '#ff3300', borderColor: '#ff3300'}}>&gt; INITIALIZE_HARDCORE</button>
+            <button onClick={() => startNewGame('ENDLESS')}>&gt; INITIALIZE_ENDLESS</button>
+            <button onClick={() => startNewGame('SUDDEN_DEATH')} style={{color: '#ffcc00', borderColor: '#ffcc00'}}>&gt; SUDDEN_DEATH</button>
+            <button onClick={() => startNewGame('ECO_CHALLENGE')}>&gt; ECO_CHALLENGE</button>
             <button onClick={loadGame}>&gt; RESTORE_SESSION</button>
             <button onClick={() => setScreen('ENEMIES')}>&gt; VIRAL_DATABASE</button>
             <button onClick={() => setScreen('TURRETS')}>&gt; DEFENSE_PROTOCOLS</button>
@@ -168,6 +188,8 @@ function App() {
             <div className="info-hub">
               <div className="info-tabs">
                 <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
+                <button className={infoTab === 'MODES' ? 'active' : ''} onClick={() => setInfoTab('MODES')}>MODES</button>
+                <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
                 <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
                 <button className={infoTab === 'DIAGNOSTICS' ? 'active' : ''} onClick={() => setInfoTab('DIAGNOSTICS')}>DATA</button>
               </div>
@@ -175,22 +197,34 @@ function App() {
                 {infoTab === 'LORE' && (
                   <div className="lore-text">
                     <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p>
-                    <p>&gt;&gt; SYSTEM_EVOLUTION V1.7.0 DETECTED.</p>
+                    <p>&gt;&gt; SYSTEM_EVOLUTION V1.8.0 DETECTED.</p>
                     <p>1. [ REPAIR_KERNEL ]: BUY REPAIRS AT SCALING COSTS.</p>
                     <p>2. [ DATA_LINKS ]: ADJACENT IDENTICAL TURRETS GAIN +10% DMG.</p>
-                    <p>3. [ ADAPTIVE_DIFFICULTY ]: SYSTEM REACTS TO TOKEN HOARDING.</p>
+                    <p>3. [ PERFECT_WAVE ]: +2% INTEREST FOR ZERO LEAKS.</p>
+                  </div>
+                )}
+                {infoTab === 'MODES' && (
+                  <div className="modes-text">
+                    <p>[ SUDDEN_DEATH ]: 1 INTEGRITY. NO REPAIRS.</p>
+                    <p>[ ECO_CHALLENGE ]: 0 TOKENS PER KILL. INTEREST ONLY.</p>
+                    <p>[ ENDLESS ]: NO LEVEL CAP. MAX SCALING.</p>
+                  </div>
+                )}
+                {infoTab === 'THREATS' && (
+                  <div className="threats-text">
+                    <p>[ ELITES ]: 3.5x HP MINI-BOSSES. 2.5x REWARD.</p>
+                    <p>[ GHOST_PACKETS ]: INVISIBLE UNLESS REVEALED BY FROST/TESLA.</p>
                   </div>
                 )}
                 {infoTab === 'LOGIC' && (
                   <div className="logic-text">
-                    <p>[ WAVE_SHIFT ]: PATHS RECONFIGURE PER WAVE.</p>
                     <p>[ OVERCLOCKING ]: TAP PLACED TURRETS TO UPGRADE (MAX LVL 3).</p>
                     <p>[ INTEREST ]: 10% BASE. +2% PER PERFECT WAVE (MAX 20%).</p>
                   </div>
                 )}
                 {infoTab === 'DIAGNOSTICS' && (
                   <div className="diag-text">
-                    <div>BUILD: v1.7.5 [HIGH_INTELLIGENCE]</div>
+                    <div>BUILD: v1.8.0 [MAIN_EVOLUTION]</div>
                     <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
                     <div className="blink">READY...</div>
                   </div>
@@ -248,6 +282,24 @@ function App() {
       <div id="game-container"></div>
       
       <div className="game-overlay">
+        {showTutorial && (
+          <div className="pause-overlay tutorial-popup">
+            <div className="pause-content">
+              <h2 className="pause-title">SYSTEM_INITIALIZATION</h2>
+              <div className="game-summary">
+                <p>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p>
+                <p>&gt; NODES DE-MATERIALIZE AFTER EVERY WAVE.</p>
+                <p>&gt; TAP PLACED NODES TO OVERCLOCK (UPGRADE).</p>
+                <p>&gt; ELITES AND GHOSTS WILL CHALLENGE THE GRID.</p>
+              </div>
+              <div className="pause-options" style={{marginTop: '20px'}}>
+                <button onClick={() => dismissTutorial(false)}>[ GOT IT ]</button>
+                <button onClick={() => dismissTutorial(true)} style={{fontSize: '0.5rem'}}>[ DON'T SHOW AGAIN ]</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isGameOver && (
           <div className="pause-overlay game-over">
             <div className="pause-content">
@@ -285,8 +337,8 @@ function App() {
               })}
             </div>
             <div className="game-summary">
-              <p>&gt; TAP PLACED TURRETS TO UPGRADE (LVL 1-3).</p>
               <p>&gt; LINK IDENTICAL TURRETS FOR +10% DMG SYNERGY.</p>
+              <p>&gt; CURRENT MODE: {gameMode}</p>
             </div>
             <button className="massive-exec-button" onClick={executeWave}>[ EXECUTE_PROTOCOL ]</button>
           </div>
@@ -299,9 +351,9 @@ function App() {
             <button 
               className="repair-button" 
               onClick={repairKernel} 
-              disabled={credits < repairCost || integrity >= 20}
+              disabled={credits < repairCost || integrity >= 20 || gameMode === 'SUDDEN_DEATH'}
             >
-              [ REPAIR_KERNEL: {repairCost}c ]
+              [ REPAIR: {repairCost}c ]
             </button>
           </div>
 
@@ -310,7 +362,7 @@ function App() {
               {[0, 1, 2, 3, 4].map(type => {
                 const cfg = TOWER_CONFIGS[type];
                 const unlocked = isUnlocked(type as TowerType);
-                const cost = isHardcore ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
+                const cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
                 const canAfford = credits >= cost;
                 
                 return (
@@ -331,6 +383,11 @@ function App() {
                   </div>
                 );
               })}
+            </div>
+            <div className="consumable-bar">
+              <button className="item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>
+                [ DATA_PURGE: 1000c ]
+              </button>
             </div>
           </div>
 

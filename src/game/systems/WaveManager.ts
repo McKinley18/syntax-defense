@@ -118,6 +118,18 @@ export class WaveManager {
         }
     }
 
+    public dataPurge() {
+        // Purge all non-elite, non-boss enemies
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const e = this.enemies[i];
+            if (!e.isElite && e.type !== EnemyType.FRACTAL) {
+                GameStateManager.getInstance().addCredits(Math.floor(e.reward * 0.5));
+                this.game.particleManager.spawnExplosion(e.container.x, e.container.y, 0.5);
+                this.removeEnemy(i);
+            }
+        }
+    }
+
     public getUpcomingEnemyTypes(): EnemyType[] {
         const types: Set<EnemyType> = new Set();
         if (this.waveNumber % 10 === 0) {

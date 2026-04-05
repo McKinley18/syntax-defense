@@ -46,7 +46,6 @@ export class Tower {
         this.container.y = y;
         this.container.alpha = 0.3;
 
-        // 1. OCTAGONAL DOCKING BASE
         const base = new PIXI.Graphics();
         const s = TILE_SIZE / 2 - 1;
         base.poly([-s, -s/2, -s/2, -s, s/2, -s, s, -s/2, s, s/2, s/2, s, -s/2, s, -s, s/2]);
@@ -57,7 +56,6 @@ export class Tower {
         this.turretHead = new PIXI.Container();
         this.container.addChild(this.turretHead);
 
-        // 2. HIGH-FIDELITY MECHA CHASSIS
         const chassis = new PIXI.Graphics();
         chassis.circle(0, 0, 7);
         chassis.fill(0x202020);
@@ -107,9 +105,19 @@ export class Tower {
         this.fireTimer -= delta;
         if (this.muzzleFlash.alpha > 0) this.muzzleFlash.alpha -= 0.1 * delta;
 
-        // ENERGY CORE PULSE
-        const pulse = 0.5 + Math.sin(Date.now() * 0.01) * 0.2;
-        this.energyCore.alpha = pulse;
+        this.energyCore.alpha = 0.5 + Math.sin(Date.now() * 0.01) * 0.2;
+
+        // GHOST REVEAL LOGIC
+        if (this.type === TowerType.FROST_RAY || this.type === TowerType.TESLA_LINK) {
+            const range = (this.config.range + (this.level === 3 ? 1 : 0)) * TILE_SIZE;
+            const rSq = range * range;
+            enemies.forEach(e => {
+                if (e.isGhost) {
+                    const dSq = (e.container.x - this.container.x)**2 + (e.container.y - this.container.y)**2;
+                    if (dSq <= rSq) e.isRevealed = true;
+                }
+            });
+        }
 
         const target = this.findTarget(enemies);
         if (target) {
@@ -135,11 +143,13 @@ export class Tower {
         const rSq = range * range;
 
         for (const enemy of enemies) {
+            // Target Ghost only if revealed
+            if (enemy.isGhost && !enemy.isRevealed) continue;
+
             const dx = enemy.container.x - this.container.x;
             const dy = enemy.container.y - this.container.y;
             const dSq = dx*dx + dy*dy;
             if (dSq <= rSq) {
-                // SMART TARGETING: Fractal > Elite > Progress
                 let weight = enemy.totalProgress;
                 if (enemy.isElite) weight += 1000;
                 if (enemy.type === 3) weight += 5000; 
@@ -155,7 +165,6 @@ export class Tower {
 
     private fire(target: Enemy, allEnemies: Enemy[]) {
         this.showMuzzleFlash();
-        // Stat Multipliers
         const levelMult = this.level === 2 ? 1.25 : this.level === 3 ? 1.5 : 1;
         const totalDmg = this.config.damage * levelMult * (1 + this.linkBonus);
 
@@ -185,6 +194,8 @@ export class Tower {
             let minDist = 100;
             allEnemies.forEach(e => {
                 if (!hitEnemies.has(e)) {
+                    // Chain to Ghost only if revealed
+                    if (e.isGhost && !e.isRevealed) return;
                     const d = Math.sqrt((e.container.x - target.container.x)**2 + (e.container.y - target.container.y)**2);
                     if (d < minDist) { minDist = d; nextTarget = e; }
                 }
