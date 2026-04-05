@@ -311,7 +311,7 @@ function App() {
   };
 
   const systemStatusText = integrity > 15 ? "STATUS: STABLE" : integrity > 5 ? "STATUS: DEGRADED" : "STATUS: CRITICAL";
-  const systemStatusColor = integrity > 15 ? "#00ffcc" : integrity > 5 ? "#ffcc00" : "#ff3300";
+  const sysStatusColor = integrity > 15 ? "#00ffcc" : integrity > 5 ? "#ffcc00" : "#ff3300";
 
   return (
     <div className="game-wrapper">
@@ -707,7 +707,7 @@ function App() {
                   <span>{integrity}/20</span>
                 </div>
                 <div className="integrity-bar-small">
-                  <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: systemStatusColor }}></div>
+                  <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div>
                 </div>
               </div>
               <button className="blue-button item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>DATA_PURGE: 1000c</button>
