@@ -363,6 +363,7 @@ function App() {
                 <span>DEPLOY NODE NEAR PATH</span>
               </div>
             </>
+          )}
           {tutorialStep === 3 && !showCombatIntel && (
             <>
               <div className="tutorial-highlight" 
@@ -382,12 +383,11 @@ function App() {
           {tutorialStep === 3 && showCombatIntel && (
             <>
               <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
-          ...
                   <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
                       <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>SECURITY_BRIEFING</div>
                       <h2 className="pause-title" style={{fontSize: '1.2rem', margin: '8px 0'}}>SYNTAX_MAINFRAME</h2>
                       <div className="manual-text" style={{fontSize: '0.7rem', lineHeight: '1.5'}}>
-                        <p style={{margin: '8px 0'}}>&gt; HOSTILE VIRAL PACKETS ATTEMPT TO BREACH THE MAINFRRAME BY TRAVERSING FROM LEFT TO RIGHT.</p>
+                        <p style={{margin: '8px 0'}}>&gt; HOSTILE VIRAL PACKETS ATTEMPT TO BREACH THE MAINFRAME BY TRAVERSING FROM LEFT TO RIGHT.</p>
                         <p style={{margin: '8px 0'}}>&gt; THE SYNTAX IS THE CORE OF YOUR SYSTEM. EACH BREACH CAUSES PERMANENT INTEGRITY LOSS.</p>
                         <p style={{margin: '8px 0'}}>&gt; IF INTEGRITY DROPS TO ZERO, THE SYSTEM COLLAPSES. NEUTRALIZE ALL SIGNATURES IMMEDIATELY.</p>
                       </div>
@@ -398,7 +398,6 @@ function App() {
                       }} style={{marginTop: '15px', padding: '10px 20px', fontSize: '0.7rem'}}>COMMENCE_DEFENSE</button>
                   </div>
                 </div>
-              )}
             </>
           )}
         </div>
