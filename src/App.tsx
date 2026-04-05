@@ -629,7 +629,7 @@ function App() {
               <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
               <div className="intel-grid-horizontal">
                 {upcomingEnemies.map(type => {
-                  const config = VISUAL_REGISTRY[type];
+                  const config = VISUAL_REGISTRY[type as keyof typeof VISUAL_REGISTRY];
                   return (
                     <div key={type} className="intel-card-modern">
                       <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
@@ -688,7 +688,7 @@ function App() {
                       <div className="mini-turret"><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div></div></div>
                       <div className="protocol-info">
                         <span className="name">{cfg.name}</span>
-                        <span className="stats">PWR: {cfg.damage} // RTE: {cfg.fireRate}ms</span>
+                        <span className="stats">PWR: {cfg.damage} // RTE: {cfg.rate * 16}ms</span>
                         <span className="cost">{cost}c</span>
                       </div>
                     </div>
