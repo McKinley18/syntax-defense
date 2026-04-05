@@ -383,19 +383,36 @@ function App() {
           {tutorialStep === 3 && showCombatIntel && (
             <>
               <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
-                  <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
+                  <div className="pause-content" style={{width: '380px', padding: '15px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto', gap: '5px'}}>
                       <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>SECURITY BRIEFING</div>
-                      <h2 className="pause-title" style={{fontSize: '1.2rem', margin: '8px 0'}}>SYNTAX MAINFRAME</h2>
-                      <div className="manual-text" style={{fontSize: '0.7rem', lineHeight: '1.5'}}>
-                        <p style={{margin: '8px 0'}}>&gt; HOSTILE VIRAL PACKETS ATTEMPT TO BREACH THE MAINFRAME BY TRAVERSING FROM LEFT TO RIGHT.</p>
-                        <p style={{margin: '8px 0'}}>&gt; THE SYNTAX IS THE CORE OF YOUR SYSTEM. EACH BREACH CAUSES PERMANENT INTEGRITY LOSS.</p>
-                        <p style={{margin: '8px 0'}}>&gt; IF INTEGRITY DROPS TO ZERO, THE SYSTEM COLLAPSES. NEUTRALIZE ALL SIGNATURES IMMEDIATELY.</p>
+                      <h2 className="pause-title" style={{fontSize: '1.1rem', margin: '0'}}>SYNTAX MAINFRAME</h2>
+                      <div className="manual-text" style={{fontSize: '0.65rem', lineHeight: '1.4', marginTop: '5px'}}>
+                        <p style={{margin: '4px 0'}}>&gt; HOSTILE VIRAL PACKETS ATTEMPT TO BREACH THE MAINFRAME BY TRAVERSING FROM LEFT TO RIGHT.</p>
+                        
+                        <div style={{display: 'flex', alignItems: 'center', gap: '15px', margin: '8px 0', background: 'rgba(0, 255, 255, 0.05)', padding: '8px', borderLeft: '2px solid var(--neon-cyan)'}}>
+                          <div style={{flex: 1}}>
+                            <p style={{margin: 0}}>&gt; THE SYNTAX IS THE CORE OF YOUR SYSTEM. EACH BREACH CAUSES PERMANENT INTEGRITY LOSS.</p>
+                          </div>
+                          {/* MINI SYNTAX VISUAL */}
+                          <div style={{width: '40px', height: '40px', position: 'relative', flexShrink: 0}}>
+                            <div style={{position: 'absolute', inset: 0, border: '1px solid var(--neon-blue)', borderRadius: '50%', opacity: 0.3}}></div>
+                            <div style={{position: 'absolute', inset: '5px', border: '2px solid var(--neon-cyan)', borderRadius: '50%', opacity: 0.6}}></div>
+                            <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '12px', height: '12px', background: 'var(--neon-cyan)', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)', boxShadow: '0 0 10px var(--neon-cyan)'}}></div>
+                          </div>
+                        </div>
+
+                        <div style={{margin: '8px 0'}}>
+                          <p style={{margin: '4px 0'}}>&gt; IF INTEGRITY DROPS TO ZERO, THE SYSTEM COLLAPSES. NEUTRALIZE ALL SIGNATURES IMMEDIATELY.</p>
+                          <div className="integrity-bar-small" style={{width: '100%', height: '8px', marginTop: '5px'}}>
+                            <div className="integrity-fill" style={{ width: '100%', background: 'linear-gradient(to right, #ff3300, #00ffcc)' }}></div>
+                          </div>
+                        </div>
                       </div>
                       <button className="blue-button" onClick={() => {
                         setShowCombatIntel(false);
                         AudioManager.getInstance().playUiClick();
                         game?.waveManager.startWave();
-                      }} style={{marginTop: '15px', padding: '10px 20px', fontSize: '0.7rem'}}>COMMENCE DEFENSE</button>
+                      }} style={{marginTop: '10px', padding: '8px 20px', fontSize: '0.7rem'}}>COMMENCE DEFENSE</button>
                   </div>
                 </div>
             </>
