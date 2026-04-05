@@ -366,7 +366,7 @@ function App() {
             <>
               <div className="tutorial-highlight" 
                 style={{
-                  top: 'calc(35% + 85px)', 
+                  top: 'calc(35% + 65px)', 
                   left: '50%', 
                   transform: 'translate(-50%, -50%)', 
                   width: '360px', 
