@@ -288,8 +288,8 @@ function App() {
                     </div>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
                       <div>
-                        <div style={{color: '#fff', fontWeight: 900}}>AMBIENT_HUM</div>
-                        <div style={{fontSize: '0.6rem', color: '#888'}}>Low-frequency Data Background</div>
+                        <div style={{color: '#fff', fontWeight: 900}}>MUSIC_ENGINE</div>
+                        <div style={{fontSize: '0.6rem', color: '#888'}}>Rhythmic Cyber-Soundtrack</div>
                       </div>
                       <button className="blue-button" onClick={toggleAmbient} style={{width: '120px'}}>{ambientMuted ? '[ DISABLED ]' : '[ ENABLED ]'}</button>
                     </div>

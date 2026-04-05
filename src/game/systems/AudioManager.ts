@@ -1,13 +1,16 @@
+import { MusicManager } from './MusicManager';
+
 export class AudioManager {
     private static instance: AudioManager;
     private ctx: AudioContext | null = null;
     private masterGain: GainNode | null = null;
     
     public isSfxMuted: boolean = false;
-    public isAmbientMuted: boolean = false; // RETAINED FOR SETTINGS COMPATIBILITY
+    public isAmbientMuted: boolean = false; 
 
     private constructor() {
         this.isSfxMuted = localStorage.getItem('syntax_sfx_muted') === 'true';
+        this.isAmbientMuted = localStorage.getItem('syntax_ambient_muted') === 'true';
     }
 
     public static getInstance(): AudioManager {
@@ -24,6 +27,12 @@ export class AudioManager {
             this.masterGain = this.ctx.createGain();
             this.masterGain.gain.value = 0.5;
             this.masterGain.connect(this.ctx.destination);
+
+            // Initialize Music Engine
+            MusicManager.getInstance().init(this.ctx, this.masterGain);
+            if (!this.isAmbientMuted) {
+                MusicManager.getInstance().start();
+            }
         } catch (e) {
             console.warn("AUDIO_INIT_FAILED:", e);
         }
@@ -34,13 +43,15 @@ export class AudioManager {
         if (this.ctx?.state === 'suspended') {
             await this.ctx.resume();
         }
+        if (!this.isAmbientMuted) {
+            MusicManager.getInstance().start();
+        }
     }
 
     public isSuspended(): boolean {
         return !this.ctx || this.ctx.state === 'suspended';
     }
 
-    // --- UNIVERSAL CLICK ---
     public playUiClick() {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
         const osc = this.ctx.createOscillator();
@@ -54,7 +65,6 @@ export class AudioManager {
         osc.start(); osc.stop(this.ctx.currentTime + 0.04);
     }
 
-    // --- BREACH SFX ---
     public playBreach() {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
         const osc = this.ctx.createOscillator();
@@ -68,7 +78,6 @@ export class AudioManager {
         osc.start(); osc.stop(this.ctx.currentTime + 0.3);
     }
 
-    // --- UNIQUE TURRET ACOUSTICS ---
     public playFirePulse() {
         if (!this.ctx || this.isSfxMuted) return;
         this.playProcedural(440, 220, 0.05, 'square', 0.08);
@@ -115,12 +124,24 @@ export class AudioManager {
         this.playProcedural(1200, 100, 0.15, 'triangle', 0.08);
     }
 
-    // --- SETTINGS ---
     public toggleSfx() {
         this.isSfxMuted = !this.isSfxMuted;
         localStorage.setItem('syntax_sfx_muted', String(this.isSfxMuted));
     }
 
-    public startAmbient() { /* REMOVED HUM AS REQUESTED */ }
-    public toggleAmbient() { /* PLACEHOLDER FOR UI COMPATIBILITY */ }
+    public toggleAmbient() {
+        this.isAmbientMuted = !this.isAmbientMuted;
+        localStorage.setItem('syntax_ambient_muted', String(this.isAmbientMuted));
+        if (this.isAmbientMuted) {
+            MusicManager.getInstance().stop();
+        } else {
+            MusicManager.getInstance().start();
+        }
+    }
+
+    public startAmbient() {
+        if (!this.isAmbientMuted) {
+            MusicManager.getInstance().start();
+        }
+    }
 }
