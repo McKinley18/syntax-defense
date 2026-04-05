@@ -27,7 +27,6 @@ function App() {
     const lockOrientation = async () => {
       try {
         const screenObj = window.screen as any;
-        // MANDATORY LANDSCAPE: Lock for ALL screens except MENU
         if (screen !== 'MENU' && screenObj.orientation?.lock) {
           await screenObj.orientation.lock('landscape');
         }
@@ -140,162 +139,151 @@ function App() {
     return false;
   };
 
-  const getSystemStatus = () => {
-    if (integrity > 15) return { text: "STATUS: STABLE", color: "#00ffcc" };
-    if (integrity > 5) return { text: "STATUS: DEGRADED", color: "#ffcc00" };
-    return { text: "STATUS: CRITICAL", color: "#ff3300" };
-  };
+  const status = integrity > 15 ? { text: "STATUS: STABLE", color: "#00ffcc" } : 
+                 integrity > 5 ? { text: "STATUS: DEGRADED", color: "#ffcc00" } : 
+                 { text: "STATUS: CRITICAL", color: "#ff3300" };
 
-  if (screen === 'MENU') {
-    return (
-      <div className="main-menu">
-        <div className="grid-background">
-          <div className="grid-lines"></div>
-          <div className="grid-glows">
-            <div className="glow-bit comet-right glow-1" style={{top: '15%', left: '-10%'}}></div>
-            <div className="glow-bit comet-left glow-2" style={{top: '40%', left: '110%'}}></div>
-            <div className="glow-bit comet-down glow-3" style={{top: '-10%', left: '45%'}}></div>
-            <div className="glow-bit comet-up glow-4" style={{top: '110%', left: '75%'}}></div>
-            <div className="grid-sweep"></div>
-          </div>
-        </div>
-        <div className="menu-content-centered">
-          <h1 className="menu-title-static">SYNTAX<br/>DEFENSE</h1>
-          <div className="menu-options-grid">
-            <button className="primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
-            <button onClick={() => setScreen('MODES')}>&gt; ADVANCED_PROTOCOLS</button>
-            <button onClick={loadGame}>&gt; RESTORE_SESSION</button>
-            <button onClick={() => setScreen('ENEMIES')}>&gt; VIRAL_DATABASE</button>
-            <button onClick={() => setScreen('TURRETS')}>&gt; DEFENSE_PROTOCOLS</button>
-            <button onClick={() => setScreen('ABOUT')}>&gt; SYSTEM_INFO</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (screen === 'MODES') {
-    return (
-      <div className="encyclopedia landscape-mode">
-        <div className="enc-header">[ SELECT_ADVANCED_PROTOCOL ]</div>
-        <div className="menu-options-grid" style={{maxWidth: '800px', marginTop: '20px'}}>
-          <button onClick={() => startNewGame('HARDCORE')} style={{color: '#ff3300', borderColor: '#ff3300'}}>&gt; HARDCORE_MODE</button>
-          <button onClick={() => startNewGame('SUDDEN_DEATH')} style={{color: '#ffcc00', borderColor: '#ffcc00'}}>&gt; SUDDEN_DEATH</button>
-          <button onClick={() => startNewGame('ENDLESS')}>&gt; ENDLESS_LOOP</button>
-          <button onClick={() => startNewGame('ECO_CHALLENGE')}>&gt; ECO_CHALLENGE</button>
-        </div>
-        <button className="back-btn" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button>
-      </div>
-    );
-  }
-
-  if (screen === 'ENEMIES' || screen === 'TURRETS' || screen === 'ABOUT') {
-    return (
-      <div className="encyclopedia landscape-mode">
-        <div className="enc-header">[ MAINFRAME_DATA_ARCHIVE // {screen} ]</div>
-        <div className="enc-content">
-          {screen === 'ABOUT' && (
-            <div className="info-hub">
-              <div className="info-tabs">
-                <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
-                <button className={infoTab === 'SYSTEM_MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM_MODES')}>MODES</button>
-                <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
-                <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
-                <button className={infoTab === 'DIAGNOSTICS' ? 'active' : ''} onClick={() => setInfoTab('DIAGNOSTICS')}>DATA</button>
-              </div>
-              <div className="info-body">
-                {infoTab === 'LORE' && (
-                  <div className="lore-text">
-                    <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p>
-                    <p>&gt;&gt; SYSTEM_EVOLUTION V1.8.0 DETECTED.</p>
-                    <p>1. [ REPAIR_KERNEL ]: BUY REPAIRS AT SCALING COSTS.</p>
-                    <p>2. [ DATA_LINKS ]: ADJACENT IDENTICAL TURRETS GAIN +10% DMG.</p>
-                    <p>3. [ PERFECT_WAVE ]: +2% INTEREST FOR ZERO LEAKS.</p>
-                  </div>
-                )}
-                {infoTab === 'SYSTEM_MODES' && (
-                  <div className="modes-text">
-                    <p>[ SUDDEN_DEATH ]: 1 INTEGRITY. NO REPAIRS.</p>
-                    <p>[ ECO_CHALLENGE ]: 0 TOKENS PER KILL. INTEREST ONLY.</p>
-                    <p>[ ENDLESS ]: NO LEVEL CAP. MAX SCALING.</p>
-                  </div>
-                )}
-                {infoTab === 'THREATS' && (
-                  <div className="threats-text">
-                    <p>[ ELITES ]: 3.5x HP MINI-BOSSES. 2.5x REWARD.</p>
-                    <p>[ GHOST_PACKETS ]: INVISIBLE UNLESS REVEALED BY FROST/TESLA.</p>
-                  </div>
-                )}
-                {infoTab === 'LOGIC' && (
-                  <div className="logic-text">
-                    <p>[ OVERCLOCKING ]: TAP PLACED TURRETS TO UPGRADE (MAX LVL 3).</p>
-                    <p>[ INTEREST ]: 10% BASE. +2% PER PERFECT WAVE (MAX 20%).</p>
-                  </div>
-                )}
-                {infoTab === 'DIAGNOSTICS' && (
-                  <div className="diag-text">
-                    <div>BUILD: v1.8.0 [MAIN_EVOLUTION]</div>
-                    <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
-                    <div className="blink">READY...</div>
-                  </div>
-                )}
-              </div>
+  const renderContent = () => {
+    if (screen === 'MENU') {
+      return (
+        <div className="main-menu">
+          <div className="grid-background">
+            <div className="grid-lines"></div>
+            <div className="grid-glows">
+              <div className="glow-bit comet-right glow-1" style={{top: '15%', left: '-10%'}}></div>
+              <div className="glow-bit comet-left glow-2" style={{top: '40%', left: '110%'}}></div>
+              <div className="glow-bit comet-down glow-3" style={{top: '-10%', left: '45%'}}></div>
+              <div className="glow-bit comet-up glow-4" style={{top: '110%', left: '75%'}}></div>
+              <div className="grid-sweep"></div>
             </div>
-          )}
-          {screen === 'ENEMIES' && (
-            <div className="visual-grid">
-              {Object.values(VISUAL_REGISTRY).map(config => (
-                <div key={config.name} className="visual-card-large">
-                  <div className="card-visual-box"><div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div></div>
-                  <div className="card-detail-box">
-                    <div className="label">{config.name}</div>
-                    <div className="stats">HP: {config.baseHp} // REWARD: {config.reward}c</div>
-                    <div className="desc">{config.priority === 'LOW' ? 'SWARM_UNIT' : config.priority === 'MED' ? 'STANDARD_THREAT' : 'HEAVY_DATA_LOAD'}</div>
-                  </div>
+          </div>
+          <div className="menu-content-centered">
+            <h1 className="menu-title-static">SYNTAX<br/>DEFENSE</h1>
+            <div className="menu-options-grid">
+              <button className="primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
+              <button onClick={() => setScreen('MODES')}>&gt; ADVANCED_PROTOCOLS</button>
+              <button onClick={loadGame}>&gt; RESTORE_SESSION</button>
+              <button onClick={() => setScreen('ENEMIES')}>&gt; VIRAL_DATABASE</button>
+              <button onClick={() => setScreen('TURRETS')}>&gt; DEFENSE_PROTOCOLS</button>
+              <button onClick={() => setScreen('ABOUT')}>&gt; SYSTEM_INFO</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (screen === 'MODES') {
+      return (
+        <div className="encyclopedia">
+          <div className="enc-header">[ SELECT_ADVANCED_PROTOCOL ]</div>
+          <div className="menu-options-grid" style={{maxWidth: '800px', marginTop: '20px'}}>
+            <button onClick={() => startNewGame('HARDCORE')} style={{color: '#ff3300', borderColor: '#ff3300'}}>&gt; HARDCORE_MODE</button>
+            <button onClick={() => startNewGame('SUDDEN_DEATH')} style={{color: '#ffcc00', borderColor: '#ffcc00'}}>&gt; SUDDEN_DEATH</button>
+            <button onClick={() => startNewGame('ENDLESS')}>&gt; ENDLESS_LOOP</button>
+            <button onClick={() => startNewGame('ECO_CHALLENGE')}>&gt; ECO_CHALLENGE</button>
+          </div>
+          <button className="back-btn" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button>
+        </div>
+      );
+    }
+
+    if (screen === 'ENEMIES' || screen === 'TURRETS' || screen === 'ABOUT') {
+      return (
+        <div className="encyclopedia">
+          <div className="enc-header">[ MAINFRAME_DATA_ARCHIVE // {screen} ]</div>
+          <div className="enc-content">
+            {screen === 'ABOUT' && (
+              <div className="info-hub">
+                <div className="info-tabs">
+                  <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
+                  <button className={infoTab === 'SYSTEM_MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM_MODES')}>MODES</button>
+                  <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
+                  <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
+                  <button className={infoTab === 'DIAGNOSTICS' ? 'active' : ''} onClick={() => setInfoTab('DIAGNOSTICS')}>DATA</button>
                 </div>
-              ))}
-            </div>
-          )}
-          {screen === 'TURRETS' && (
-            <div className="visual-grid">
-              {[0, 1, 2, 3, 4].map(id => {
-                const type = id as TowerType;
-                const cfg = TOWER_CONFIGS[type];
-                return (
-                  <div key={cfg.name} className="visual-card-large" data-type={type}>
-                    <div className="card-visual-box">
-                      <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
-                        <div className="mini-base"></div>
-                        <div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+                <div className="info-body">
+                  {infoTab === 'LORE' && (
+                    <div className="lore-text">
+                      <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p>
+                      <p>&gt;&gt; SYSTEM_EVOLUTION V1.8.0 DETECTED.</p>
+                      <p>1. [ REPAIR_KERNEL ]: BUY REPAIRS AT SCALING COSTS.</p>
+                      <p>2. [ DATA_LINKS ]: ADJACENT IDENTICAL TURRETS GAIN +10% DMG.</p>
+                      <p>3. [ PERFECT_WAVE ]: +2% INTEREST FOR ZERO LEAKS.</p>
+                    </div>
+                  )}
+                  {infoTab === 'SYSTEM_MODES' && (
+                    <div className="modes-text">
+                      <p>[ SUDDEN_DEATH ]: 1 INTEGRITY. NO REPAIRS.</p>
+                      <p>[ ECO_CHALLENGE ]: 0 TOKENS PER KILL. INTEREST ONLY.</p>
+                      <p>[ ENDLESS ]: NO LEVEL CAP. MAX SCALING.</p>
+                    </div>
+                  )}
+                  {infoTab === 'THREATS' && (
+                    <div className="threats-text">
+                      <p>[ ELITES ]: 3.5x HP MINI-BOSSES. 2.5x REWARD.</p>
+                      <p>[ GHOST_PACKETS ]: INVISIBLE UNLESS REVEALED BY FROST/TESLA.</p>
+                    </div>
+                  )}
+                  {infoTab === 'LOGIC' && (
+                    <div className="logic-text">
+                      <p>[ OVERCLOCKING ]: TAP PLACED TURRETS TO UPGRADE (MAX LVL 3).</p>
+                      <p>[ INTEREST ]: 10% BASE. +2% PER PERFECT WAVE (MAX 20%).</p>
+                    </div>
+                  )}
+                  {infoTab === 'DIAGNOSTICS' && (
+                    <div className="diag-text">
+                      <div>BUILD: v1.8.0 [MAIN_EVOLUTION]</div>
+                      <div>STATUS: {integrity > 5 ? 'STABLE' : 'CRITICAL'}</div>
+                      <div className="blink">READY...</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {screen === 'ENEMIES' && (
+              <div className="visual-grid">
+                {Object.values(VISUAL_REGISTRY).map(config => (
+                  <div key={config.name} className="visual-card-large">
+                    <div className="card-visual-box"><div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div></div>
+                    <div className="card-detail-box">
+                      <div className="label">{config.name}</div>
+                      <div className="stats">HP: {config.baseHp} // REWARD: {config.reward}c</div>
+                      <div className="desc">{config.priority === 'LOW' ? 'SWARM_UNIT' : config.priority === 'MED' ? 'STANDARD_THREAT' : 'HEAVY_DATA_LOAD'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {screen === 'TURRETS' && (
+              <div className="visual-grid">
+                {[0, 1, 2, 3, 4].map(id => {
+                  const type = id as TowerType;
+                  const cfg = TOWER_CONFIGS[type];
+                  return (
+                    <div key={cfg.name} className="visual-card-large">
+                      <div className="card-visual-box">
+                        <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
+                          <div className="mini-base"></div>
+                          <div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+                        </div>
+                      </div>
+                      <div className="card-detail-box">
+                        <div className="label">{cfg.name}</div>
+                        <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div>
+                        <div className="desc">{type === 0 ? 'RAPID_SUPPRESSION' : type === 1 ? 'DATA_FREEZE' : type === 2 ? 'AOE_DISCHARGE' : type === 3 ? 'MASSIVE_PENETRATION' : 'LIGHTNING_CHAIN'}</div>
                       </div>
                     </div>
-                    <div className="card-detail-box">
-                      <div className="label">{cfg.name}</div>
-                      <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div>
-                      <div className="desc">{type === 0 ? 'RAPID_SUPPRESSION' : type === 1 ? 'DATA_FREEZE' : type === 2 ? 'AOE_DISCHARGE' : type === 3 ? 'MASSIVE_PENETRATION' : 'LIGHTNING_CHAIN'}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <button className="back-btn" onClick={() => setScreen('MENU')}>[ TERMINATE ]</button>
         </div>
-        <button className="back-btn" onClick={() => setScreen('MENU')}>[ TERMINATE ]</button>
-      </div>
-    );
-  }
+      );
+    }
 
-  const status = getSystemStatus();
-
-  return (
-    <div className="game-wrapper">
-      <div className="orientation-warning">
-        <div className="warning-icon">🔄</div>
-        <div className="warning-text">SYSTEM_DISPLAY_OPTIMIZATION_REQUIRED</div>
-        <div className="warning-subtext">[ PLEASE_ROTATE_DEVICE_TO_LANDSCAPE_TO_INITIALIZE_MAINFRAME ]</div>
-      </div>
-      <div id="game-container"></div>
-      
+    return (
       <div className="game-overlay">
         {showTutorial && (
           <div className="pause-overlay tutorial-popup">
@@ -314,7 +302,6 @@ function App() {
             </div>
           </div>
         )}
-
         {isGameOver && (
           <div className="pause-overlay game-over">
             <div className="pause-content">
@@ -323,7 +310,6 @@ function App() {
             </div>
           </div>
         )}
-
         {isPaused && !isGameOver && (
           <div className="pause-overlay">
             <div className="pause-content">
@@ -336,7 +322,6 @@ function App() {
             </div>
           </div>
         )}
-
         {!isWaveActive && !isPaused && (
           <div className="pre-wave-overlay">
             <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
@@ -358,20 +343,14 @@ function App() {
             <button className="massive-exec-button" onClick={executeWave}>[ EXECUTE_PROTOCOL ]</button>
           </div>
         )}
-
         <div className="tactical-dashboard">
           <div className="dashboard-left">
             <button className="exec-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
             <div className="wave-label">{waveName} // LVL_{wave}</div>
-            <button 
-              className="repair-button" 
-              onClick={repairKernel} 
-              disabled={credits < repairCost || integrity >= 20 || gameMode === 'SUDDEN_DEATH'}
-            >
+            <button className="repair-button" onClick={repairKernel} disabled={credits < repairCost || integrity >= 20 || gameMode === 'SUDDEN_DEATH'}>
               [ REPAIR: {repairCost}c ]
             </button>
           </div>
-
           <div className="dashboard-center">
             <div className="turret-grid-horizontal">
               {[0, 1, 2, 3, 4].map(type => {
@@ -379,47 +358,38 @@ function App() {
                 const unlocked = isUnlocked(type as TowerType);
                 const cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
                 const canAfford = credits >= cost;
-                
                 return (
-                  <div 
-                    key={type} 
-                    className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} 
-                    onClick={() => unlocked && selectTurret(type)}
-                  >
-                    {!unlocked ? (
-                      <div className="lock-icon">🔒</div>
-                    ) : (
-                      <div className="slim-card-info">
-                        <span className="name">{cfg.name}</span>
-                        <span className="stats">DMG:{cfg.damage}</span>
-                        <span className="cost">{cost}c</span>
-                      </div>
-                    )}
+                  <div key={type} className={`slim-turret-card ${selectedTurret === type ? 'active' : ''} ${!canAfford ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} onClick={() => unlocked && selectTurret(type)}>
+                    {!unlocked ? <div className="lock-icon">🔒</div> : <div className="slim-card-info"><span className="name">{cfg.name}</span><span className="stats">DMG:{cfg.damage}</span><span className="cost">{cost}c</span></div>}
                   </div>
                 );
               })}
             </div>
             <div className="consumable-bar">
-              <button className="item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>
-                [ DATA_PURGE: 1000c ]
-              </button>
+              <button className="item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>[ DATA_PURGE: 1000c ]</button>
             </div>
           </div>
-
           <div className="dashboard-right">
-            <div className="stat-row">
-              <span className="label">TOKENS:</span>
-              <span className="credits-value">{credits}</span>
-            </div>
+            <div className="stat-row"><span className="label">TOKENS:</span><span className="credits-value">{credits}</span></div>
             <div className="integrity-stack">
               <div className="system-status-label" style={{color: status.color}}>{status.text}</div>
-              <div className="integrity-bar-small">
-                <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div>
-              </div>
+              <div className="integrity-bar-small"><div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div></div>
             </div>
           </div>
         </div>
       </div>
+    );
+  };
+
+  return (
+    <div className="game-wrapper">
+      <div className="orientation-warning">
+        <div className="warning-icon">🔄</div>
+        <div className="warning-text">SYSTEM_DISPLAY_OPTIMIZATION_REQUIRED</div>
+        <div className="warning-subtext">[ PLEASE_ROTATE_DEVICE_TO_LANDSCAPE_TO_INITIALIZE_MAINFRAME ]</div>
+      </div>
+      <div id="game-container"></div>
+      {renderContent()}
     </div>
   );
 }
