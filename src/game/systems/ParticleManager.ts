@@ -90,7 +90,7 @@ export class ParticleManager {
         });
     }
 public spawnHitMarker(x: number, y: number, amount: number) {
-    const marker = new HitMarker(x, y, amount);
+    const marker = HitMarker.create(x, y, amount);
     this.game.effectLayer.addChild(marker.container);
     this.particles.push({
         sprite: marker.container as any,
@@ -99,13 +99,25 @@ public spawnHitMarker(x: number, y: number, amount: number) {
     } as any);
 }
 
-public update(delta: number) {
-    for (let i = this.particles.length - 1; i >= 0; i--) {
+public addEffect(graphics: PIXI.Graphics, frames: number) {
+    this.particles.push({
+        sprite: graphics,
+        vx: 0,
+        vy: 0,
+        life: frames,
+        maxLife: frames,
+        fade: true,
+        scale: false
+    });
+}
+
+public update(delta: number) {    for (let i = this.particles.length - 1; i >= 0; i--) {
         const p = this.particles[i] as any;
 
         if (p.marker) {
             if (!p.marker.update(delta)) {
                 this.game.effectLayer.removeChild(p.sprite);
+                HitMarker.release(p.marker);
                 this.particles.splice(i, 1);
             }
             continue;

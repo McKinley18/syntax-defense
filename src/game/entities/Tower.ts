@@ -234,7 +234,9 @@ export class Tower {
             g.stroke({ width: 3, color: this.config.color, alpha: 0.6 });
         }
         GameContainer.instance!.effectLayer.addChild(g);
-        setTimeout(() => g.destroy(), 60);
+        
+        // Add to ParticleManager for synced lifecycle
+        GameContainer.instance!.particleManager.addEffect(g, 6); // 6 frames = ~100ms
     }
 
     private drawLightning(x1: number, y1: number, x2: number, y2: number) {
@@ -243,7 +245,9 @@ export class Tower {
         g.stroke({ width: 3, color: 0xffffff, alpha: 0.8 });
         g.stroke({ width: 6, color: this.config.color, alpha: 0.3 });
         GameContainer.instance!.effectLayer.addChild(g);
-        setTimeout(() => g.destroy(), 80);
+        
+        // Add to ParticleManager for synced lifecycle
+        GameContainer.instance!.particleManager.addEffect(g, 8); // 8 frames = ~130ms
     }
 
     public upgrade(): boolean {

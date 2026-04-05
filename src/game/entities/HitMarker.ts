@@ -5,13 +5,25 @@ export class HitMarker {
     private text: PIXI.Text;
     private life: number = 60; // Frames
 
-    constructor(x: number, y: number, amount: number) {
-        this.container = new PIXI.Container();
-        this.container.x = x;
-        this.container.y = y;
+    private static pool: HitMarker[] = [];
 
+    public static create(x: number, y: number, amount: number): HitMarker {
+        let marker = this.pool.pop();
+        if (!marker) {
+            marker = new HitMarker();
+        }
+        marker.reset(x, y, amount);
+        return marker;
+    }
+
+    public static release(marker: HitMarker) {
+        HitMarker.pool.push(marker);
+    }
+
+    private constructor() {
+        this.container = new PIXI.Container();
         this.text = new PIXI.Text({
-            text: `-${Math.floor(amount)}`,
+            text: "",
             style: {
                 fontFamily: 'Courier New',
                 fontSize: 14,
@@ -22,6 +34,14 @@ export class HitMarker {
         });
         this.text.anchor.set(0.5);
         this.container.addChild(this.text);
+    }
+
+    private reset(x: number, y: number, amount: number) {
+        this.container.x = x;
+        this.container.y = y;
+        this.text.text = `-${Math.floor(amount)}`;
+        this.life = 60;
+        this.container.alpha = 1;
     }
 
     public update(delta: number): boolean {
