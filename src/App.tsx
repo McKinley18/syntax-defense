@@ -24,6 +24,7 @@ function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
 
+  // MANDATORY LANDSCAPE LOCK
   useEffect(() => {
     const lockOrientation = async () => {
       try {
@@ -36,6 +37,7 @@ function App() {
     lockOrientation();
   }, [screen]);
 
+  // ENGINE INITIALIZATION
   useEffect(() => {
     if (screen === 'GAME' && !game && !isInitializing) {
       async function init() {
@@ -139,16 +141,16 @@ function App() {
     return false;
   };
 
-  const statusColor = integrity > 15 ? "#00ffcc" : integrity > 5 ? "#ffcc00" : "#ff3300";
   const statusText = integrity > 15 ? "STATUS: STABLE" : integrity > 5 ? "STATUS: DEGRADED" : "STATUS: CRITICAL";
+  const statusColor = integrity > 15 ? "#00ffcc" : integrity > 5 ? "#ffcc00" : "#ff3300";
 
+  // LOGO GLITCH ENGINE
   const [glitchIndex, setGlitchIndex] = useState(-1);
   const [isDistorted, setIsDistorted] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // 15% CHANCE EVERY 10 SECONDS
-      if (Math.random() < 0.15) {
+      if (Math.random() < 0.1) {
         setGlitchIndex(Math.floor(Math.random() * 13)); 
         setIsDistorted(true);
         setTimeout(() => {
@@ -165,9 +167,10 @@ function App() {
       <div className="orientation-warning"><div className="warning-icon">🔄</div><div className="warning-text">Please rotate your device</div></div>
       <div id="game-container"></div>
 
+      {/* --- HOME MENU --- */}
       {screen === 'MENU' && (
-        <div className="main-menu">
-          <div className={`grid-background ${isDistorted ? 'distorted' : ''}`}><div className="grid-lines"></div><div className="grid-glows"><div className="glow-bit comet-right glow-1" style={{top: '10%'}}></div><div className="glow-bit comet-left glow-2" style={{top: '30%'}}></div><div className="glow-bit comet-down glow-3" style={{left: '40%'}}></div><div className="glow-bit comet-up glow-4" style={{left: '70%'}}></div><div className="grid-sweep"></div></div></div>
+        <div className="main-menu ui-layer">
+          <div className={`grid-background ${isDistorted ? 'distorted' : ''}`}><div className="grid-lines"></div><div className="grid-glows"><div className="glow-bit comet-right glow-1" style={{top: '15%'}}></div><div className="glow-bit comet-left glow-2" style={{top: '45%'}}></div><div className="glow-bit comet-down glow-3" style={{left: '30%'}}></div><div className="glow-bit comet-up glow-4" style={{left: '80%'}}></div><div className="grid-sweep"></div></div></div>
           <div className="menu-content-centered">
             <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''}`}>
               {"SYNTAX".split('').map((c, i) => ( <span key={i} style={{ color: glitchIndex === i ? 'var(--neon-red)' : 'inherit' }}>{c}</span> ))}
@@ -186,8 +189,9 @@ function App() {
         </div>
       )}
 
+      {/* --- ADVANCED MODES --- */}
       {screen === 'MODES' && (
-        <div className="encyclopedia">
+        <div className="encyclopedia ui-layer">
           <div className="enc-header">[ SELECT_ADVANCED_PROTOCOL ]</div>
           <div className="menu-options-grid" style={{marginTop: '20px'}}>
             <button className="cyan-menu-btn" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>&gt; HARDCORE_MODE</button>
@@ -199,8 +203,9 @@ function App() {
         </div>
       )}
 
+      {/* --- DATABASES --- */}
       {(screen === 'ENEMIES' || screen === 'TURRETS' || screen === 'ABOUT') && (
-        <div className="encyclopedia">
+        <div className="encyclopedia ui-layer">
           <div className="enc-header">[ MAINFRAME_DATA_ARCHIVE // {screen} ]</div>
           <div className="enc-content">
             {screen === 'ABOUT' && (
@@ -217,7 +222,7 @@ function App() {
                   {infoTab === 'SYSTEM_MODES' && <div className="manual-text"><p>[ SUDDEN_DEATH ]: 1 INTEGRITY. NO REPAIRS.</p><p>[ ECO_CHALLENGE ]: INTEREST ONLY INCOME.</p></div>}
                   {infoTab === 'THREATS' && <div className="manual-text"><p>[ ELITES ]: 3.5x HP MINI-BOSSES.</p><p>[ GHOST_PACKETS ]: INVISIBLE UNLESS REVEALED.</p></div>}
                   {infoTab === 'LOGIC' && <div className="manual-text"><p>[ OVERCLOCKING ]: TAP PLACED TURRETS TO UPGRADE.</p></div>}
-                  {infoTab === 'DIAGNOSTICS' && <div className="manual-text"><div>BUILD: v1.8.8 [PRIME_RESTORE]</div><div>STATUS: {statusText}</div></div>}
+                  {infoTab === 'DIAGNOSTICS' && <div className="manual-text"><div>BUILD: v1.8.9 [PRIME_RESTORE]</div><div>STATUS: {statusText}</div></div>}
                 </div>
               </div>
             )}
@@ -249,10 +254,11 @@ function App() {
         </div>
       )}
 
+      {/* --- IN-GAME LAYERS --- */}
       {screen === 'GAME' && !game && <div className="loading-overlay">INITIALIZING_MAINFRAME...</div>}
 
       {screen === 'GAME' && game && (
-        <div className="game-overlay-active">
+        <div className="game-overlay-active ui-layer">
           {showTutorial && (
             <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">SYSTEM_INITIALIZATION</h2><div className="game-summary"><p>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p><p>&gt; NODES DE-MATERIALIZE AFTER EVERY WAVE.</p></div><div className="pause-options"><button className="blue-button" onClick={() => dismissTutorial(false)}>[ GOT IT ]</button></div></div></div>
           )}
