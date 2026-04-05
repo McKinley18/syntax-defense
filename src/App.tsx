@@ -147,18 +147,24 @@ function App() {
                  { text: "STATUS: CRITICAL", color: "#ff3300" };
 
   const [glitchIndex, setGlitchIndex] = useState(-1);
+  const [isDistorted, setIsDistorted] = useState(false);
+
   useEffect(() => {
-    // SYNC WITH 4s TERMINAL FLICKER
     const triggerGlitch = () => {
       setGlitchIndex(Math.floor(Math.random() * 13));
-      setTimeout(() => setGlitchIndex(-1), 150);
+      setIsDistorted(true);
+      setTimeout(() => {
+        setGlitchIndex(-1);
+        setIsDistorted(false);
+      }, 180); // Duration of the "malfunction"
     };
 
     const interval = setInterval(() => {
-      // First dip at 0.8s (20%)
-      setTimeout(triggerGlitch, 800);
-      // Second dip at 2.5s (63%)
-      setTimeout(triggerGlitch, 2520);
+      // 35% CHANCE to malfunction this 4s cycle
+      if (Math.random() < 0.35) {
+        // Trigger 200ms BEFORE the first flicker dip (800ms mark)
+        setTimeout(triggerGlitch, 600);
+      }
     }, 4000);
 
     return () => clearInterval(interval);
@@ -170,7 +176,7 @@ function App() {
       const title2 = "DEFENSE".split('');
       return (
         <div className="main-menu">
-          <div className="grid-background">
+          <div className={`grid-background ${isDistorted ? 'distorted' : ''}`}>
             <div className="grid-lines"></div>
             <div className="grid-glows">
               <div className="glow-bit comet-right glow-1" style={{top: '15%', left: '-10%'}}></div>
@@ -181,13 +187,13 @@ function App() {
             </div>
           </div>
           <div className="menu-content-centered">
-            <h1 className="menu-title-static">
+            <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''}`}>
               {title1.map((c, i) => (
-                <span key={i} style={{ color: glitchIndex === i ? '#ff3300' : 'inherit' }}>{c}</span>
+                <span key={i} style={{ color: glitchIndex === i ? 'var(--neon-red)' : 'inherit' }}>{c}</span>
               ))}
               <br/>
               {title2.map((c, i) => (
-                <span key={i+6} style={{ color: glitchIndex === (i+6) ? '#ff3300' : 'inherit' }}>{c}</span>
+                <span key={i+6} style={{ color: glitchIndex === (i+6) ? 'var(--neon-red)' : 'inherit' }}>{c}</span>
               ))}
             </h1>
             <div className="menu-options-grid">
