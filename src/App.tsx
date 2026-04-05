@@ -60,7 +60,7 @@ function App() {
          setShowTutorialComplete(true);
          setIsTutorialActive(false);
          setTutorialStep(0);
-       }, 1500); // 1.5s delay to see the destruction
+       }, 1500); 
     }
   }, [isTutorialActive, gamePhase, tutorialStep, isWaveActive, game]);
 
@@ -326,7 +326,6 @@ function App() {
           </div>
           {tutorialStep === 1 && !showRadiusExplanation && (
             <>
-              {/* TARGET: Pulse MG Card - Top, Left, Bottom are perfect. Extended width to 175px. */}
               <div className="tutorial-highlight" 
                 style={{bottom: '12px', left: '215px', width: '175px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
                 onClick={() => selectTurret(0)}
@@ -357,7 +356,6 @@ function App() {
           )}
           {tutorialStep === 2 && !showRadiusExplanation && (
             <>
-              {/* TARGET: Tile (5, 6) */}
               <div className="tutorial-highlight" style={{top: '144px', left: '120px', width: '24px', height: '24px', borderRadius: '0', pointerEvents: 'none'}}></div>
               <div className="tutorial-pointer" style={{top: '55px', left: '57px', width: '150px', pointerEvents: 'none', flexDirection: 'column'}}>
                 <span>DEPLOY NODE NEAR PATH</span>
@@ -393,7 +391,6 @@ function App() {
                           <div style={{flex: 1}}>
                             <p style={{margin: 0}}>&gt; THE SYNTAX IS THE CORE OF YOUR SYSTEM. EACH BREACH CAUSES PERMANENT INTEGRITY LOSS.</p>
                           </div>
-                          {/* MINI SYNTAX VISUAL */}
                           <div style={{width: '40px', height: '40px', position: 'relative', flexShrink: 0}}>
                             <div style={{position: 'absolute', inset: 0, border: '1px solid var(--neon-blue)', borderRadius: '50%', opacity: 0.3}}></div>
                             <div style={{position: 'absolute', inset: '5px', border: '2px solid var(--neon-cyan)', borderRadius: '50%', opacity: 0.6}}></div>
@@ -403,7 +400,7 @@ function App() {
 
                         <div style={{margin: '8px 0'}}>
                           <p style={{margin: '4px 0'}}>&gt; IF INTEGRITY DROPS TO ZERO, THE SYSTEM COLLAPSES. NEUTRALIZE ALL SIGNATURES IMMEDIATELY.</p>
-                          <div className="integrity-bar-small" style={{width: '100%', height: '10px', marginTop: '5px'}}>
+                          <div className="integrity-bar-small" style={{width: '100%', height: '100%', marginTop: '5px'}}>
                             <div className="integrity-fill" style={{ width: '100%', background: sysStatusColor }}></div>
                           </div>
                         </div>
@@ -623,7 +620,7 @@ function App() {
                 <button className="blue-button" onClick={() => {
                   localStorage.setItem('syntax_tutorial_done', 'true');
                   setShowTutorialComplete(false);
-                  quitToMenu(); 
+                  GameStateManager.getInstance().resetGame('STANDARD');
                   startNewGame('STANDARD');
                 }} style={{marginTop: '20px', width: '100%', padding: '12px'}}>EXIT TUTORIAL & START REAL GAME</button>
               </div>
@@ -632,7 +629,7 @@ function App() {
           {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={() => setScreen('MENU')}>RETURN TO ROOT</button></div></div>}
           {isPaused && integrity > 0 && !isVictorious && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>RESUME</button><button className="blue-button" onClick={saveAndQuit}>SAVE & EXIT</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>ABANDON</button></div></div></div>}
           
-          {gamePhase === 'PREP' && !isPaused && integrity > 0 && (!isTutorialActive || tutorialStep === 3) && (
+          {gamePhase === 'PREP' && !isPaused && integrity > 0 && !showTutorial && !showTutorialComplete && (!isTutorialActive || tutorialStep === 3) && (
             <div className="pre-wave-overlay">
               {wave > 1 && (
                 <div className="wave-summary-ledger" style={{width: '100%', marginBottom: '10px', borderBottom: '1px solid #333', paddingBottom: '15px'}}>
