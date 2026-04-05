@@ -32,12 +32,12 @@ export const VISUAL_REGISTRY: Record<EnemyType, VisualConfig> = {
     [EnemyType.STRIDER]: {
         name: 'STRIDER',
         shape: 'triangle',
-        color: 0xff00ff,
-        colorHex: '#ff00ff',
-        priority: 'MED',
-        baseHp: 100,
+        color: 0xaa00ff,
+        colorHex: '#aa00ff',
+        priority: 'MEDIUM',
+        baseHp: 150,
         speed: 1.2,
-        reward: 50
+        reward: 25
     },
     [EnemyType.BEHEMOTH]: {
         name: 'BEHEMOTH',

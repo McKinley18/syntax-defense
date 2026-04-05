@@ -102,7 +102,9 @@ html, body, #root {
 .main-menu { 
   width: 100vw; height: 100vh; 
   display: flex; flex-direction: column; 
-  justify-content: center; align-items: center; 
+  justify-content: flex-start; /* PULL TO TOP */
+  align-items: center; 
+  padding-top: 15vh; /* OFFSET FROM TOP */
   perspective: 1500px; 
 }
 .menu-content-centered { 
