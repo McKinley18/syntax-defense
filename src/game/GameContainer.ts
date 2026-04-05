@@ -81,6 +81,10 @@ export class GameContainer {
         this.waveManager = new WaveManager(this);
         this.inputHandler = new InputHandler(this);
 
+        // INITIALIZE KERNEL
+        this.kernel = new Kernel(0, 0);
+        this.towerLayer.addChild(this.kernel.container);
+
         // SYNC WITH STATE MANAGER (FOR RESTORED SESSIONS)
         this.waveManager.prepareWave(false); 
         
