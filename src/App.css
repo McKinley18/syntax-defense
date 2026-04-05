@@ -257,6 +257,7 @@ html, body, #root {
   background: rgba(0, 0, 0, 0.9); border: 2px solid var(--neon-blue); padding: 12px;
   min-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 10px;
   pointer-events: auto; z-index: 50;
+  max-height: 85vh; overflow-y: auto;
 }
 .intel-card-modern { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 80px; text-align: center; }
 .intel-label { font-size: 0.7rem; color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
