@@ -114,19 +114,25 @@ export class Enemy {
         }
 
         const target = this.pathPoints[this.currentPointIndex + 1];
-        const dx = target.x - this.container.x;
-        const dy = target.y - this.container.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
+        const vec = GameContainer.instance!.pathManager.pathVectors[this.currentPointIndex];
         const moveStep = this.speed * delta;
+        
+        let reached = false;
+        if (vec.dx !== 0) {
+            if (vec.dx > 0 && this.container.x + moveStep >= target.x) reached = true;
+            else if (vec.dx < 0 && this.container.x - moveStep <= target.x) reached = true;
+        } else {
+            if (vec.dy > 0 && this.container.y + moveStep >= target.y) reached = true;
+            else if (vec.dy < 0 && this.container.y - moveStep <= target.y) reached = true;
+        }
 
-        if (dist <= moveStep) {
+        if (reached) {
             this.container.x = target.x;
             this.container.y = target.y;
             this.currentPointIndex++;
         } else {
-            const ratio = moveStep / dist;
-            this.container.x += dx * ratio;
-            this.container.y += dy * ratio;
+            this.container.x += vec.dx * moveStep;
+            this.container.y += vec.dy * moveStep;
         }
         
         this.totalProgress += moveStep;

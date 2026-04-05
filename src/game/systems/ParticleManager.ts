@@ -16,13 +16,33 @@ export class ParticleManager {
     private particles: Particle[] = [];
     private game: GameContainer;
     public isThrottled: boolean = false;
+    private static graphicsPool: PIXI.Graphics[] = [];
 
     constructor(game: GameContainer) {
         this.game = game;
     }
 
+    private getGraphics(): PIXI.Graphics {
+        const g = ParticleManager.graphicsPool.pop();
+        if (g) {
+            g.clear();
+            g.alpha = 1;
+            g.scale.set(1);
+            return g;
+        }
+        return new PIXI.Graphics();
+    }
+
+    private releaseGraphics(g: PIXI.Graphics) {
+        if (ParticleManager.graphicsPool.length < 200) {
+            ParticleManager.graphicsPool.push(g);
+        } else {
+            g.destroy();
+        }
+    }
+
     public spawnDust(x: number, y: number) {
-        const graphics = new PIXI.Graphics();
+        const graphics = this.getGraphics();
         graphics.circle(0, 0, 2 + Math.random() * 2);
         graphics.fill({ color: 0x555555, alpha: 0.6 });
         
@@ -45,7 +65,7 @@ export class ParticleManager {
         if (this.particles.length > (this.isThrottled ? 50 : 150)) return; 
         const count = this.isThrottled ? 3 : 8;
         for (let i = 0; i < count; i++) {
-            const graphics = new PIXI.Graphics();
+            const graphics = this.getGraphics();
             graphics.circle(0, 0, (4 + Math.random() * 8) * scale);
             const color = Math.random() > 0.5 ? 0x00ffff : 0x0066ff;
             graphics.fill({ color, alpha: 0.8 });
@@ -140,7 +160,11 @@ public update(delta: number) {    for (let i = this.particles.length - 1; i >= 0
 
             if (p.life <= 0) {
                 this.game.effectLayer.removeChild(p.sprite);
-                p.sprite.destroy();
+                if (p.sprite instanceof PIXI.Graphics) {
+                    this.releaseGraphics(p.sprite);
+                } else {
+                    p.sprite.destroy();
+                }
                 this.particles.splice(i, 1);
             }
         }

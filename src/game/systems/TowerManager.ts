@@ -81,7 +81,14 @@ export class TowerManager {
     private getAdjustedCost(type: TowerType): number {
         const state = GameStateManager.getInstance();
         const base = TOWER_CONFIGS[type].cost;
-        let cost = state.gameMode === 'HARDCORE' ? Math.floor(base * 1.5) : base;
+        
+        // SUPPLY & DEMAND PRICING
+        const count = this.getTowerCount(type);
+        const supplyMultiplier = count >= 4 ? 1.15 : 1.0;
+        
+        let cost = Math.floor(base * supplyMultiplier);
+        if (state.gameMode === 'HARDCORE') cost = Math.floor(cost * 1.5);
+        
         // SMART LOGIC: Recovery pricing
         if (state.integrity < 10 && state.gameMode !== 'SUDDEN_DEATH') cost = Math.floor(cost * 0.85);
         return cost;

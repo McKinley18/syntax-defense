@@ -18,6 +18,8 @@ export class GameStateManager {
     public totalXP: number = 0;
     public architectRank: string = "INITIATE";
 
+    public lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
+
     private integrityLostThisWave: boolean = false;
 
     private constructor() {
@@ -31,9 +33,14 @@ export class GameStateManager {
         return GameStateManager.instance;
     }
 
-    public addCredits(amount: number) {
-        if (this.gameMode === 'ECO_CHALLENGE' && amount > 0) return; 
+    public addCredits(amount: number, reason: 'kill' | 'interest' | 'perfect' = 'kill') {
+        if (this.gameMode === 'ECO_CHALLENGE' && reason === 'kill') return; 
         this.credits += amount;
+
+        if (reason === 'kill') this.lastWaveSummary.kills += amount;
+        else if (reason === 'interest') this.lastWaveSummary.interest += amount;
+        else if (reason === 'perfect') this.lastWaveSummary.perfectBonus += amount;
+        this.lastWaveSummary.total += amount;
     }
 
     public takeDamage(amount: number) {
@@ -90,6 +97,9 @@ export class GameStateManager {
     public resetForNextWave() {
         if (this.integrity <= 0) return;
 
+        // RESET WAVE SUMMARY
+        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
+
         // META XP GRANT
         const waveXP = this.currentWave * 50 * (this.gameMode === 'HARDCORE' ? 2 : 1);
         this.totalXP += waveXP;
@@ -98,7 +108,7 @@ export class GameStateManager {
 
         // PERFECT WAVE BONUS
         if (!this.integrityLostThisWave && this.gameMode !== 'HARDCORE') {
-            this.addCredits(150); 
+            this.addCredits(150, 'perfect'); 
             this.interestRate = Math.min(0.20, this.interestRate + 0.02);
         } else if (this.integrityLostThisWave) {
             this.interestRate = 0.10; 
@@ -106,7 +116,7 @@ export class GameStateManager {
 
         if (this.gameMode !== 'HARDCORE') {
             const interest = Math.ceil(this.credits * this.interestRate); 
-            this.credits += interest;
+            this.addCredits(interest, 'interest');
         }
 
         this.currentWave++;

@@ -13,6 +13,7 @@ export class PathManager {
     public endNodePos: PIXI.Point = new PIXI.Point(0, 0);
 
     public macroPath: GridCoord[] = [];
+    public pathVectors: { dx: number, dy: number }[] = [];
     public offsetX: number = 0;
     public offsetY: number = 0;
     public microCols: number = 0;
@@ -27,6 +28,16 @@ export class PathManager {
         while (!success && attempts < 100) {
             success = this.attemptMacroGeneration(waveNumber);
             attempts++;
+        }
+        
+        // CACHE VECTORS FOR ENEMIES
+        const pts = this.getPathPoints();
+        this.pathVectors = [];
+        for (let i = 0; i < pts.length - 1; i++) {
+            const dx = pts[i+1].x - pts[i].x;
+            const dy = pts[i+1].y - pts[i].y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            this.pathVectors.push({ dx: dx/dist, dy: dy/dist });
         }
     }
 

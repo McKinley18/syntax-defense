@@ -32,6 +32,7 @@ function App() {
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
   const [upcomingEnemies, setUpcomingEnemies] = useState<number[]>([]);
+  const [waveSummary, setWaveSummary] = useState({ kills: 0, interest: 0, perfectBonus: 0, total: 0 });
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
   const [isVictorious, setIsVictorious] = useState(false);
 
@@ -85,6 +86,7 @@ function App() {
           setGameMode(state.gameMode);
           setGamePhase(state.phase); 
           setRank(state.architectRank);
+          setWaveSummary(state.lastWaveSummary);
 
           if (state.currentWave > 50 && state.gameMode === 'STANDARD') {
             setIsVictorious(true);
@@ -178,7 +180,7 @@ function App() {
 
   const toggleFastForward = () => {
     AudioManager.getInstance().playUiClick();
-    setIsFastForward(!isFastForward);
+    setIsFastForward(f => !f);
   };
 
   const selectTurret = (type: number) => {
@@ -188,6 +190,26 @@ function App() {
       game.towerManager.startPlacement(type as any);
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (screen !== 'GAME' || isPaused && e.key !== ' ') return;
+      
+      if (e.key === ' ') {
+        setIsPaused(p => !p);
+        AudioManager.getInstance().playUiClick();
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFastForward();
+      } else if (e.key === '1') selectTurret(0);
+      else if (e.key === '2' && isUnlocked(1)) selectTurret(1);
+      else if (e.key === '3' && isUnlocked(2)) selectTurret(2);
+      else if (e.key === '4' && isUnlocked(3)) selectTurret(3);
+      else if (e.key === '5' && isUnlocked(4)) selectTurret(4);
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [screen, isPaused, wave]);
 
   const executeWave = () => {
     AudioManager.getInstance().playUiClick();
@@ -435,8 +457,8 @@ function App() {
                 <div className="game-summary">
                   <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p>
                   <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; NODES DE-MATERIALIZE AFTER EVERY SWARM.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; TAP PLACED NODES TO OVERCLOCK (UPGRADE).</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; ELITES AND GHOSTS WILL CHALLENGE THE GRID.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; GHOSTS ARE INVISIBLE. USE FROST OR TESLA TO REVEAL.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; ELITES WILL MASSIVELY CHALLENGE THE GRID.</p>
                 </div>
                 <div className="pause-options row" style={{marginTop: '15px'}}>
                   <button className="blue-button" onClick={() => dismissTutorial(false)}>[ GOT IT ]</button>
@@ -450,6 +472,15 @@ function App() {
           
           {gamePhase === 'PREP' && !isPaused && integrity > 0 && (
             <div className="pre-wave-overlay">
+              {wave > 1 && (
+                <div className="wave-summary-ledger" style={{width: '100%', marginBottom: '10px', borderBottom: '1px solid #333', paddingBottom: '15px'}}>
+                  <div style={{fontSize: '0.7rem', color: 'var(--neon-cyan)', marginBottom: '8px', textAlign: 'center', letterSpacing: '2px'}}>[ PREVIOUS_WAVE_ANALYSIS ]</div>
+                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>KILLS:</span> <span style={{color: 'var(--neon-green)'}}>+{waveSummary.kills}c</span></div>
+                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>INTEREST:</span> <span style={{color: 'var(--neon-green)'}}>+{waveSummary.interest}c</span></div>
+                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>PERFECT_BONUS:</span> <span style={{color: waveSummary.perfectBonus > 0 ? 'var(--neon-green)' : '#666'}}>{waveSummary.perfectBonus > 0 ? `+${waveSummary.perfectBonus}c` : '0c'}</span></div>
+                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 900, color: 'var(--neon-blue)', marginTop: '8px', borderTop: '1px dashed #333', paddingTop: '8px'}}><span>TOTAL_INCOME:</span> <span>+{waveSummary.total}c</span></div>
+                </div>
+              )}
               <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
               <div className="intel-grid-horizontal">
                 {upcomingEnemies.map(type => {
@@ -489,7 +520,19 @@ function App() {
                 {[0, 1, 2, 3, 4].map(type => {
                   const cfg = TOWER_CONFIGS[type as TowerType];
                   const unlocked = type === 0 || isUnlocked(type); 
-                  const cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
+                  
+                  let cost = cfg.cost;
+                  if (game?.towerManager) {
+                    // Use exact logic from TowerManager
+                    const count = game.towerManager.getTowerCount(type as TowerType);
+                    const supplyMultiplier = count >= 4 ? 1.15 : 1.0;
+                    cost = Math.floor(cfg.cost * supplyMultiplier);
+                    if (gameMode === 'HARDCORE') cost = Math.floor(cost * 1.5);
+                    if (integrity < 10 && gameMode !== 'SUDDEN_DEATH') cost = Math.floor(cost * 0.85);
+                  } else {
+                    cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
+                  }
+                  
                   return (
                     <div key={type} className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} data-type={type} onClick={() => unlocked && selectTurret(type)}>
                       {!unlocked && <div className="lock-icon">🔒</div>}
