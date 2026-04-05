@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { GameContainer } from './game/GameContainer';
 import { GameStateManager, type GameMode } from './game/systems/GameStateManager';
 import { TowerType, TOWER_CONFIGS } from './game/entities/Tower';
-import { VISUAL_REGISTRY } from './game/VisualRegistry';
+import { VISUAL_REGISTRY, EnemyType } from './game/VisualRegistry';
 import './App.css';
 
-type ScreenState = 'MENU' | 'GAME' | 'ABOUT' | 'ENEMIES' | 'TURRETS';
-type InfoTab = 'LORE' | 'LOGIC' | 'DIAGNOSTICS' | 'MODES' | 'THREATS';
+type ScreenState = 'MENU' | 'GAME' | 'ABOUT' | 'ENEMIES' | 'TURRETS' | 'MODES';
+type InfoTab = 'LORE' | 'LOGIC' | 'DIAGNOSTICS' | 'SYSTEM_MODES' | 'THREATS';
 
 function App() {
   const [screen, setScreen] = useState<ScreenState>('MENU');
@@ -40,8 +40,6 @@ function App() {
       async function init() {
         const g = await GameContainer.getInstance();
         setGame(g);
-        
-        // CHECK TUTORIAL STATUS
         const tutorialDone = localStorage.getItem('syntax_tutorial_done');
         if (!tutorialDone) setShowTutorial(true);
 
@@ -153,27 +151,39 @@ function App() {
         <div className="grid-background">
           <div className="grid-lines"></div>
           <div className="grid-glows">
-            <div className="glow-bit comet-right glow-1" style={{top: '10%', left: '-5%'}}></div>
-            <div className="glow-bit comet-left glow-2" style={{top: '30%', left: '105%'}}></div>
-            <div className="glow-bit comet-down glow-3" style={{top: '-5%', left: '50%'}}></div>
-            <div className="glow-bit comet-up glow-4" style={{top: '105%', left: '80%'}}></div>
+            <div className="glow-bit comet-right glow-1" style={{top: '15%', left: '-10%'}}></div>
+            <div className="glow-bit comet-left glow-2" style={{top: '40%', left: '110%'}}></div>
+            <div className="glow-bit comet-down glow-3" style={{top: '-10%', left: '45%'}}></div>
+            <div className="glow-bit comet-up glow-4" style={{top: '110%', left: '75%'}}></div>
             <div className="grid-sweep"></div>
           </div>
         </div>
         <div className="menu-content-centered">
           <h1 className="menu-title-static">SYNTAX<br/>DEFENSE</h1>
           <div className="menu-options-grid">
-            <button onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
-            <button onClick={() => startNewGame('HARDCORE')} style={{color: '#ff3300', borderColor: '#ff3300'}}>&gt; INITIALIZE_HARDCORE</button>
-            <button onClick={() => startNewGame('ENDLESS')}>&gt; INITIALIZE_ENDLESS</button>
-            <button onClick={() => startNewGame('SUDDEN_DEATH')} style={{color: '#ffcc00', borderColor: '#ffcc00'}}>&gt; SUDDEN_DEATH</button>
-            <button onClick={() => startNewGame('ECO_CHALLENGE')}>&gt; ECO_CHALLENGE</button>
+            <button className="primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
+            <button onClick={() => setScreen('MODES')}>&gt; ADVANCED_PROTOCOLS</button>
             <button onClick={loadGame}>&gt; RESTORE_SESSION</button>
             <button onClick={() => setScreen('ENEMIES')}>&gt; VIRAL_DATABASE</button>
             <button onClick={() => setScreen('TURRETS')}>&gt; DEFENSE_PROTOCOLS</button>
             <button onClick={() => setScreen('ABOUT')}>&gt; SYSTEM_INFO</button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (screen === 'MODES') {
+    return (
+      <div className="encyclopedia">
+        <div className="enc-header">[ SELECT_ADVANCED_PROTOCOL ]</div>
+        <div className="menu-options-grid" style={{maxWidth: '800px', marginTop: '20px'}}>
+          <button onClick={() => startNewGame('HARDCORE')} style={{color: '#ff3300', borderColor: '#ff3300'}}>&gt; HARDCORE_MODE</button>
+          <button onClick={() => startNewGame('SUDDEN_DEATH')} style={{color: '#ffcc00', borderColor: '#ffcc00'}}>&gt; SUDDEN_DEATH</button>
+          <button onClick={() => startNewGame('ENDLESS')}>&gt; ENDLESS_LOOP</button>
+          <button onClick={() => startNewGame('ECO_CHALLENGE')}>&gt; ECO_CHALLENGE</button>
+        </div>
+        <button className="back-btn" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button>
       </div>
     );
   }
@@ -187,7 +197,7 @@ function App() {
             <div className="info-hub">
               <div className="info-tabs">
                 <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
-                <button className={infoTab === 'MODES' ? 'active' : ''} onClick={() => setInfoTab('MODES')}>MODES</button>
+                <button className={infoTab === 'SYSTEM_MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM_MODES')}>MODES</button>
                 <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
                 <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
                 <button className={infoTab === 'DIAGNOSTICS' ? 'active' : ''} onClick={() => setInfoTab('DIAGNOSTICS')}>DATA</button>
@@ -202,7 +212,7 @@ function App() {
                     <p>3. [ PERFECT_WAVE ]: +2% INTEREST FOR ZERO LEAKS.</p>
                   </div>
                 )}
-                {infoTab === 'MODES' && (
+                {infoTab === 'SYSTEM_MODES' && (
                   <div className="modes-text">
                     <p>[ SUDDEN_DEATH ]: 1 INTEGRITY. NO REPAIRS.</p>
                     <p>[ ECO_CHALLENGE ]: 0 TOKENS PER KILL. INTEREST ONLY.</p>
@@ -247,20 +257,25 @@ function App() {
           )}
           {screen === 'TURRETS' && (
             <div className="visual-grid">
-              {Object.values(TOWER_CONFIGS).map((cfg, idx) => (
-                <div key={cfg.name} className="visual-card-large" data-type={idx}>
-                  <div className="card-visual-box">
-                    <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
-                      <div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+              {[0, 1, 2, 3, 4].map(id => {
+                const type = id as TowerType;
+                const cfg = TOWER_CONFIGS[type];
+                return (
+                  <div key={cfg.name} className="visual-card-large" data-type={type}>
+                    <div className="card-visual-box">
+                      <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
+                        <div className="mini-base"></div>
+                        <div className="mini-head"><div className="mini-weapon"></div><div className="mini-core"></div></div>
+                      </div>
+                    </div>
+                    <div className="card-detail-box">
+                      <div className="label">{cfg.name}</div>
+                      <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div>
+                      <div className="desc">{type === 0 ? 'RAPID_SUPPRESSION' : type === 1 ? 'DATA_FREEZE' : type === 2 ? 'AOE_DISCHARGE' : type === 3 ? 'MASSIVE_PENETRATION' : 'LIGHTNING_CHAIN'}</div>
                     </div>
                   </div>
-                  <div className="card-detail-box">
-                    <div className="label">{cfg.name}</div>
-                    <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}sq</div>
-                    <div className="desc">{cfg.cost}c INITIAL // LVL 3 MAX</div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
