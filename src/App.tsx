@@ -697,20 +697,22 @@ function App() {
               </div>
             </div>
             <div className="dashboard-right">
-              <div className="credits-display" style={{display: 'flex', alignItems: 'baseline', gap: '8px', justifyContent: 'flex-end', marginBottom: '4px'}}>
-                <span className="credits-label" style={{fontSize: '0.7rem', fontWeight: 900, color: '#fff'}}>TOKENS:</span>
-                <span className="credits-value">{credits}</span>
-              </div>
-              <div className="integrity-stack" style={{alignItems: 'flex-end', width: '160px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.6rem', color: '#fff', marginBottom: '2px'}}>
-                  <span style={{color: sysStatusColor, fontWeight: 900, letterSpacing: '1px'}}>{systemStatusText}</span>
-                  <span>{integrity}/20</span>
+              <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '160px', gap: '4px'}}>
+                <div className="credits-display" style={{display: 'flex', alignItems: 'baseline', gap: '8px', justifyContent: 'space-between', width: '100%'}}>
+                  <span className="credits-label" style={{fontSize: '0.8rem', fontWeight: 900, color: '#fff'}}>TOKENS:</span>
+                  <span className="credits-value" style={{fontSize: '1.4rem'}}>{credits}</span>
                 </div>
-                <div className="integrity-bar-small" style={{width: '160px'}}>
-                  <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div>
+                <div className="integrity-stack" style={{width: '100%'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.6rem', color: '#fff', marginBottom: '2px'}}>
+                    <span style={{color: sysStatusColor, fontWeight: 900, letterSpacing: '1px', fontSize: '0.7rem'}}>{systemStatusText}</span>
+                    <span>{integrity}/20</span>
+                  </div>
+                  <div className="integrity-bar-small" style={{width: '100%'}}>
+                    <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div>
+                  </div>
                 </div>
+                <button className="blue-button item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive} style={{marginTop: '5px', width: '100%'}}>DATA PURGE: 1000c</button>
               </div>
-              <button className="blue-button item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive} style={{marginTop: '5px', width: '160px'}}>DATA PURGE: 1000c</button>
             </div>
           </div>
         </div>
