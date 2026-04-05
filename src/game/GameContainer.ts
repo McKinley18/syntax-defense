@@ -103,7 +103,9 @@ export class GameContainer {
 
     public destroy() {
         window.removeEventListener('resize', this.handleResize);
-        this.app.ticker.remove(this.update, this);
+        if (this.app.ticker) {
+            this.app.ticker.remove(this.update, this);
+        }
         this.app.destroy(true, { children: true, texture: true });
         GameContainer.instance = null; 
     }
