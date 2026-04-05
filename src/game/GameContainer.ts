@@ -28,6 +28,8 @@ export class GameContainer {
     public kernel!: Kernel;
     public isPaused: boolean = false; 
     public isFastForward: boolean = false; 
+    public isTutorialActive: boolean = false;
+    public tutorialStep: number = 0;
 
     public static instance: GameContainer | null = null;
 

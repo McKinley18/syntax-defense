@@ -66,10 +66,12 @@ export class WaveManager {
     public startWave() {
         if (this.isWaveActive) return;
         this.isWaveActive = true;
-        this.hasProcessedEnd = false; // OPEN THE LATCH
-        GameStateManager.getInstance().phase = 'WAVE'; // SWITCH PHASE
+        this.hasProcessedEnd = false; 
+        GameStateManager.getInstance().phase = 'WAVE'; 
 
-        if (this.waveNumber % 10 === 0) {
+        if (this.game.isTutorialActive) {
+            this.enemiesToSpawn = 1;
+        } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
             this.enemiesToSpawn = 8 + Math.floor(this.waveNumber * 3.2);

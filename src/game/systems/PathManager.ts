@@ -46,6 +46,26 @@ export class PathManager {
         const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
         this.microCols = visibleCols;
 
+        // TUTORIAL OVERRIDE: STRAIGHT PATH FROM LEFT TO RIGHT
+        if (waveNumber === 1 && localStorage.getItem('syntax_tutorial_done') !== 'true') {
+            const topMargin = 2;
+            const bottomMargin = 8;
+            const availRows = visibleRows - (topMargin + bottomMargin);
+            
+            // Set offsets so buildMicroPathFromMacro uses them
+            this.offsetX = 0;
+            this.offsetY = topMargin;
+
+            // Middle of the available rows
+            const midMacroY = Math.floor(Math.floor(availRows / 4) / 2);
+            const macroCols = Math.floor((visibleCols - 2) / 4);
+
+            const tutorialPath = [{x: 0, y: midMacroY}, {x: macroCols, y: midMacroY}];
+            this.macroPath = tutorialPath;
+            this.buildMicroPathFromMacro(tutorialPath);
+            return true;
+        }
+
         const topMargin = 2; // TOP BUFFER
         const bottomMargin = 8; // HUGE BOTTOM BUFFER FOR DASHBOARD
 
