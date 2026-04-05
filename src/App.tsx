@@ -501,9 +501,13 @@ function App() {
           <div className="tactical-dashboard">
             <div className="dashboard-left">
               <div style={{display: 'flex', gap: '5px'}}>
-                <button className="blue-button pause-btn" onClick={() => setIsPaused(true)}>[ PAUSE ]</button>
-                <button className={`blue-button pause-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? 'var(--neon-green)' : ''}}>
-                  {isFastForward ? '[ 2X ]' : '[ >> ]'}
+                <button className="blue-button pause-btn" onClick={() => setIsPaused(true)} style={{flexDirection: 'column'}}>
+                  <span>[ PAUSE ]</span>
+                  <span className="hotkey-hint">SPACE</span>
+                </button>
+                <button className={`blue-button pause-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? 'var(--neon-green)' : '', flexDirection: 'column'}}>
+                  <span>{isFastForward ? '[ 2X ]' : '[ >> ]'}</span>
+                  <span className="hotkey-hint">F</span>
                 </button>
               </div>
               <div className="wave-label">LVL_{wave} // {waveName}</div>
@@ -536,6 +540,7 @@ function App() {
                   return (
                     <div key={type} className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} data-type={type} onClick={() => unlocked && selectTurret(type)}>
                       {!unlocked && <div className="lock-icon">🔒</div>}
+                      <div className="hotkey-badge">{type + 1}</div>
                       <div className="mini-turret"><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div></div></div>
                       <div className="protocol-info">
                         <span className="name">{cfg.name}</span>
