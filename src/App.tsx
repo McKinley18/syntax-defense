@@ -396,7 +396,22 @@ function App() {
       {screen === 'GAME' && game && (
         <div className="game-overlay-active ui-layer">
           {showTutorial && (
-            <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">SYSTEM_INITIALIZATION</h2><div className="game-summary"><p style={{color: '#fff', fontWeight: 900}}>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p><p style={{color: '#fff', fontWeight: 900}}>&gt; NODES DE-MATERIALIZE AFTER EVERY SWARM.</p><p style={{color: '#fff', fontWeight: 900}}>&gt; TAP PLACED NODES TO OVERCLOCK (UPGRADE).</p><p style={{color: '#fff', fontWeight: 900}}>&gt; ELITES AND GHOSTS WILL CHALLENGE THE GRID.</p></div><div className="pause-options row"><button className="blue-button" onClick={() => dismissTutorial(false)}>[ GOT IT ]</button><button className="blue-button" onClick={() => dismissTutorial(true)} style={{fontSize: '0.5rem'}}>[ DON'T SHOW AGAIN ]</button></div></div></div>
+            <div className="pause-overlay-locked">
+              <div className="pause-content" style={{padding: '25px'}}>
+                <div className="wave-label" style={{marginBottom: '5px', textAlign: 'center'}}>SYSTEM_INITIALIZATION</div>
+                <h2 className="pause-title" style={{marginTop: '0'}}>INSTRUCTIONS</h2>
+                <div className="game-summary">
+                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; DEPLOY NODES TO DEFEND THE KERNEL.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; NODES DE-MATERIALIZE AFTER EVERY SWARM.</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; TAP PLACED NODES TO OVERCLOCK (UPGRADE).</p>
+                  <p style={{color: '#fff', fontWeight: 900, margin: '8px 0'}}>&gt; ELITES AND GHOSTS WILL CHALLENGE THE GRID.</p>
+                </div>
+                <div className="pause-options row" style={{marginTop: '15px'}}>
+                  <button className="blue-button" onClick={() => dismissTutorial(false)}>[ GOT IT ]</button>
+                  <button className="blue-button" onClick={() => dismissTutorial(true)} style={{fontSize: '0.5rem'}}>[ DON'T SHOW AGAIN ]</button>
+                </div>
+              </div>
+            </div>
           )}
           {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE</h2><button className="blue-button" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button></div></div>}
           {isPaused && integrity > 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>[ RESUME ]</button><button className="blue-button" onClick={saveAndQuit}>[ SAVE & EXIT ]</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>[ ABANDON ]</button></div></div></div>}
@@ -429,7 +444,13 @@ function App() {
                 </button>
               </div>
               <div className="wave-label">LVL_{wave} // {waveName}</div>
-              <button className="blue-button repair-button" onClick={repairKernel} disabled={credits < repairCost || integrity >= 20}>[ REPAIR: {repairCost}c ]</button>
+              <button 
+                className={`blue-button repair-button ${integrity <= 5 && credits >= repairCost ? 'critical-repair' : ''}`} 
+                onClick={repairKernel} 
+                disabled={credits < repairCost || integrity >= 20}
+              >
+                [ REPAIR: {repairCost}c ]
+              </button>
             </div>
             <div className="dashboard-center">
               <div className="turret-row">
@@ -451,9 +472,13 @@ function App() {
                 })}
               </div>
             </div>
-            <div className="dashboard-right">
+            <div className={`dashboard-right ${integrity < 10 ? 'hud-glitch' : ''}`}>
               <button className="blue-button item-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>[ DATA_PURGE: 1000c ]</button>
-              <div className="stat-row"><span className="label">TOKENS:</span><span className="credits-value">{credits}</span></div>
+              <div className="stat-row">
+                <span className="label">TOKENS:</span>
+                <span className="credits-value">{credits}</span>
+                {credits >= 2000 && <span style={{fontSize: '0.6rem', color: 'var(--neon-green)', animation: 'hardware-blink 1s infinite', marginLeft: '5px'}}>MAX_INT</span>}
+              </div>
               <div className="integrity-stack">
                 <div className="system-status-label" style={{color: systemStatusColor}}>{systemStatusText}</div>
                 <div className="integrity-bar-small"><div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%` }}></div></div>

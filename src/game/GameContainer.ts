@@ -108,6 +108,14 @@ export class GameContainer {
 
     public update(ticker: PIXI.Ticker) {
         if (this.isPaused) return;
+
+        // PERFORMANCE AUTO-THROTTLE
+        if (ticker.FPS < 45) {
+            this.particleManager.isThrottled = true;
+        } else if (ticker.FPS > 55) {
+            this.particleManager.isThrottled = false;
+        }
+
         let delta = ticker.deltaTime;
         if (this.isFastForward) delta *= 2;
 

@@ -185,10 +185,10 @@ export class Tower {
             allEnemies.forEach(e => {
                 const dx = e.container.x - target.container.x;
                 const dy = e.container.y - target.container.y;
-                if (dx*dx + dy*dy < impactRSq) e.takeDamage(totalDmg);
+                if (dx*dx + dy*dy < impactRSq) e.takeDamage(totalDmg, this.type);
             });
         } else {
-            target.takeDamage(totalDmg);
+            target.takeDamage(totalDmg, this.type);
             this.drawEffect(target.container.x, target.container.y, 'line');
         }
     }
@@ -196,7 +196,7 @@ export class Tower {
     private chainFire(target: Enemy, allEnemies: Enemy[], dmg: number) {
         let currentSource = { x: this.container.x, y: this.container.y };
         let hitEnemies = new Set([target]);
-        target.takeDamage(dmg);
+        target.takeDamage(dmg, this.type);
         this.drawLightning(currentSource.x, currentSource.y, target.container.x, target.container.y);
 
         for (let i = 0; i < 2; i++) {
@@ -210,7 +210,7 @@ export class Tower {
                 }
             });
             if (nextTarget) {
-                (nextTarget as Enemy).takeDamage(dmg * 0.7);
+                (nextTarget as Enemy).takeDamage(dmg * 0.7, this.type);
                 this.drawLightning(target.container.x, target.container.y, (nextTarget as Enemy).container.x, (nextTarget as Enemy).container.y);
                 hitEnemies.add(nextTarget);
             }

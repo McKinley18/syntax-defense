@@ -15,6 +15,7 @@ export interface Particle {
 export class ParticleManager {
     private particles: Particle[] = [];
     private game: GameContainer;
+    public isThrottled: boolean = false;
 
     constructor(game: GameContainer) {
         this.game = game;
@@ -41,8 +42,9 @@ export class ParticleManager {
     }
 
     public spawnExplosion(x: number, y: number, scale: number = 1) {
-        if (this.particles.length > 150) return; 
-        for (let i = 0; i < 8; i++) {
+        if (this.particles.length > (this.isThrottled ? 50 : 150)) return; 
+        const count = this.isThrottled ? 3 : 8;
+        for (let i = 0; i < count; i++) {
             const graphics = new PIXI.Graphics();
             graphics.circle(0, 0, (4 + Math.random() * 8) * scale);
             const color = Math.random() > 0.5 ? 0x00ffff : 0x0066ff;

@@ -16,12 +16,14 @@ export class Enemy {
     public totalProgress: number = 0;
     public reachedGoal: boolean = false;
     public isElite: boolean = false;
-    public isGhost: boolean = false; // NEW: GHOST STATUS
-    public isRevealed: boolean = false; // NEW: VISIBILITY
-    
+    public isGhost: boolean = false;
+    public isRevealed: boolean = false; 
+    public hasThermalShield: boolean = false; // VIRAL LEARNING
+
     private pathPoints: PIXI.Point[];
     private currentPointIndex: number = 0;
     private visual: PIXI.Graphics;
+    private shieldVisual?: PIXI.Graphics;
     private healthBar: PIXI.Graphics;
     private freezeTimer: number = 0;
 
@@ -151,11 +153,29 @@ export class Enemy {
         this.healthBar.fill(pct > 0.5 ? 0x00ffcc : pct > 0.25 ? 0xffcc00 : 0xff3300);
     }
 
-    public takeDamage(amount: number): boolean {
-        this.health -= amount;
+    public renderShield() {
+        if (this.hasThermalShield && !this.shieldVisual) {
+            this.shieldVisual = new PIXI.Graphics();
+            this.shieldVisual.circle(0, 0, (TILE_SIZE / 2) + 2);
+            this.shieldVisual.stroke({ width: 2, color: 0xff3300, alpha: 0.8 });
+            this.container.addChild(this.shieldVisual);
+        }
+    }
+
+    public takeDamage(amount: number, sourceType?: number): boolean {
+        let finalDamage = amount;
+        
+        if (this.hasThermalShield && sourceType === 0) { // PULSE_MG
+            finalDamage *= 0.5; // 50% RESISTANCE
+            if (GameContainer.instance) {
+                GameContainer.instance.particleManager.spawnFloatingText(this.container.x, this.container.y - 20, "RESIST");
+            }
+        }
+        
+        this.health -= finalDamage;
 
         if (GameContainer.instance) {
-            GameContainer.instance.particleManager.spawnHitMarker(this.container.x, this.container.y, amount);
+            GameContainer.instance.particleManager.spawnHitMarker(this.container.x, this.container.y, finalDamage);
         }
 
         if (this.isElite || this.type === 3) {

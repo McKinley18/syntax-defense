@@ -137,6 +137,10 @@ export class TowerManager {
         }
     }
 
+    public getTowerCount(type: TowerType): number {
+        return this.towers.filter(t => t.type === type).length;
+    }
+
     private updatePreview(wx: number, wy: number) {
         this.previewGraphics.clear();
         const gx = Math.floor(wx / TILE_SIZE);
@@ -144,7 +148,7 @@ export class TowerManager {
         const sx = gx * TILE_SIZE;
         const sy = gy * TILE_SIZE;
         const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
-        
+
         const isBoundary = gy <= 0 || gy >= visibleRows - 1;
         const isBuildable = this.game.mapManager.isBuildable(wx, wy) && !this.getTowerAt(wx, wy) && !isBoundary;
         const config = TOWER_CONFIGS[this.selectedTurretType];
@@ -154,13 +158,16 @@ export class TowerManager {
         this.previewGraphics.fill({ color: config.color, alpha: 0.1 });
         this.previewGraphics.stroke({ width: 1, color: config.color, alpha: 0.3 });
 
-        // Snap Box
+        // Snap Box with Interactive Grid Pulse
         this.previewGraphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
-        this.previewGraphics.stroke({ 
-            width: 2, 
-            color: isBuildable ? 0x00ffcc : 0xff3300, 
-            alpha: 0.8 
-        });
+        if (isBuildable) {
+            const pulse = 0.2 + Math.abs(Math.sin(Date.now() / 200)) * 0.3;
+            this.previewGraphics.fill({ color: 0x00ffcc, alpha: pulse });
+            this.previewGraphics.stroke({ width: 2, color: 0x00ffcc, alpha: 0.8 });
+        } else {
+            this.previewGraphics.fill({ color: 0xff3300, alpha: 0.3 });
+            this.previewGraphics.stroke({ width: 2, color: 0xff3300, alpha: 0.8 });
+        }
     }
 
     public update(delta: number) {

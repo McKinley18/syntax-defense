@@ -170,7 +170,15 @@ export class WaveManager {
                 if (rand > 0.6) type = EnemyType.STRIDER;
             }
         }
+        
         const enemy = new Enemy(type, this.waveNumber);
+        
+        // VIRAL LEARNING: Strider Thermal Shield
+        if (type === EnemyType.STRIDER && this.game.towerManager.getTowerCount(0) >= 5) {
+            enemy.hasThermalShield = true;
+            enemy.renderShield(); // Visually attach the shield
+        }
+
         this.enemies.push(enemy);
         this.game.enemyLayer.addChild(enemy.container);
     }
