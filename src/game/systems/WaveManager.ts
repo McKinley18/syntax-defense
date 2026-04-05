@@ -30,6 +30,7 @@ export class WaveManager {
         }
         
         this.waveNumber = GameStateManager.getInstance().currentWave;
+        GameStateManager.getInstance().phase = 'PREP'; // LOCK PREP PHASE
         this.game.towerManager.clearTowers();
         
         let success = false;
@@ -60,6 +61,7 @@ export class WaveManager {
         if (this.isWaveActive) return;
         this.isWaveActive = true;
         this.hasProcessedEnd = false; // OPEN THE LATCH
+        GameStateManager.getInstance().phase = 'WAVE'; // SWITCH PHASE
 
         if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 

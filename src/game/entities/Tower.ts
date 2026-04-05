@@ -168,6 +168,14 @@ export class Tower {
         const levelMult = this.level === 2 ? 1.25 : this.level === 3 ? 1.5 : 1;
         const totalDmg = this.config.damage * levelMult * (1 + this.linkBonus);
 
+        // TRIGGER UNIQUE SFX
+        const am = AudioManager.getInstance();
+        if (this.type === TowerType.PULSE_MG) am.playFirePulse();
+        else if (this.type === TowerType.FROST_RAY) am.playFireFrost();
+        else if (this.type === TowerType.BLAST_NOVA) am.playFireBlast();
+        else if (this.type === TowerType.RAILGUN) am.playFireRail();
+        else if (this.type === TowerType.TESLA_LINK) am.playFireTesla();
+
         if (this.type === TowerType.TESLA_LINK) {
             this.chainFire(target, allEnemies, totalDmg);
         } else if (this.config.damage > 25) { 

@@ -112,7 +112,8 @@ html, body, #root {
 .menu-title-static { 
   font-family: 'Arial Black', sans-serif; font-size: clamp(3rem, 12vw, 6rem); 
   font-weight: 900; line-height: 0.85; text-align: center; color: var(--neon-blue); 
-  margin-bottom: 0.2vh; transform: rotateX(45deg) translateZ(50px); 
+  margin-bottom: 0; /* REMOVED SPACING */
+  transform: rotateX(45deg) translateZ(50px); 
   text-shadow: 0 1px 0 #0044bb, 0 3px 0 #002299, 0 0 30px rgba(0, 102, 255, 0.8);
 }
 .menu-title-static span { display: inline-block; transition: color 0.05s; }

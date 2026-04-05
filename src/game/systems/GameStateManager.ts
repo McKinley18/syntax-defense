@@ -1,13 +1,15 @@
 export type GlitchType = 'NONE' | 'OVERCLOCK' | 'LAG_SPIKE' | 'SYSTEM_DRAIN';
 export type GameMode = 'STANDARD' | 'HARDCORE' | 'ENDLESS' | 'SUDDEN_DEATH' | 'ECO_CHALLENGE';
+export type GamePhase = 'PREP' | 'WAVE';
 
 export class GameStateManager {
     private static instance: GameStateManager;
     
-    public credits: number = 850; // BOOSTED FROM 500
+    public credits: number = 850; 
     public integrity: number = 20;
     public currentWave: number = 1;
     public gameMode: GameMode = 'STANDARD';
+    public phase: GamePhase = 'PREP'; // EXPLICIT PHASE
     public activeGlitch: GlitchType = 'NONE';
     public interestRate: number = 0.10; 
     public repairCost: number = 500; 

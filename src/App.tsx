@@ -31,6 +31,7 @@ function App() {
   const [glitchIndex, setGlitchIndex] = useState(-1);
   const [isDistorted, setIsDistorted] = useState(false);
   const [isFlickering, setIsFlickering] = useState(false);
+  const [gamePhase, setGamePhase] = useState<string>("PREP"); // NEW STATE
 
   // 2. STABLE EFFECT HOOKS
   useEffect(() => {
@@ -77,6 +78,7 @@ function App() {
           setWaveName(state.getWaveName());
           setRepairCost(state.repairCost);
           setGameMode(state.gameMode);
+          setGamePhase(state.phase); // SYNC PHASE
           if (g.waveManager) {
             setWave(g.waveManager.waveNumber);
             setIsWaveActive(g.waveManager.isWaveActive);
@@ -399,7 +401,7 @@ function App() {
           {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL_SYSTEM_FAILURE</h2><button className="blue-button" onClick={() => setScreen('MENU')}>[ RETURN_TO_ROOT ]</button></div></div>}
           {isPaused && integrity > 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>[ RESUME ]</button><button className="blue-button" onClick={saveAndQuit}>[ SAVE & EXIT ]</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>[ ABANDON ]</button></div></div></div>}
           
-          {!isWaveActive && !isPaused && integrity > 0 && (
+          {gamePhase === 'PREP' && !isPaused && integrity > 0 && (
             <div className="pre-wave-overlay">
               <div className="intel-header">SWARM_SIGNATURES_DETECTED</div>
               <div className="intel-grid-horizontal">

@@ -62,30 +62,6 @@ export class ParticleManager {
                 scale: true
             });
         }
-        // HIGH-INTELLIGENCE: Data bit harvester
-        this.spawnDataBit(x, y);
-    }
-
-    private spawnDataBit(x: number, y: number) {
-        const p = new PIXI.Graphics();
-        p.rect(0, 0, 4, 4);
-        p.fill(0x00ffff);
-        p.x = x; p.y = y;
-        this.game.effectLayer.addChild(p);
-
-        const tx = window.innerWidth - 100;
-        const ty = window.innerHeight - 50;
-        
-        let t = 0;
-        const anim = () => {
-            t += 0.02;
-            p.x += (tx - p.x) * 0.08;
-            p.y += (ty - p.y) * 0.08;
-            p.alpha = 1 - t;
-            if (t < 1) requestAnimationFrame(anim);
-            else p.destroy();
-        };
-        anim();
     }
 
     public spawnFloatingText(x: number, y: number, text: string) {
