@@ -22,6 +22,7 @@ function App() {
   const [repairCost, setRepairCost] = useState(500);
   const [gameMode, setGameMode] = useState<GameMode>('STANDARD');
   const [showTutorial, setShowTutorial] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     const lockOrientation = async () => {
@@ -36,10 +37,13 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
-    if (screen === 'GAME' && !game) {
+    if (screen === 'GAME' && !game && !isInitializing) {
       async function init() {
+        setIsInitializing(true);
         const g = await GameContainer.getInstance();
         setGame(g);
+        setIsInitializing(false);
+        
         const tutorialDone = localStorage.getItem('syntax_tutorial_done');
         if (!tutorialDone) setShowTutorial(true);
 
@@ -59,7 +63,7 @@ function App() {
       }
       init();
     }
-  }, [screen, game]);
+  }, [screen, game, isInitializing]);
 
   useEffect(() => {
     if (game) game.isPaused = isPaused;
@@ -80,25 +84,24 @@ function App() {
     }
   };
 
-  const saveAndQuit = () => {
-    GameStateManager.getInstance().save();
+  const cleanupGame = () => {
     if (game) {
-      game.app.destroy(true, { children: true, texture: true });
+      game.destroy();
       const container = document.getElementById('game-container');
       if (container) container.innerHTML = '';
       setGame(null);
     }
+  };
+
+  const saveAndQuit = () => {
+    GameStateManager.getInstance().save();
+    cleanupGame();
     setIsPaused(false);
     setScreen('MENU');
   };
 
   const quitToMenu = () => {
-    if (game) {
-      game.app.destroy(true, { children: true, texture: true });
-      const container = document.getElementById('game-container');
-      if (container) container.innerHTML = '';
-      setGame(null);
-    }
+    cleanupGame();
     setIsPaused(false);
     setScreen('MENU');
   };
@@ -143,8 +146,28 @@ function App() {
                  integrity > 5 ? { text: "STATUS: DEGRADED", color: "#ffcc00" } : 
                  { text: "STATUS: CRITICAL", color: "#ff3300" };
 
+  const [glitchIndex, setGlitchIndex] = useState(-1);
+  useEffect(() => {
+    // SYNC WITH 4s TERMINAL FLICKER
+    const triggerGlitch = () => {
+      setGlitchIndex(Math.floor(Math.random() * 13));
+      setTimeout(() => setGlitchIndex(-1), 150);
+    };
+
+    const interval = setInterval(() => {
+      // First dip at 0.8s (20%)
+      setTimeout(triggerGlitch, 800);
+      // Second dip at 2.5s (63%)
+      setTimeout(triggerGlitch, 2520);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const renderContent = () => {
     if (screen === 'MENU') {
+      const title1 = "SYNTAX".split('');
+      const title2 = "DEFENSE".split('');
       return (
         <div className="main-menu">
           <div className="grid-background">
@@ -158,7 +181,15 @@ function App() {
             </div>
           </div>
           <div className="menu-content-centered">
-            <h1 className="menu-title-static">SYNTAX<br/>DEFENSE</h1>
+            <h1 className="menu-title-static">
+              {title1.map((c, i) => (
+                <span key={i} style={{ color: glitchIndex === i ? '#ff3300' : 'inherit' }}>{c}</span>
+              ))}
+              <br/>
+              {title2.map((c, i) => (
+                <span key={i+6} style={{ color: glitchIndex === (i+6) ? '#ff3300' : 'inherit' }}>{c}</span>
+              ))}
+            </h1>
             <div className="menu-options-grid">
               <button className="primary-btn" onClick={() => startNewGame('STANDARD')}>&gt; INITIALIZE_STANDARD</button>
               <button onClick={() => setScreen('MODES')}>&gt; ADVANCED_PROTOCOLS</button>
@@ -205,7 +236,6 @@ function App() {
                   {infoTab === 'LORE' && (
                     <div className="lore-text">
                       <p>&gt;&gt; LOG_ENTRY: INTRUSION DETECTED IN KERNEL_0.</p>
-                      <p>&gt;&gt; SYSTEM_EVOLUTION V1.8.0 DETECTED.</p>
                       <p>1. [ REPAIR_KERNEL ]: BUY REPAIRS AT SCALING COSTS.</p>
                       <p>2. [ DATA_LINKS ]: ADJACENT IDENTICAL TURRETS GAIN +10% DMG.</p>
                       <p>3. [ PERFECT_WAVE ]: +2% INTEREST FOR ZERO LEAKS.</p>
@@ -260,7 +290,7 @@ function App() {
                   const type = id as TowerType;
                   const cfg = TOWER_CONFIGS[type];
                   return (
-                    <div key={cfg.name} className="visual-card-large">
+                    <div key={cfg.name} className="visual-card-large" data-type={type}>
                       <div className="card-visual-box">
                         <div className="mini-turret" style={{ '--turret-color': `#${cfg.color.toString(16).padStart(6,'0')}` } as any}>
                           <div className="mini-base"></div>
@@ -282,6 +312,8 @@ function App() {
         </div>
       );
     }
+
+    if (!game) return <div className="loading-overlay">INITIALIZING_MAINFRAME...</div>;
 
     return (
       <div className="game-overlay">
@@ -385,8 +417,7 @@ function App() {
     <div className="game-wrapper">
       <div className="orientation-warning">
         <div className="warning-icon">🔄</div>
-        <div className="warning-text">SYSTEM_DISPLAY_OPTIMIZATION_REQUIRED</div>
-        <div className="warning-subtext">[ PLEASE_ROTATE_DEVICE_TO_LANDSCAPE_TO_INITIALIZE_MAINFRAME ]</div>
+        <div className="warning-text">Please rotate your device</div>
       </div>
       <div id="game-container"></div>
       {renderContent()}

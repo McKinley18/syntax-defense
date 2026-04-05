@@ -38,7 +38,7 @@ export class Kernel {
         this.core.stroke({ width: 2, color: 0xffffff });
         this.container.addChild(this.core);
 
-        GameContainer.instance.effectLayer.addChild(this.container);
+        GameContainer.instance!.effectLayer.addChild(this.container);
     }
 
     public triggerFlash() {

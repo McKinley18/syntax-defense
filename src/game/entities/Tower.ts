@@ -224,7 +224,7 @@ export class Tower {
             g.circle(tx, ty, 60);
             g.stroke({ width: 3, color: this.config.color, alpha: 0.6 });
         }
-        GameContainer.instance.effectLayer.addChild(g);
+        GameContainer.instance!.effectLayer.addChild(g);
         setTimeout(() => g.destroy(), 60);
     }
 
@@ -233,7 +233,7 @@ export class Tower {
         g.moveTo(x1, y1).lineTo(x2, y2);
         g.stroke({ width: 3, color: 0xffffff, alpha: 0.8 });
         g.stroke({ width: 6, color: this.config.color, alpha: 0.3 });
-        GameContainer.instance.effectLayer.addChild(g);
+        GameContainer.instance!.effectLayer.addChild(g);
         setTimeout(() => g.destroy(), 80);
     }
 

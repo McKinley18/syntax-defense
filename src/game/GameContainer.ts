@@ -26,9 +26,9 @@ export class GameContainer {
     public mapManager!: MapManager;
     public inputHandler!: InputHandler;
     public kernel!: Kernel;
-    public isPaused: boolean = false; // GLOBAL PAUSE STATE
+    public isPaused: boolean = false; 
 
-    public static instance: GameContainer;
+    public static instance: GameContainer | null = null;
 
     private constructor() {
         this.app = new PIXI.Application();
@@ -56,7 +56,7 @@ export class GameContainer {
             background: '#0a0a0a',
             resizeTo: window,
             antialias: true,
-            roundPixels: true, // ENSURE RAZOR-SHARP SNAP
+            roundPixels: true,
             resolution: window.devicePixelRatio || 1,
             autoDensity: true,
         });
@@ -81,22 +81,27 @@ export class GameContainer {
         this.mapManager.setPathFromCells(this.pathManager.pathCells);
         this.kernel = new Kernel(this.pathManager.endNodePos.x, this.pathManager.endNodePos.y);
         
-        window.addEventListener('resize', () => {
-            if (this.app.renderer) {
-                this.app.renderer.resize(window.innerWidth, window.innerHeight);
-                if (this.mapManager) this.mapManager.render();
-            }
-        });
-        
+        window.addEventListener('resize', this.handleResize);
         this.app.ticker.add((ticker) => this.update(ticker));
     }
 
+    private handleResize = () => {
+        if (this.app.renderer) {
+            this.app.renderer.resize(window.innerWidth, window.innerHeight);
+            if (this.mapManager) this.mapManager.render();
+        }
+    };
+
+    public destroy() {
+        window.removeEventListener('resize', this.handleResize);
+        this.app.destroy(true, { children: true, texture: true });
+        GameContainer.instance = null; // CLEAR INSTANCE FOR RELOAD
+    }
+
     public update(ticker: PIXI.Ticker) {
-        if (this.isPaused) return; // FREEZE ENGINE
-        
+        if (this.isPaused) return;
         const delta = ticker.deltaTime;
         const enemies = this.waveManager.enemies;
-        
         this.waveManager.update(delta);
         this.towerManager.update(delta);
         this.particleManager.update(delta);

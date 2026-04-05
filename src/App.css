@@ -3,6 +3,7 @@
   --neon-blue: #0066ff;
   --neon-cyan: #00ffff;
   --neon-green: #00ffcc;
+  --neon-red: #ff3300;
   --bg-deep: #000000;
   --dashboard-height: clamp(90px, 16vh, 130px);
   --font-xs: clamp(0.55rem, 1.2vw, 0.75rem);
@@ -57,6 +58,11 @@ html, body, #root {
   animation: terminal-flicker 4s infinite;
 }
 
+.menu-title-static span {
+  display: inline-block;
+  transition: color 0.1s ease;
+}
+
 @keyframes terminal-flicker {
   0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% { opacity: 1; }
   20%, 21.999%, 63%, 63.999%, 65%, 69.999% { opacity: 0.4; }
@@ -88,14 +94,15 @@ html, body, #root {
   background: rgba(0, 102, 255, 0.15) !important;
 }
 
-/* 2. GLOW TRAILS */
+/* 2. GLOW TRAILS - FIXED BACKGROUND POSITIONS */
 .grid-background { 
-  position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; 
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+  width: 100vw; height: 100vh; 
   pointer-events: none; z-index: 1; 
 }
 
 .grid-lines { 
-  position: absolute; width: 100%; height: 100%; 
+  position: absolute; inset: 0; width: 100%; height: 100%; 
   background-image: 
     linear-gradient(to right, rgba(0, 102, 255, 0.15) 1px, transparent 1px), 
     linear-gradient(to bottom, rgba(0, 102, 255, 0.15) 1px, transparent 1px); 
@@ -173,6 +180,7 @@ html, body, #root {
 }
 
 .repair-button { color: var(--neon-green); border-color: var(--neon-green); }
+.repair-button:disabled { opacity: 0.2; border-color: #333; color: #666; }
 
 .slim-turret-card {
   background: rgba(10, 10, 15, 0.8); border: 1px solid #333;
@@ -182,9 +190,12 @@ html, body, #root {
 }
 
 .slim-turret-card.active { border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.05); }
+.slim-turret-card.dimmed { opacity: 0.25; filter: grayscale(1); }
+.slim-turret-card.locked { opacity: 0.15; border-style: dashed; }
 
 .credits-value { color: var(--neon-cyan); font-size: 1.3rem; font-weight: 900; }
 .integrity-stack { width: 140px; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.system-status-label { font-size: 0.5rem; font-weight: bold; }
 .integrity-bar-small { height: 10px; width: 100%; background: #050505; border: 1px solid #333; padding: 2px; }
 .integrity-fill { height: 100%; background: linear-gradient(to right, var(--neon-blue), var(--neon-green)); transition: width 0.4s; }
 
@@ -233,42 +244,25 @@ html, body, #root {
 .mini-core { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--turret-color); box-shadow: 0 0 10px var(--turret-color); }
 .mini-weapon { position: absolute; width: 100%; height: 100%; }
 
-/* Type 0: Pulse MG */
-[data-type="0"] .mini-weapon::before, [data-type="0"] .mini-weapon::after { 
-  content: ''; position: absolute; width: 3px; height: 14px; background: #333; top: 2px; border-top: 3px solid var(--turret-color);
-}
+[data-type="0"] .mini-weapon::before, [data-type="0"] .mini-weapon::after { content: ''; position: absolute; width: 3px; height: 14px; background: #333; top: 2px; border-top: 3px solid var(--turret-color); }
 [data-type="0"] .mini-weapon::before { left: 10px; } [data-type="0"] .mini-weapon::after { right: 10px; }
-
-/* Type 1: Frost Ray */
-[data-type="1"] .mini-weapon::before { 
-  content: ''; position: absolute; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 18px solid #2c3e50; top: 4px; left: 8px; 
-}
+[data-type="1"] .mini-weapon::before { content: ''; position: absolute; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 18px solid #2c3e50; top: 4px; left: 8px; }
 [data-type="1"] .mini-weapon::after { content: ''; position: absolute; width: 2px; height: 22px; background: var(--turret-color); top: 2px; left: 15px; }
-
-/* Type 2: Blast Nova */
-[data-type="2"] .mini-weapon::before { 
-  content: ''; position: absolute; width: 16px; height: 16px; background: #2c3e50; border: 1.5px solid #111; top: 8px; left: 8px; 
-}
+[data-type="2"] .mini-weapon::before { content: ''; position: absolute; width: 16px; height: 16px; background: #2c3e50; border: 1.5px solid #111; top: 8px; left: 8px; }
 [data-type="2"] .mini-weapon::after { content: ''; position: absolute; width: 18px; height: 4px; background: var(--turret-color); top: 14px; left: 7px; }
-
-/* Type 3: Railgun */
-[data-type="3"] .mini-weapon::before, [data-type="3"] .mini-weapon::after { 
-  content: ''; position: absolute; width: 2px; height: 26px; background: #333; top: 0; 
-}
+[data-type="3"] .mini-weapon::before, [data-type="3"] .mini-weapon::after { content: ''; position: absolute; width: 2px; height: 26px; background: #333; top: 0; }
 [data-type="3"] .mini-weapon::before { left: 10px; } [data-type="3"] .mini-weapon::after { right: 10px; }
-[data-type="3"] .mini-head::after {
-  content: ''; position: absolute; width: 10px; height: 12px;
-  background: repeating-linear-gradient(to bottom, var(--turret-color), var(--turret-color) 2px, transparent 2px, transparent 4px);
-  top: 6px; left: 11px;
-}
-
-/* Type 4: Tesla Link */
-[data-type="4"] .mini-weapon::before {
-  content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--turret-color); top: 9px; left: 9px;
-}
+[data-type="3"] .mini-head::after { content: ''; position: absolute; width: 10px; height: 12px; background: repeating-linear-gradient(to bottom, var(--turret-color), var(--turret-color) 2px, transparent 2px, transparent 4px); top: 6px; left: 11px; }
+[data-type="4"] .mini-weapon::before { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--turret-color); top: 9px; left: 9px; }
 [data-type="4"] .mini-core { background: #fff !important; width: 4px; height: 4px; }
 
 /* MISC */
+.loading-overlay { 
+  position: fixed; inset: 0; background: #000; color: var(--neon-cyan); 
+  display: flex; justify-content: center; align-items: center; 
+  z-index: 9999; font-weight: 900; letter-spacing: 4px;
+}
+
 .pause-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 5000; pointer-events: auto; }
 .pause-content { background: #050505; border: 2px solid var(--neon-blue); padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 20px; box-shadow: 0 0 30px rgba(0, 102, 255, 0.3); }
 
@@ -281,5 +275,12 @@ html, body, #root {
 .shape.square { border: 1px solid #fff; }
 .shape.hexagon { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
 
-.orientation-warning { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; text-align: center; }
+.orientation-warning { 
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+  background: #000; color: var(--neon-blue); 
+  display: none; flex-direction: column; justify-content: center; align-items: center; 
+  z-index: 99999; text-align: center; font-weight: 900; letter-spacing: 2px;
+}
 @media (orientation: portrait) { .orientation-warning { display: flex; } }
+.warning-icon { font-size: 4rem; margin-bottom: 20px; animation: rotate-studio 3s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes rotate-studio { 0% { transform: rotate(0deg) scale(1); opacity: 0.5; } 50% { transform: rotate(90deg) scale(1.1); opacity: 1; } 100% { transform: rotate(0deg) scale(1); opacity: 0.5; } }

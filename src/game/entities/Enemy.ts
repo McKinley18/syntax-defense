@@ -28,7 +28,7 @@ export class Enemy {
     constructor(type: EnemyType, waveNumber: number) {
         this.type = type;
         this.container = new PIXI.Container();
-        this.pathPoints = GameContainer.instance.pathManager.getPathPoints();
+        this.pathPoints = GameContainer.instance!.pathManager.getPathPoints();
         
         const config = VISUAL_REGISTRY[type];
         
