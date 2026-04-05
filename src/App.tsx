@@ -611,14 +611,14 @@ function App() {
           )}
           {showTutorialComplete && (
             <div className="pause-overlay-locked">
-              <div className="pause-content" style={{width: '450px', padding: '25px', border: '2px solid var(--neon-cyan)'}}>
-                <div className="rank-tag" style={{background: 'var(--neon-cyan)', color: '#000'}}>INITIALIZATION COMPLETE</div>
-                <h2 className="pause-title" style={{marginTop: '10px'}}>MISSION OBJECTIVE</h2>
-                <div className="manual-text" style={{fontSize: '0.75rem', lineHeight: '1.6'}}>
-                  <p style={{margin: '10px 0'}}>&gt; YOU HAVE SUCCESSFULLY SECURED THE GRID FOR THIS INITIAL SWARM.</p>
-                  <p style={{margin: '10px 0'}}>&gt; WARNING: SUBSEQUENT VIRAL PACKETS WILL BE FASTER AND MORE NUMEROUS.</p>
-                  <p style={{margin: '10px 0'}}>&gt; RE-DEPLOY YOUR TURRETS WISELY EVERY WAVE TO MANAGE YOUR CAPITAL.</p>
-                  <p style={{margin: '10px 0'}}>&gt; MAINTAIN THE SYNTAX. PROTECT THE CORE.</p>
+              <div className="pause-content" style={{width: '450px', padding: '15px 25px', border: '2px solid var(--neon-cyan)', gap: '5px'}}>
+                <div className="rank-tag" style={{background: 'var(--neon-cyan)', color: '#000', marginBottom: 0}}>INITIALIZATION COMPLETE</div>
+                <h2 className="pause-title" style={{margin: '5px 0'}}>MISSION OBJECTIVE</h2>
+                <div className="manual-text" style={{fontSize: '0.75rem', lineHeight: '1.5', marginTop: '5px'}}>
+                  <p style={{margin: '6px 0'}}>&gt; YOU HAVE SUCCESSFULLY SECURED THE GRID FOR THIS INITIAL SWARM.</p>
+                  <p style={{margin: '6px 0'}}>&gt; WARNING: SUBSEQUENT VIRAL PACKETS WILL BE FASTER AND MORE NUMEROUS.</p>
+                  <p style={{margin: '6px 0'}}>&gt; RE-DEPLOY YOUR TURRETS WISELY EVERY WAVE TO MANAGE YOUR CAPITAL.</p>
+                  <p style={{margin: '6px 0'}}>&gt; MAINTAIN THE SYNTAX. PROTECT THE CORE.</p>
                 </div>
                 <button className="blue-button" onClick={() => {
                   localStorage.setItem('syntax_tutorial_done', 'true');

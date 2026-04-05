@@ -71,6 +71,14 @@ export class WaveManager {
 
         if (this.game.isTutorialActive) {
             this.enemiesToSpawn = 1;
+            // WE NEED IT TO SURVIVE LONGER FOR DEMO
+            setTimeout(() => {
+                const enemies = this.game.enemyLayer.children as any[];
+                if (enemies.length > 0) {
+                    enemies[0].hp = 500; 
+                    enemies[0].maxHp = 500;
+                }
+            }, 100);
         } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
