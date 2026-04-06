@@ -48,16 +48,15 @@ export class PathManager {
         this.microCols = visibleCols;
 
         // TUTORIAL OVERRIDE: STRAIGHT PATH FROM LEFT TO RIGHT
-        if (GameContainer.instance?.isTutorialActive && waveNumber === 0) {
+        // MANDATE: Only ever for wave 0
+        if (waveNumber === 0) {
             const topMargin = 2;
             const bottomMargin = 8;
-            const availRows = visibleRows - (topMargin + bottomMargin);
-            
-            // Set offsets so buildMicroPathFromMacro uses them
+            const availRows = Math.max(4, visibleRows - (topMargin + bottomMargin));
+
             this.offsetX = 0;
             this.offsetY = topMargin;
 
-            // Middle of the available rows
             const midMacroY = Math.floor(Math.floor(availRows / 4) / 2);
             const macroCols = Math.floor((visibleCols - 2) / 4);
 
@@ -67,16 +66,14 @@ export class PathManager {
             return true;
         }
 
-        const topMargin = 2; // TOP BUFFER
-        const bottomMargin = 8; // HUGE BOTTOM BUFFER FOR DASHBOARD
-
-        const availCols = visibleCols - 2; 
-        const availRows = visibleRows - (topMargin + bottomMargin);
-
-        const macroCols = Math.floor(availCols / 4);
+        // REAL GAME GENERATION
+        const topMargin = 2;
+        const bottomMargin = 8; 
+        const availRows = Math.max(4, visibleRows - (topMargin + bottomMargin));
+        const macroCols = Math.floor((visibleCols - 2) / 4);
         const macroRows = Math.floor(availRows / 4);
 
-        if (macroCols <= 0 || macroRows <= 0) return false;
+        if (macroRows < 1 || macroCols < 2) return false;
 
         this.offsetX = 0; 
         this.offsetY = topMargin;
