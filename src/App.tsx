@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { GameContainer } from './game/GameContainer';
 import { GameStateManager, type GameMode } from './game/systems/GameStateManager';
 import { TowerType, TOWER_CONFIGS } from './game/entities/Tower';
+import { EnemyType } from './game/entities/Enemy';
 import { VISUAL_REGISTRY } from './game/VisualRegistry';
 import { AudioManager } from './game/systems/AudioManager';
 import { TILE_SIZE, MapManager } from './game/systems/MapManager';
