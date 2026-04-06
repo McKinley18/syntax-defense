@@ -446,9 +446,9 @@ function App() {
           <div className="enc-header">SELECT ADVANCED PROTOCOL</div>
           <div className="menu-options-grid" style={{marginTop: '20px'}}>
             <button className="cyan-menu-btn" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>HARDCORE MODE</button>
-            <button className="cyan-menu-btn" onClick={() => startNewGame('SUDDEN DEATH')} style={{borderColor: '#ffcc00'}}>SUDDEN DEATH</button>
+            <button className="cyan-menu-btn" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}>SUDDEN DEATH</button>
             <button className="cyan-menu-btn" onClick={() => startNewGame('ENDLESS')}>ENDLESS LOOP</button>
-            <button className="cyan-menu-btn" onClick={() => startNewGame('ECO CHALLENGE')}>ECO CHALLENGE</button>
+            <button className="cyan-menu-btn" onClick={() => startNewGame('ECO_CHALLENGE')}>ECO CHALLENGE</button>
           </div>
           <button className="cyan-menu-btn back-btn" onClick={() => setScreen('MENU')}>RETURN TO ROOT</button>
         </div>

@@ -106,7 +106,7 @@ export class GameContainer {
         if (this.app.ticker) {
             this.app.ticker.remove(this.update, this);
         }
-        this.app.destroy({ children: true, texture: true });
+        this.app.destroy(true, { children: true });
         GameContainer.instance = null; 
     }
 
