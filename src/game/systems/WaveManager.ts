@@ -82,7 +82,7 @@ export class WaveManager {
         } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
-            this.enemiesToSpawn = 8 + Math.floor(this.waveNumber * 3.2);
+            this.enemiesToSpawn = 6 + Math.floor(this.waveNumber * 1.8);
         }
         this.totalEnemiesThisWave = this.enemiesToSpawn;
         this.spawnTimer = 0;
@@ -132,7 +132,7 @@ export class WaveManager {
 
             if (enemy.health <= 0) {
                 const baseReward = enemy.type === EnemyType.BEHEMOTH ? 40 : enemy.type === EnemyType.FRACTAL ? 150 : 15;
-                const scaledReward = Math.floor(baseReward * Math.pow(1.05, this.waveNumber));
+                const scaledReward = Math.floor(baseReward * Math.pow(1.08, this.waveNumber));
                 
                 AudioManager.getInstance().playPurge();
                 GameStateManager.getInstance().addCredits(scaledReward);

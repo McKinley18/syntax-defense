@@ -124,7 +124,7 @@ function App() {
           setRank(state.architectRank);
           setWaveSummary(state.lastWaveSummary);
 
-          if (state.currentWave > 50 && state.gameMode === 'STANDARD') {
+          if (state.currentWave > 50 && state.gameMode !== 'ENDLESS') {
             setIsVictorious(true);
             setIsPaused(true);
           }
@@ -281,7 +281,7 @@ function App() {
   const useDataPurge = () => {
     if (credits >= 1000 && game?.waveManager) {
       AudioManager.getInstance().playPurge();
-      GameStateManager.getInstance().addCredits(-1000);
+      GameStateManager.getInstance().addCredits(-1000, 'spend');
       game.waveManager.dataPurge();
     }
   };
@@ -636,8 +636,8 @@ function App() {
               </div>
             </div>
           )}
-          {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={() => setScreen('MENU')}>RETURN TO ROOT</button></div></div>}
-          {isPaused && integrity > 0 && !isVictorious && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>RESUME</button><button className="blue-button" onClick={saveAndQuit}>SAVE & EXIT</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>ABANDON</button></div></div></div>}
+          {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={quitToMenu}>RETURN TO ROOT</button></div></div>}
+          {isPaused && integrity > 0 && !isVictorious && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>RESUME</button><button className="blue-button" onClick={saveAndQuit} disabled={isWaveActive} style={{opacity: isWaveActive ? 0.5 : 1}}>SAVE & EXIT</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>ABANDON</button></div></div></div>}
           
           {gamePhase === 'PREP' && !isPaused && integrity > 0 && !showTutorial && !showTutorialComplete && (!isTutorialActive || tutorialStep === 3) && (
             <div className="pre-wave-overlay">

@@ -43,12 +43,17 @@ export class Enemy {
             this.isGhost = true;
         }
 
-        const hpMult = Math.pow(1.15, waveNumber) * (this.isElite ? 3.5 : 1);
+        const hpMult = Math.pow(1.10, waveNumber) * (this.isElite ? 3.5 : 1);
         this.maxHealth = Math.floor(config.baseHp * hpMult);
         this.health = this.maxHealth;
         this.reward = Math.floor(config.reward * (this.isElite ? 2.5 : 1));
 
         let finalSpeed = config.speed;
+        
+        // PROGRESSIVE PRESSURE: +0.5% speed per wave (Cap at 25% extra)
+        const waveSpeedMult = Math.min(1.25, 1 + (waveNumber * 0.005));
+        finalSpeed *= waveSpeedMult;
+
         if (GameStateManager.getInstance().activeGlitch === 'LAG_SPIKE') finalSpeed *= 0.7;
         this.speed = finalSpeed;
 

@@ -84,9 +84,9 @@ export class PathManager {
         let path: GridCoord[] = [];
         let visited = new Set<string>();
         
-        // ADAPTIVE INTEREST: Length increases by 10% per wave
+        // WEALTH REACTIVE DIFFICULTY: Shorter path = less time to kill
         const state = GameStateManager.getInstance();
-        const wealthMult = state.credits > 2500 ? 1.4 : 1.0; // WEALTH REACTIVE DIFFICULTY
+        const wealthMult = state.credits > 2500 ? 0.75 : 1.0; 
         
         const baseTarget = Math.floor(macroCols * macroRows * 0.35 * wealthMult);
         const waveBonus = Math.floor(waveNumber * 1.2);

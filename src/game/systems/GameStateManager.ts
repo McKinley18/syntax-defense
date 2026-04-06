@@ -33,19 +33,25 @@ export class GameStateManager {
         return GameStateManager.instance;
     }
 
-    public addCredits(amount: number, reason: 'kill' | 'interest' | 'perfect' = 'kill') {
+    public addCredits(amount: number, reason: 'kill' | 'interest' | 'perfect' | 'spend' | 'refund' = 'kill') {
         if (this.gameMode === 'ECO_CHALLENGE' && reason === 'kill') return; 
         this.credits += amount;
 
         if (reason === 'kill') this.lastWaveSummary.kills += amount;
         else if (reason === 'interest') this.lastWaveSummary.interest += amount;
         else if (reason === 'perfect') this.lastWaveSummary.perfectBonus += amount;
-        this.lastWaveSummary.total += amount;
+        
+        if (amount > 0 && reason !== 'refund') {
+            this.lastWaveSummary.total += amount;
+        }
     }
 
     public takeDamage(amount: number) {
         this.integrity = Math.max(0, this.integrity - amount);
         this.integrityLostThisWave = true;
+        if (this.integrity === 0) {
+            localStorage.removeItem('syntax_defense_save');
+        }
     }
 
     public calculateRank(): string {
@@ -115,7 +121,8 @@ export class GameStateManager {
         }
 
         if (this.gameMode !== 'HARDCORE') {
-            const interest = Math.ceil(this.credits * this.interestRate); 
+            const potentialInterest = Math.ceil(this.credits * this.interestRate); 
+            const interest = Math.min(1000, potentialInterest); // INTEREST CAP: Prevent infinite snowball
             this.addCredits(interest, 'interest');
         }
 
@@ -142,6 +149,8 @@ export class GameStateManager {
         this.currentWave = 1;
         this.repairCost = 500;
         this.interestRate = mode === 'HARDCORE' ? 0 : 0.10;
+        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
+        this.activeGlitch = 'NONE';
         this.save();
     }
 

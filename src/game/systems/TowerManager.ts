@@ -186,10 +186,30 @@ export class TowerManager {
     }
 
     public clearTowers() {
+        let totalRefund = 0;
         this.towers.forEach(t => {
+            const baseCost = TOWER_CONFIGS[t.type].cost;
+            let towerValue = baseCost;
+            if (t.level >= 2) towerValue += Math.floor(baseCost * 1.5);
+            if (t.level >= 3) towerValue += Math.floor(baseCost * 2.0);
+            
+            if (GameStateManager.getInstance().gameMode === 'HARDCORE') {
+                towerValue = Math.floor(towerValue * 1.5);
+            }
+            if (GameStateManager.getInstance().integrity < 10 && GameStateManager.getInstance().gameMode !== 'SUDDEN_DEATH') {
+                towerValue = Math.floor(towerValue * 0.85);
+            }
+            
+            totalRefund += Math.floor(towerValue * 0.75);
+
             this.game.towerLayer.removeChild(t.container);
             t.container.destroy({ children: true });
         });
+
+        if (totalRefund > 0) {
+            GameStateManager.getInstance().addCredits(totalRefund, 'refund');
+        }
+
         this.towers = [];
         this.linkGraphics.clear();
     }

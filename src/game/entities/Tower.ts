@@ -179,6 +179,10 @@ export class Tower {
 
         if (this.type === TowerType.TESLA_LINK) {
             this.chainFire(target, allEnemies, totalDmg);
+        } else if (this.type === TowerType.FROST_RAY) {
+            target.takeDamage(totalDmg, this.type);
+            target.freeze(30); // Apply 30 frame freeze
+            this.drawEffect(target.container.x, target.container.y, 'line');
         } else if (this.config.damage > 25) { 
             this.drawEffect(target.container.x, target.container.y, 'ring');
             const impactRSq = 3600; // 60px radius squared
