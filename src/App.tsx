@@ -248,6 +248,7 @@ function App() {
       setTutorialStep(0);
     } else {
       GameStateManager.getInstance().resetGame(mode);
+      setShowCombatIntel(true); // AUTO-TRIGGER BRIEFING
     }
     
     setIsVictorious(false);
