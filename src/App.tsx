@@ -170,9 +170,10 @@ function App() {
           setRank(state.architectRank);
           setWaveSummary(state.lastWaveSummary);
 
-          // WAVE STATS TRIGGER (After Wave 1+)
-          if (state.phase === 'PREP' && state.currentWave >= 1 && state.lastWaveSummary && !showWaveSummaryPopup && !showCombatIntel) {
+          // WAVE STATS TRIGGER (Signalled by Engine)
+          if (g.waveManager.isSummaryActive && !showWaveSummaryPopup && !showCombatIntel) {
              setShowWaveSummaryPopup(true);
+             g.waveManager.isSummaryActive = false; // CONSUME THE TRIGGER
           }
 
           if (state.currentWave > 50 && state.gameMode !== 'ENDLESS') {
@@ -798,7 +799,9 @@ function App() {
             setShowTutorialComplete(false);
             setIsTutorialActive(false);
             localStorage.setItem('syntax_tutorial_done', 'true');
-            game?.waveManager.prepareWave(true);
+            GameStateManager.getInstance().resetGame('STANDARD'); // FORCE WAVE 1
+            game?.waveManager.prepareWave(false); // Prep the new path for Wave 1
+            setShowWaveSummaryPopup(false);
             setShowCombatIntel(true); 
           }}>START GAME</button>
         </div>

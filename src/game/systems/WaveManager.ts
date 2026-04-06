@@ -9,6 +9,7 @@ export class WaveManager {
     public enemies: Enemy[] = [];
     public waveNumber: number = 0; // START AT 0 FOR TUTORIAL
     public isWaveActive: boolean = false;
+    public isSummaryActive: boolean = false;
     
     private spawnTimer: number = 0;
     private enemiesToSpawn: number = 0;
@@ -154,7 +155,8 @@ export class WaveManager {
         if (this.enemiesToSpawn === 0 && this.enemies.length === 0 && !this.hasProcessedEnd) {
             this.hasProcessedEnd = true; 
             this.isWaveActive = false;
-            this.prepareWave(); // THIS WILL NOT RESET hasProcessedEnd
+            if (this.waveNumber > 0) this.isSummaryActive = true; 
+            this.prepareWave(); 
         }
     }
 

@@ -103,14 +103,14 @@ export class GameStateManager {
     public resetForNextWave() {
         if (this.integrity <= 0) return;
 
-        // RESET WAVE SUMMARY
-        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
-
         // META XP GRANT
         const waveXP = this.currentWave * 50 * (this.gameMode === 'HARDCORE' ? 2 : 1);
         this.totalXP += waveXP;
         this.saveXP();
         this.architectRank = this.calculateRank();
+
+        // RESET WAVE SUMMARY FOR THE NEW WAVE WE ARE ABOUT TO ENTER
+        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
 
         // PERFECT WAVE BONUS
         if (!this.integrityLostThisWave && this.gameMode !== 'HARDCORE') {
@@ -122,7 +122,7 @@ export class GameStateManager {
 
         if (this.gameMode !== 'HARDCORE') {
             const potentialInterest = Math.ceil(this.credits * this.interestRate); 
-            const interest = Math.min(1000, potentialInterest); // INTEREST CAP: Prevent infinite snowball
+            const interest = Math.min(1000, potentialInterest); 
             this.addCredits(interest, 'interest');
         }
 
@@ -146,10 +146,11 @@ export class GameStateManager {
         const bonus = this.getRankBonus();
         this.credits = (mode === 'HARDCORE' || mode === 'ECO_CHALLENGE') ? 1000 : (850 + bonus);
         this.integrity = mode === 'SUDDEN_DEATH' ? 1 : 20;
-        this.currentWave = 1; // RESET TO LEVEL 1 FOR REAL GAMES
+        this.currentWave = 1; 
         this.repairCost = 500;
         this.interestRate = mode === 'HARDCORE' ? 0 : 0.10;
         this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
+        this.integrityLostThisWave = false;
         this.activeGlitch = 'NONE';
         this.save();
     }

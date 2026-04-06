@@ -280,11 +280,11 @@ body::after {
 
 /* 6. OVERLAYS */
 .pre-wave-overlay, .victory-overlay {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
   background: rgba(0, 5, 10, 0.98); border: 2px solid var(--neon-blue); padding: min(15px, 3vh);
   width: 92vw; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: min(8px, 1.5vh);
   pointer-events: auto; z-index: 30000;
-  max-height: 85vh; overflow-y: auto;
+  max-height: 65vh; overflow-y: auto;
   box-shadow: 0 0 40px rgba(0, 102, 255, 0.4);
 }
 
