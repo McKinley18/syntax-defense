@@ -31,7 +31,12 @@ body::after {
   pointer-events: none; 
 }
 
-.ui-layer button, .ui-layer .protocol-card, .ui-layer .info-tabs button {
+.ui-layer button, 
+.ui-layer .protocol-card, 
+.ui-layer .info-tabs button, 
+.ui-layer .pause-overlay-locked,
+.ui-layer .pause-content,
+.ui-layer .pre-wave-overlay {
   pointer-events: auto; 
 }
 
