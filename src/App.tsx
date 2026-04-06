@@ -205,21 +205,20 @@ function App() {
   useEffect(() => {
     const triggerAtmospheric = () => {
       const type = Math.random();
-      if (type < 0.05) {
+      if (type < 0.15) { // INCREASED FROM 0.05
         setIsDistorted(true);
         setGlitchIndex(Math.floor(Math.random() * 13));
         AudioManager.getInstance().playGlitchBuzz();
-        // Removed playBreach() to prevent confusion with actual core damage
         setTimeout(() => {
           setIsDistorted(false);
           setGlitchIndex(-1);
         }, 200);
-      } else if (type < 0.20) {
+      } else if (type < 0.40) { // INCREASED FROM 0.20
         setIsFlickering(true);
         setTimeout(() => setIsFlickering(false), 150);
       }
     };
-    const interval = setInterval(triggerAtmospheric, 8000);
+    const interval = setInterval(triggerAtmospheric, 5000); // REDUCED FROM 8000
     return () => clearInterval(interval);
   }, []);
 
