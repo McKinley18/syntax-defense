@@ -529,7 +529,12 @@ function App() {
                   <div className="visual-grid">
                     {Object.values(VISUAL_REGISTRY).map(v => (
                       <div key={v.name} className="visual-card-large">
-                        <div className="card-visual-box"><div className={`shape ${v.shape}`} style={{ background: v.colorHex }}></div></div>
+                        <div className="card-visual-box">
+                          <div 
+                            className={`shape ${v.shape}`} 
+                            style={v.shape === 'triangle' ? { borderBottomColor: v.colorHex } : { background: v.colorHex }}
+                          ></div>
+                        </div>
                         <div className="card-detail-box">
                           <div className="label">{v.name}</div>
                           <div className="stats">HP: {v.baseHp} // SPD: {v.speed}x // PRIORITY: {v.priority}</div>
