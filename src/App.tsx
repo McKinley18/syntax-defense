@@ -370,7 +370,7 @@ function App() {
 
       {/* INTERACTIVE TUTORIAL OVERLAYS */}
       {isTutorialActive && (
-        <div className="tutorial-mask" style={{ pointerEvents: (tutorialStep === 2 && !showRadiusExplanation && !showCombatIntel) ? 'none' : 'auto' }}>
+        <div className="tutorial-mask" style={{ pointerEvents: (showTutorial || showTutorialComplete || (tutorialStep === 2 && !showRadiusExplanation && !showCombatIntel)) ? 'none' : 'auto' }}>
           <div className="rank-tag" style={{position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0, 255, 204, 0.1)', border: '1px solid rgba(0, 255, 204, 0.4)', color: 'var(--neon-cyan)', padding: '5px 15px', zIndex: 16000, fontSize: '0.6rem'}}>
             TUTORIAL MODE ACTIVE
           </div>

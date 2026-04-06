@@ -27,7 +27,7 @@ body::after {
 
 .ui-layer {
   position: fixed; inset: 0;
-  z-index: 10000;
+  z-index: 30000;
   pointer-events: none; 
 }
 
