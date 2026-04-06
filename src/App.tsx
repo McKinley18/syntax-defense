@@ -780,8 +780,8 @@ function App() {
              <div className="intel-header">MISSION: {waveName}</div>
              <div className="intel-grid-horizontal">
                 {upcomingEnemies.map((type, idx) => {
-                  const typeName = (EnemyType as any)[type] as keyof typeof VISUAL_REGISTRY;
-                  const reg = VISUAL_REGISTRY[typeName];
+                  const reg = VISUAL_REGISTRY[type as EnemyType];
+                  if (!reg) return null;
                   return (
                     <div key={idx} className="intel-card-modern">
                       <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex } : { background: reg.colorHex }}></div>
