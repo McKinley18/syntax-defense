@@ -114,7 +114,8 @@ body::after {
   display: flex; flex-direction: column; 
   justify-content: space-between; 
   align-items: center; 
-  padding: 8dvh 0 20dvh 0; /* MAXIMIZED BOTTOM SPACE */
+  padding: 8dvh 0 25dvh 0; /* MAXIMIZED BOTTOM SPACE */
+  padding-bottom: max(25dvh, env(safe-area-inset-bottom));
   perspective: 1500px; 
 }
 .menu-content-centered { 

@@ -1,7 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { TILE_SIZE } from './MapManager';
 import { GameStateManager } from './GameStateManager';
-import { GameContainer } from '../GameContainer';
 
 export interface GridCoord {
     x: number;
@@ -38,7 +37,11 @@ export class PathManager {
             const dx = pts[i+1].x - pts[i].x;
             const dy = pts[i+1].y - pts[i].y;
             const dist = Math.sqrt(dx*dx + dy*dy);
-            this.pathVectors.push({ dx: dx/dist, dy: dy/dist });
+            if (dist > 0) {
+                this.pathVectors.push({ dx: dx/dist, dy: dy/dist });
+            } else {
+                this.pathVectors.push({ dx: 1, dy: 0 });
+            }
         }
     }
 
@@ -47,63 +50,58 @@ export class PathManager {
         const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
         this.microCols = visibleCols;
 
+        // MANDATE: USE ENTIRE SPACE EXCEPT TOP AND BOTTOM ROW
+        // Top row is 0, Bottom row is visibleRows - 1
+        const playableTop = 1;
+        const playableBottom = visibleRows - 2;
+        const playableRows = playableBottom - playableTop + 1;
+
+        if (playableRows < 4) return false; // Safety check
+
         // TUTORIAL OVERRIDE: STRAIGHT PATH FROM LEFT TO RIGHT
-        // MANDATE: Only ever for wave 0
         if (waveNumber === 0) {
-            const topMargin = 2;
-            const bottomMargin = 8;
-            const availRows = Math.max(4, visibleRows - (topMargin + bottomMargin));
-
             this.offsetX = 0;
-            this.offsetY = topMargin;
+            this.offsetY = playableTop;
 
-            const midMacroY = Math.floor(Math.floor(availRows / 4) / 2);
-            const macroCols = Math.floor((visibleCols - 2) / 4);
-
-            const tutorialPath = [{x: 0, y: midMacroY}, {x: macroCols, y: midMacroY}];
-            this.macroPath = tutorialPath;
-            this.buildMicroPathFromMacro(tutorialPath);
+            const midY = Math.floor(playableRows / 2);
+            // Tutorial path is just a line across the middle
+            this.pathCells = [];
+            for (let x = 0; x < visibleCols; x++) {
+                this.pathCells.push({ x, y: playableTop + midY });
+            }
+            this.startNodePos = new PIXI.Point(0, (playableTop + midY) * TILE_SIZE + TILE_SIZE / 2);
+            this.endNodePos = new PIXI.Point(visibleCols * TILE_SIZE, (playableTop + midY) * TILE_SIZE + TILE_SIZE / 2);
             return true;
         }
 
-        // REAL GAME GENERATION
-        const topMargin = 2;
-        const bottomMargin = 8; 
-        const availRows = Math.max(4, visibleRows - (topMargin + bottomMargin));
-        const macroCols = Math.floor((visibleCols - 2) / 4);
-        const macroRows = Math.floor(availRows / 4);
+        // REAL GAME GENERATION (Random Walk / DFS)
+        // We use a macro grid where each macro cell is 2x2 micro tiles to match the enemy stamp
+        const macroCols = Math.floor((visibleCols) / 2);
+        const macroRows = Math.floor(playableRows / 2);
 
-        if (macroRows < 1 || macroCols < 2) return false;
-
-        this.offsetX = 0; 
-        this.offsetY = topMargin;
+        if (macroCols < 4 || macroRows < 2) return false;
 
         const startY = Math.floor(Math.random() * macroRows);
         const path: GridCoord[] = [];
         const visited = new Set<string>();
         
-        // WEALTH REACTIVE DIFFICULTY: Shorter path = less time to kill
         const state = GameStateManager.getInstance();
         const wealthMult = state.credits > 2500 ? 0.75 : 1.0; 
         
-        // DYNAMIC COMPLEXITY: Target length varies significantly each wave
-        const complexityFactor = 0.25 + (Math.random() * 0.2); 
-        const baseTarget = Math.floor(macroCols * macroRows * complexityFactor * wealthMult);
-        const waveBonus = Math.floor(waveNumber * 0.8);
-        const targetLength = Math.min(macroCols * macroRows * 0.85, baseTarget + waveBonus);
+        const complexityFactor = 0.3 + (Math.random() * 0.2); 
+        const targetLength = Math.floor(macroCols * macroRows * complexityFactor * wealthMult);
 
-        // RANDOMIZED DIRECTION BIAS: Each map has a unique "flow" personality
-        const forwardWeight = 5 + Math.random() * 10;
-        const verticalWeight = 2 + Math.random() * 15;
-        const backWeight = Math.random() * 3;
+        const forwardWeight = 10 + Math.random() * 10;
+        const verticalWeight = 5 + Math.random() * 15;
+        const backWeight = 1;
 
         const dfs = (mx: number, my: number): boolean => {
             if (mx === macroCols - 1) {
-                // Variation: End point can be any Y on the last column
-                if (path.length >= targetLength) {
+                if (path.length >= Math.min(macroCols, targetLength / 2)) {
                     path.push({ x: mx, y: my });
                     return true;
                 }
+                return false;
             }
 
             visited.add(`${mx},${my}`);
@@ -116,13 +114,17 @@ export class PathManager {
                 { dx: -1, dy: 0, weight: backWeight }   
             ];
 
-            // Add slight per-step jitter to weights
-            dirs.sort((a, b) => (Math.random() * b.weight * (0.8 + Math.random() * 0.4)) - (Math.random() * a.weight * (0.8 + Math.random() * 0.4)));
+            dirs.sort((a, b) => (Math.random() * b.weight) - (Math.random() * a.weight));
 
             for (const d of dirs) {
                 const nx = mx + d.dx;
                 const ny = my + d.dy;
+                
                 if (nx >= 0 && nx < macroCols && ny >= 0 && ny < macroRows) {
+                    // MANDATE: Only entrance and exit touch left/right
+                    if (nx === 0 && mx !== 0) continue; 
+                    // nx === macroCols - 1 is handled by the goal condition
+                    
                     if (!visited.has(`${nx},${ny}`)) {
                         if (dfs(nx, ny)) return true;
                     }
@@ -134,52 +136,50 @@ export class PathManager {
             return false;
         };
 
-        const success = dfs(0, startY);
-        if (success) {
+        if (dfs(0, startY)) {
             this.macroPath = path;
-            this.buildMicroPathFromMacro(path);
+            this.buildMicroPathFromMacro(path, playableTop);
+            return true;
         }
-        return success;
+        return false;
     }
 
-    private buildMicroPathFromMacro(macroPath: GridCoord[]) {
+    private buildMicroPathFromMacro(macroPath: GridCoord[], playableTop: number) {
         this.pathCells = [];
+        // Each macro coord (mx, my) maps to micro tiles (mx*2, playableTop + my*2)
         for (let i = 0; i < macroPath.length; i++) {
-            const mc = macroPath[i];
-            const microCenterX = this.offsetX + (mc.x * 4) + 1;
-            const microCenterY = this.offsetY + (mc.y * 4) + 1;
+            const curr = macroPath[i];
+            const microX = curr.x * 2;
+            const microY = playableTop + curr.y * 2;
+
+            // Add the 2x2 block for this macro cell
+            this.pathCells.push({ x: microX, y: microY });
+            this.pathCells.push({ x: microX + 1, y: microY });
+            this.pathCells.push({ x: microX, y: microY + 1 });
+            this.pathCells.push({ x: microX + 1, y: microY + 1 });
 
             if (i === 0) {
-                for (let x = 0; x <= microCenterX; x++) {
-                    this.pathCells.push({ x, y: microCenterY });
-                }
-                this.startNodePos = new PIXI.Point(0, microCenterY * TILE_SIZE + TILE_SIZE);
+                this.startNodePos = new PIXI.Point(0, (microY + 1) * TILE_SIZE);
             }
-
-            if (i > 0) {
-                const prev = macroPath[i - 1];
-                const prevCenterX = this.offsetX + (prev.x * 4) + 1;
-                const prevCenterY = this.offsetY + (prev.y * 4) + 1;
-
-                if (mc.x > prev.x) { for (let x = prevCenterX + 1; x <= microCenterX; x++) this.pathCells.push({ x, y: microCenterY }); }
-                else if (mc.x < prev.x) { for (let x = prevCenterX - 1; x >= microCenterX; x--) this.pathCells.push({ x, y: microCenterY }); }
-                else if (mc.y > prev.y) { for (let y = prevCenterY + 1; y <= microCenterY; y++) this.pathCells.push({ x: microCenterX, y }); }
-                else if (mc.y < prev.y) { for (let y = prevCenterY - 1; y >= microCenterY; y--) this.pathCells.push({ x: microCenterX, y }); }
-            }
-
             if (i === macroPath.length - 1) {
-                for (let x = microCenterX + 1; x < this.microCols; x++) {
-                    this.pathCells.push({ x: x, y: microCenterY });
-                }
-                this.endNodePos = new PIXI.Point(this.microCols * TILE_SIZE, microCenterY * TILE_SIZE + TILE_SIZE);
+                this.endNodePos = new PIXI.Point(this.microCols * TILE_SIZE, (microY + 1) * TILE_SIZE);
+            }
+
+            // Bridge gap to next cell if needed (DFS ensures adjacency, but we might need filler)
+            if (i < macroPath.length - 1) {
+                const next = macroPath[i+1];
+                // Since it's a DFS on a grid, they are already adjacent. 
+                // The 2x2 blocks will touch.
             }
         }
     }
 
     public getPathPoints(): PIXI.Point[] {
+        // Sort path cells to ensure enemies follow the sequence
+        // Actually, pathCells should already be in order from buildMicroPathFromMacro
         return this.pathCells.map(c => new PIXI.Point(
-            c.x * TILE_SIZE + TILE_SIZE, 
-            c.y * TILE_SIZE + TILE_SIZE
+            c.x * TILE_SIZE + TILE_SIZE / 2, 
+            c.y * TILE_SIZE + TILE_SIZE / 2
         ));
     }
 }

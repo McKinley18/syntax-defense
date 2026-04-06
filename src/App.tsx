@@ -613,6 +613,38 @@ function App() {
                     ))}
                   </div>
                 )}
+                {infoTab === 'PROTOCOLS' && (
+                  <div className="visual-grid">
+                    {Object.keys(TOWER_CONFIGS).map(key => {
+                      const type = parseInt(key) as TowerType;
+                      const cfg = TOWER_CONFIGS[type];
+                      return (
+                        <div key={key} className="visual-card-large">
+                          <div className="card-visual-box">
+                            <div className="mini-turret" data-type={type} style={{transform: 'scale(1.2)'}}>
+                              <div className="mini-base"></div>
+                              <div className="mini-head">
+                                <div className="mini-weapon"></div>
+                                <div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="card-detail-box">
+                            <div className="label">{cfg.name}</div>
+                            <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range} // COST: {cfg.cost}c</div>
+                            <div className="desc">{
+                              type === 0 ? 'Rapid-fire logic pulse. Standard frontline defense.' :
+                              type === 1 ? 'Cryo-cycle beam. Applies 50% movement reduction.' :
+                              type === 2 ? 'High-voltage bridge. Arc damage to 3 adjacent targets.' :
+                              type === 3 ? 'Sub-atomic accelerator. High damage + Reveal stealth.' :
+                              'Global system buffer. Grants +25% DMG to all linked nodes.'
+                            }</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {infoTab === 'SYSTEM MODES' && (
                   <div className="manual-text">
                     <p><span style={{color: 'var(--neon-red)'}}>HARDCORE:</span> NO INTEREST REWARDS. UNIT COSTS INCREASED BY 50%. STARTING CAPITAL REDUCED. ONLY FOR ELITE SYSTEM ARCHITECTS.</p>
