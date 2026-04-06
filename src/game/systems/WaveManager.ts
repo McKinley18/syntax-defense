@@ -10,6 +10,7 @@ export class WaveManager {
     public waveNumber: number = 0; // START AT 0 FOR TUTORIAL
     public isWaveActive: boolean = false;
     public isSummaryActive: boolean = false;
+    public onWaveEnd: (() => void) | null = null;
     
     private spawnTimer: number = 0;
     private enemiesToSpawn: number = 0;
@@ -158,9 +159,8 @@ export class WaveManager {
             
             if (this.waveNumber > 0) {
                 this.isSummaryActive = true; 
-                // DO NOT call prepareWave yet - wait for player to click "NEXT" in UI
+                if (this.onWaveEnd) this.onWaveEnd();
             } else {
-                // Tutorial special case - auto-increment or handle via tutorial success
                 this.prepareWave(); 
             }
         }

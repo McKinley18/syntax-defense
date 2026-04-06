@@ -149,6 +149,14 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
+    if (game && game.waveManager) {
+      game.waveManager.onWaveEnd = () => {
+        setShowWaveSummaryPopup(true);
+      };
+    }
+  }, [game]);
+
+  useEffect(() => {
     if (game && game.towerManager) {
       game.towerManager.onTowerPlaced = () => {
         // Use a functional check or a ref-style access if needed, but useEffect dependency is cleaner
@@ -876,41 +884,48 @@ function App() {
             </div>
             <div className="dashboard-center">
               <div className="turret-row">
-                {[0, 1, 2, 3, 4].map(type => {
-                  const cfg = TOWER_CONFIGS[type as TowerType];
-                  const unlocked = type === 0 || isUnlocked(type); 
-                  
-                  let cost = cfg.cost;
-                  if (game?.towerManager) {
-                    const count = game.towerManager.getTowerCount(type as TowerType);
-                    const supplyMultiplier = count >= 4 ? 1.15 : 1.0;
-                    cost = Math.floor(cfg.cost * supplyMultiplier);
-                    if (gameMode === 'HARDCORE') cost = Math.floor(cost * 1.5);
-                    if (integrity < 10 && gameMode !== 'SUDDEN_DEATH') cost = Math.floor(cost * 0.85);
-                  } else {
-                    cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
-                  }
-                  
-                  return (
-                    <div 
-                      key={type} 
-                      ref={type === 0 ? firstTurretRef : null}
-                      className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} 
-                      data-type={type} 
-                      onClick={() => unlocked && selectTurret(type)}
-                    >
-                      {!unlocked && <div className="lock-icon">🔒</div>}
-                      <div className="hotkey-badge">{type + 1}</div>
-                      <div className="mini-turret"><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div></div></div>
-                      <div className="protocol-info">
-                        <span className="name">{cfg.name}</span>
-                        <span className="stats">PWR: {cfg.damage} // RTE: {cfg.rate * 16}ms</span>
-                        <span className="cost">{cost}c</span>
-                      </div>
-                    </div>
-                  );
-                })}
+               {[0, 1, 2, 3, 4].map(type => {
+                 const cfg = TOWER_CONFIGS[type as TowerType];
+                 const unlocked = type === 0 || isUnlocked(type);
+
+                 let cost = cfg.cost;
+                 if (game?.towerManager) {
+                   const count = game.towerManager.getTowerCount(type as TowerType);
+                   const supplyMultiplier = count >= 4 ? 1.15 : 1.0;
+                   cost = Math.floor(cfg.cost * supplyMultiplier);
+                   if (gameMode === 'HARDCORE') cost = Math.floor(cost * 1.5);
+                   if (integrity < 10 && gameMode !== 'SUDDEN_DEATH') cost = Math.floor(cost * 0.85);
+                 } else {
+                   cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
+                 }
+
+                 return (
+                   <div
+                     key={type}
+                     ref={type === 0 ? firstTurretRef : null}
+                     className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`}
+                     data-type={type}
+                     onClick={() => unlocked && selectTurret(type)}
+                   >
+                     {!unlocked && <div className="lock-icon">🔒</div>}
+                     <div className="hotkey-badge">{type + 1}</div>
+                     <div className="mini-turret" style={{transform: 'scale(0.8)', marginBottom: '2px'}}>
+                       <div className="mini-base"></div>
+                       <div className="mini-head">
+                         <div className="mini-weapon"></div>
+                         <div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div>
+                       </div>
+                     </div>
+                     <div className="protocol-info">
+                       <div className="name">{cfg.name}</div>
+                       <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range}</div>
+                       <div className="cost">{cost}c</div>
+                     </div>
+                   </div>
+                 );
+               })}
               </div>
+
             </div>
             <div className="dashboard-right">
               <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '160px', gap: '4px'}}>
