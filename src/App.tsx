@@ -130,6 +130,18 @@ function App() {
   }, [screen]);
 
   useEffect(() => {
+    if (game && game.towerManager) {
+      game.towerManager.onTowerPlaced = () => {
+        // Use a functional check or a ref-style access if needed, but useEffect dependency is cleaner
+        if (isTutorialActive) {
+          setTutorialStep(3);
+          setShowCombatIntel(true);
+        }
+      };
+    }
+  }, [game, isTutorialActive]);
+
+  useEffect(() => {
     if (screen === 'GAME' && !game && !isInitializing) {
       async function init() {
         setIsInitializing(true);
@@ -139,16 +151,6 @@ function App() {
         const tutorialDone = localStorage.getItem('syntax_tutorial_done');
         if (!tutorialDone && g.waveManager.waveNumber === 1) {
           setShowTutorial(true);
-        }
-
-        // TIE TUTORIAL CALLBACK
-        if (g.towerManager) {
-          g.towerManager.onTowerPlaced = () => {
-            if (isTutorialActive) {
-              setTutorialStep(3);
-              setShowCombatIntel(true);
-            }
-          };
         }
 
         const interval = setInterval(() => {
@@ -419,9 +421,9 @@ function App() {
                   pointerEvents: 'none'
                 }}
               ></div>
-              <div className="tutorial-pointer" 
+              <div className={`tutorial-pointer ${tilePos.y < 100 ? 'pointer-below' : ''}`} 
                 style={{
-                  top: tilePos.y - 65, 
+                  top: tilePos.y < 100 ? tilePos.y + TILE_SIZE + 10 : tilePos.y - 65, 
                   left: tilePos.x - (150 / 2) + (TILE_SIZE / 2), 
                   width: '150px', 
                   pointerEvents: 'none', 
