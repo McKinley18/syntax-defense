@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { GameContainer } from './game/GameContainer';
-import { GameStateManager, type GameMode } from './game/systems/GameStateManager';
+import { GameStateManager, type GameMode, type WaveSummary } from './game/systems/GameStateManager';
 import { TowerType, TOWER_CONFIGS } from './game/entities/Tower';
 import { EnemyType } from './game/entities/Enemy';
 import { VISUAL_REGISTRY } from './game/VisualRegistry';
@@ -34,7 +34,7 @@ function App() {
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
   const [upcomingEnemies, setUpcomingEnemies] = useState<number[]>([]);
-  const [waveSummary, setWaveSummary] = useState({ kills: 0, interest: 0, perfectBonus: 0, total: 0 });
+  const [waveSummary, setWaveSummary] = useState<WaveSummary>({ kills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 });
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
   const [isVictorious, setIsVictorious] = useState(false);
   const [resetStatus, setResetStatus] = useState("");
@@ -347,14 +347,6 @@ function App() {
       GameStateManager.getInstance().addCredits(-1000, 'spend');
       game.waveManager.dataPurge();
     }
-  };
-
-  const dismissTutorial = (permanent: boolean) => {
-    AudioManager.getInstance().playUiClick();
-    setShowTutorial(false);
-    setIsTutorialActive(true);
-    setTutorialStep(1);
-    if (permanent) localStorage.setItem('syntax_tutorial_done', 'true');
   };
 
   const isUnlocked = (type: number) => {
@@ -746,7 +738,7 @@ function App() {
             </div>
             <div className="stats-item">
               <div className="stats-label">REFUND CREDIT</div>
-              <div className="stats-value">+{waveSummary.refunds}c</div>
+              <div className="stats-value">+{waveSummary.refunds || 0}c</div>
             </div>
             <div className="stats-item">
               <div className="stats-label">INTEREST EARNED</div>
@@ -772,7 +764,8 @@ function App() {
              <div className="intel-header">MISSION: {waveName}</div>
              <div className="intel-grid-horizontal">
                 {upcomingEnemies.map((type, idx) => {
-                  const reg = VISUAL_REGISTRY[EnemyType[type] as keyof typeof VISUAL_REGISTRY];
+                  const typeName = (EnemyType as any)[type] as keyof typeof VISUAL_REGISTRY;
+                  const reg = VISUAL_REGISTRY[typeName];
                   return (
                     <div key={idx} className="intel-card-modern">
                       <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex } : { background: reg.colorHex }}></div>

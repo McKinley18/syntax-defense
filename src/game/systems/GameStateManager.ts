@@ -2,6 +2,14 @@ export type GlitchType = 'NONE' | 'OVERCLOCK' | 'LAG_SPIKE' | 'SYSTEM_DRAIN';
 export type GameMode = 'STANDARD' | 'HARDCORE' | 'ENDLESS' | 'SUDDEN_DEATH' | 'ECO_CHALLENGE';
 export type GamePhase = 'PREP' | 'WAVE';
 
+export interface WaveSummary {
+    kills: number;
+    interest: number;
+    perfectBonus: number;
+    refunds: number;
+    total: number;
+}
+
 export class GameStateManager {
     private static instance: GameStateManager;
     
@@ -18,7 +26,7 @@ export class GameStateManager {
     public totalXP: number = 0;
     public architectRank: string = "INITIATE";
 
-    public lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
+    public lastWaveSummary: WaveSummary = { kills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
 
     private integrityLostThisWave: boolean = false;
 
@@ -40,6 +48,7 @@ export class GameStateManager {
         if (reason === 'kill') this.lastWaveSummary.kills += amount;
         else if (reason === 'interest') this.lastWaveSummary.interest += amount;
         else if (reason === 'perfect') this.lastWaveSummary.perfectBonus += amount;
+        else if (reason === 'refund') this.lastWaveSummary.refunds += amount;
         
         if (amount > 0 && reason !== 'refund') {
             this.lastWaveSummary.total += amount;
@@ -110,7 +119,7 @@ export class GameStateManager {
         this.architectRank = this.calculateRank();
 
         // RESET WAVE SUMMARY FOR THE NEW WAVE WE ARE ABOUT TO ENTER
-        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
+        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
 
         // PERFECT WAVE BONUS
         if (!this.integrityLostThisWave && this.gameMode !== 'HARDCORE') {
@@ -149,7 +158,7 @@ export class GameStateManager {
         this.currentWave = 1; 
         this.repairCost = 500;
         this.interestRate = mode === 'HARDCORE' ? 0 : 0.10;
-        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };
+        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
         this.integrityLostThisWave = false;
         this.activeGlitch = 'NONE';
         this.save();
