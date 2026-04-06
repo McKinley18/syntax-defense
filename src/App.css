@@ -125,17 +125,17 @@ body::after {
 }
 .menu-title-static { 
   font-family: 'Arial Black', sans-serif; font-size: clamp(2.2rem, 12vw, 5rem); 
-  font-weight: 900; line-height: 0.8; text-align: center; color: #fff; 
+  font-weight: 900; line-height: 0.8; text-align: center; color: var(--neon-blue); 
   margin-top: 10px; margin-bottom: 25px; 
-  transform: rotateX(25deg) rotateY(-5deg) rotateZ(-1deg);
+  transform: rotateX(15deg); /* REDUCED TILT */
   transform-style: preserve-3d;
-  /* DEEP 3D BOX EXTRUSION */
+  /* DEEP NEON BLUE 3D EXTRUSION */
   text-shadow: 
-    0 1px 0 #ccc, 
-    0 2px 0 #c5c5c5, 
-    0 3px 0 #bbb, 
-    0 4px 0 #b5b5b5, 
-    0 5px 0 #aaa, 
+    0 1px 0 #0055dd, 
+    0 2px 0 #0044bb, 
+    0 3px 0 #0033aa, 
+    0 4px 0 #002299, 
+    0 5px 0 #001188, 
     0 6px 1px rgba(0,0,0,.1), 
     0 0 5px rgba(0,0,0,.1), 
     0 1px 3px rgba(0,0,0,.3), 
@@ -143,7 +143,7 @@ body::after {
     0 5px 10px rgba(0,0,0,.25), 
     0 10px 10px rgba(0,0,0,.2), 
     0 20px 20px rgba(0,0,0,.15),
-    0 0 30px rgba(0, 102, 255, 0.6);
+    0 0 30px rgba(0, 102, 255, 0.4);
   width: 100%;
   letter-spacing: -2px;
 }
