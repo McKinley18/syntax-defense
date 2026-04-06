@@ -47,7 +47,7 @@ export class PathManager {
         this.microCols = visibleCols;
 
         // TUTORIAL OVERRIDE: STRAIGHT PATH FROM LEFT TO RIGHT
-        if (waveNumber === 1 && localStorage.getItem('syntax_tutorial_done') !== 'true') {
+        if (GameContainer.instance?.isTutorialActive && waveNumber === 1) {
             const topMargin = 2;
             const bottomMargin = 8;
             const availRows = visibleRows - (topMargin + bottomMargin);
