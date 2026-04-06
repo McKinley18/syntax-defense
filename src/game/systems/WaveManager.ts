@@ -74,8 +74,8 @@ export class WaveManager {
             // WE NEED IT TO SURVIVE LONGER FOR DEMO
             setTimeout(() => {
                 if (this.enemies.length > 0) {
-                    this.enemies[0].health = 500; 
-                    this.enemies[0].maxHealth = 500;
+                    this.enemies[0].health = 120; 
+                    this.enemies[0].maxHealth = 120;
                 }
             }, 100);
         } else if (this.waveNumber % 10 === 0) {
