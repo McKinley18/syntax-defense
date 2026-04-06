@@ -167,7 +167,6 @@ export class PathManager {
 
             // Bridge gap to next cell if needed (DFS ensures adjacency, but we might need filler)
             if (i < macroPath.length - 1) {
-                const next = macroPath[i+1];
                 // Since it's a DFS on a grid, they are already adjacent. 
                 // The 2x2 blocks will touch.
             }
