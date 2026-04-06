@@ -89,12 +89,20 @@ export class PathManager {
         const state = GameStateManager.getInstance();
         const wealthMult = state.credits > 2500 ? 0.75 : 1.0; 
         
-        const baseTarget = Math.floor(macroCols * macroRows * 0.35 * wealthMult);
-        const waveBonus = Math.floor(waveNumber * 1.2);
-        const targetLength = Math.min(macroCols * macroRows * 0.8, baseTarget + waveBonus);
+        // DYNAMIC COMPLEXITY: Target length varies significantly each wave
+        const complexityFactor = 0.25 + (Math.random() * 0.2); 
+        const baseTarget = Math.floor(macroCols * macroRows * complexityFactor * wealthMult);
+        const waveBonus = Math.floor(waveNumber * 0.8);
+        const targetLength = Math.min(macroCols * macroRows * 0.85, baseTarget + waveBonus);
+
+        // RANDOMIZED DIRECTION BIAS: Each map has a unique "flow" personality
+        const forwardWeight = 5 + Math.random() * 10;
+        const verticalWeight = 2 + Math.random() * 15;
+        const backWeight = Math.random() * 3;
 
         const dfs = (mx: number, my: number): boolean => {
             if (mx === macroCols - 1) {
+                // Variation: End point can be any Y on the last column
                 if (path.length >= targetLength) {
                     path.push({ x: mx, y: my });
                     return true;
@@ -105,13 +113,14 @@ export class PathManager {
             path.push({ x: mx, y: my });
 
             const dirs = [
-                { dx: 1, dy: 0, weight: 4 },   
-                { dx: 0, dy: 1, weight: 10 },  
-                { dx: 0, dy: -1, weight: 10 }, 
-                { dx: -1, dy: 0, weight: 2 }   
+                { dx: 1, dy: 0, weight: forwardWeight },   
+                { dx: 0, dy: 1, weight: verticalWeight },  
+                { dx: 0, dy: -1, weight: verticalWeight }, 
+                { dx: -1, dy: 0, weight: backWeight }   
             ];
 
-            dirs.sort((a, b) => (Math.random() * b.weight) - (Math.random() * a.weight));
+            // Add slight per-step jitter to weights
+            dirs.sort((a, b) => (Math.random() * b.weight * (0.8 + Math.random() * 0.4)) - (Math.random() * a.weight * (0.8 + Math.random() * 0.4)));
 
             for (const d of dirs) {
                 const nx = mx + d.dx;

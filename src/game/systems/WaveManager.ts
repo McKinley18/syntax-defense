@@ -82,7 +82,8 @@ export class WaveManager {
         } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
-            this.enemiesToSpawn = 6 + Math.floor(this.waveNumber * 1.8);
+            // PROGRESSIVE SCALE: From 6-8 at Wave 1 to ~120 at Wave 50
+            this.enemiesToSpawn = 6 + Math.floor(this.waveNumber * 2.3);
         }
         this.totalEnemiesThisWave = this.enemiesToSpawn;
         this.spawnTimer = 0;
@@ -100,12 +101,16 @@ export class WaveManager {
                 const waveProgress = 1 - (this.enemiesToSpawn / this.totalEnemiesThisWave);
                 const intensityBoost = 1 - (waveProgress * 0.25);
 
+                // DYNAMIC BATCH SPAWNING (Wave 15+): Enemies arrive in 2-3 distinct clusters
+                const isClustered = this.waveNumber >= 15 && this.currentPattern !== 'sustained_stream';
+                const clusterGap = isClustered && (Math.random() < 0.1) ? (120 + Math.random() * 200) : 0;
+
                 if (this.currentPattern === 'bulk_breach') {
-                    this.spawnTimer = (15 + Math.random() * 10) * intensityBoost; 
+                    this.spawnTimer = ((15 + Math.random() * 10) * intensityBoost) + clusterGap; 
                 } else if (this.currentPattern === 'staggered_burst') {
-                    this.spawnTimer = ((this.enemiesToSpawn % 5 === 0) ? 150 : 25) * intensityBoost; 
+                    this.spawnTimer = (((this.enemiesToSpawn % 5 === 0) ? 150 : 25) * intensityBoost) + clusterGap; 
                 } else {
-                    this.spawnTimer = Math.max(25, 60 - (this.waveNumber * 1.5)) * intensityBoost; 
+                    this.spawnTimer = (Math.max(25, 60 - (this.waveNumber * 1.5)) * intensityBoost) + clusterGap; 
                 }
             }
         }
