@@ -141,11 +141,8 @@ export class PathManager {
             const microX = mc.x * 2;
             const microY = this.playableTop + mc.y * 2;
 
-            // Fill 2x2 micro-tile block
+            // PUSH ONLY THE ANCHOR - MapManager handles 2x2 stamp
             this.pathCells.push({ x: microX, y: microY });
-            this.pathCells.push({ x: microX + 1, y: microY });
-            this.pathCells.push({ x: microX, y: microY + 1 });
-            this.pathCells.push({ x: microX + 1, y: microY + 1 });
 
             if (i === 0) {
                 this.startNodePos = new PIXI.Point(0, (microY + 1) * TILE_SIZE);
