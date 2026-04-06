@@ -23,7 +23,7 @@ export class AudioManager {
     public init() {
         if (this.ctx) return;
         try {
-            this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            this.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
             this.masterGain = this.ctx.createGain();
             this.masterGain.gain.value = 0.5;
             this.masterGain.connect(this.ctx.destination);

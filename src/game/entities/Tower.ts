@@ -198,8 +198,8 @@ export class Tower {
     }
 
     private chainFire(target: Enemy, allEnemies: Enemy[], dmg: number) {
-        let currentSource = { x: this.container.x, y: this.container.y };
-        let hitEnemies = new Set([target]);
+        const currentSource = { x: this.container.x, y: this.container.y };
+        const hitEnemies = new Set([target]);
         target.takeDamage(dmg, this.type);
         this.drawLightning(currentSource.x, currentSource.y, target.container.x, target.container.y);
 

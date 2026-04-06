@@ -82,8 +82,8 @@ export class PathManager {
         this.offsetY = topMargin;
 
         const startY = Math.floor(Math.random() * macroRows);
-        let path: GridCoord[] = [];
-        let visited = new Set<string>();
+        const path: GridCoord[] = [];
+        const visited = new Set<string>();
         
         // WEALTH REACTIVE DIFFICULTY: Shorter path = less time to kill
         const state = GameStateManager.getInstance();

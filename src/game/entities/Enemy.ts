@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameContainer } from '../GameContainer';
 import { GameStateManager } from '../systems/GameStateManager';
 import { TILE_SIZE } from '../systems/MapManager';
-import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
+import { EnemyType, VISUAL_REGISTRY, type VisualConfig } from '../VisualRegistry';
 
 export { EnemyType };
 
@@ -80,7 +80,7 @@ export class Enemy {
         }
     }
 
-    private createVisual(config: any): PIXI.Graphics {
+    private createVisual(config: VisualConfig): PIXI.Graphics {
         const g = new PIXI.Graphics();
         const s = TILE_SIZE / 2 - 2; 
         

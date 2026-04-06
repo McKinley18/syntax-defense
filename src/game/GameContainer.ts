@@ -81,7 +81,7 @@ export class GameContainer {
         this.mapManager = new MapManager(this);
         this.towerManager = new TowerManager(this);
         this.waveManager = new WaveManager(this);
-        this.inputHandler = new InputHandler(this);
+        this.inputHandler = new InputHandler();
 
         // INITIALIZE KERNEL
         this.kernel = new Kernel(0, 0);

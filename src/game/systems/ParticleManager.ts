@@ -3,13 +3,14 @@ import { GameContainer } from '../GameContainer';
 import { HitMarker } from '../entities/HitMarker';
 
 export interface Particle {
-    sprite: PIXI.Graphics | PIXI.Text;
+    sprite: PIXI.Graphics | PIXI.Text | PIXI.Container;
     vx: number;
     vy: number;
     life: number;
     maxLife: number;
     fade: boolean;
     scale: boolean;
+    marker?: HitMarker;
 }
 
 export class ParticleManager {
@@ -115,10 +116,10 @@ public spawnHitMarker(x: number, y: number, amount: number) {
     const marker = HitMarker.create(x, y, amount);
     this.game.effectLayer.addChild(marker.container);
     this.particles.push({
-        sprite: marker.container as any,
+        sprite: marker.container,
         vx: 0, vy: -0.5, life: 60, maxLife: 60, fade: true, scale: false,
         marker: marker // CUSTOM FIELD FOR UPDATE
-    } as any);
+    });
 }
 
 public addEffect(graphics: PIXI.Graphics, frames: number) {
@@ -134,7 +135,7 @@ public addEffect(graphics: PIXI.Graphics, frames: number) {
 }
 
 public update(delta: number) {    for (let i = this.particles.length - 1; i >= 0; i--) {
-        const p = this.particles[i] as any;
+        const p = this.particles[i];
 
         if (p.marker) {
             if (!p.marker.update(delta)) {

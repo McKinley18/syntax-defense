@@ -85,11 +85,13 @@ function App() {
   useEffect(() => {
     const lockOrientation = async () => {
       try {
-        const screenObj = window.screen as any;
+        const screenObj = window.screen as unknown as { orientation?: { lock: (mode: string) => Promise<void> } };
         if (screen !== 'MENU' && screenObj.orientation?.lock) {
           await screenObj.orientation.lock('landscape');
         }
-      } catch (e) { }
+      } catch {
+        // Ignore lock errors
+      }
     };
     lockOrientation();
   }, [screen]);
@@ -240,7 +242,7 @@ function App() {
     AudioManager.getInstance().playUiClick();
     setSelectedTurret(type);
     if (game?.towerManager) {
-      game.towerManager.startPlacement(type as any);
+      game.towerManager.startPlacement(type as TowerType);
     }
     
     if (isTutorialActive && tutorialStep === 1 && type === 0) {
@@ -261,6 +263,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, isPaused, wave]);
 
   const executeWave = () => {
