@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { TILE_SIZE } from './MapManager';
 import { GameStateManager } from './GameStateManager';
+import { GameContainer } from '../GameContainer';
 
 export interface GridCoord {
     x: number;
