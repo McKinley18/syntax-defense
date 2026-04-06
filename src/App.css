@@ -18,6 +18,11 @@ html, body, #root {
   font-family: 'Courier New', Courier, monospace;
 }
 
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 100000;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%); background-size: 100% 4px;
+}
+
 #game-container { position: fixed; inset: 0; z-index: 1; }
 
 .ui-layer {

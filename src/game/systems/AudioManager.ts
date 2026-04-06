@@ -104,7 +104,7 @@ export class AudioManager {
     }
 
     private playProcedural(startFreq: number, endFreq: number, duration: number, type: OscillatorType, vol: number) {
-        if (!this.ctx || this.ctx.state !== 'running') return;
+        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = type;
