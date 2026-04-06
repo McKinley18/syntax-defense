@@ -276,7 +276,12 @@ function App() {
       if (container) container.innerHTML = '';
       setGame(null);
     }
+    setShowWaveSummaryPopup(false);
+    setShowCombatIntel(false);
+    setShowSettingsInGame(false);
   };
+
+  const [showSettingsInGame, setShowSettingsInGame] = useState(false);
 
   const saveAndQuit = () => {
     AudioManager.getInstance().playUiClick();
@@ -741,7 +746,37 @@ function App() {
             </div>
           )}
           {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={quitToMenu}>RETURN TO ROOT</button></div></div>}
-          {isPaused && integrity > 0 && !isVictorious && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>RESUME</button><button className="blue-button" onClick={saveAndQuit} disabled={isWaveActive} style={{opacity: isWaveActive ? 0.5 : 1}}>SAVE & EXIT</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>ABANDON</button></div></div></div>}
+          {isPaused && integrity > 0 && !isVictorious && (
+            <div className="pause-overlay-locked">
+              {!showSettingsInGame ? (
+                <div className="pause-content small-pause">
+                  <h2 className="pause-title">SYSTEM PAUSED</h2>
+                  <div className="pause-options grid-options">
+                    <button className="blue-button" onClick={() => setIsPaused(false)}>RESUME</button>
+                    <button className="blue-button" onClick={() => setShowSettingsInGame(true)}>SETTINGS</button>
+                    <button className="blue-button" onClick={() => { setIsPaused(false); setShowTutorial(true); }}>HOW TO PLAY</button>
+                    <button className="blue-button" onClick={saveAndQuit} disabled={isWaveActive} style={{opacity: isWaveActive ? 0.5 : 1}}>SAVE & EXIT</button>
+                    <button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300', gridColumn: 'span 2'}}>ABANDON</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="pause-content small-pause">
+                  <h2 className="pause-title">SETTINGS</h2>
+                  <div className="manual-text" style={{width: '100%', marginBottom: '10px'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                      <span style={{fontSize: '0.7rem'}}>SFX</span>
+                      <button className="blue-button" onClick={toggleSfx} style={{width: '100px', fontSize: '0.6rem'}}>{sfxMuted ? 'OFF' : 'ON'}</button>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                      <span style={{fontSize: '0.7rem'}}>MUSIC</span>
+                      <button className="blue-button" onClick={toggleAmbient} style={{width: '100px', fontSize: '0.6rem'}}>{ambientMuted ? 'OFF' : 'ON'}</button>
+                    </div>
+                  </div>
+                  <button className="blue-button" onClick={() => setShowSettingsInGame(false)} style={{width: '100%'}}>BACK</button>
+                </div>
+              )}
+            </div>
+          )}
           
       {/* WAVE SUMMARY POPUP (Level 1+) */}
       {gamePhase === 'PREP' && waveSummary && wave >= 1 && showWaveSummaryPopup && !isPaused && integrity > 0 && !isTutorialActive && (
