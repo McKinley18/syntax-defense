@@ -3,7 +3,7 @@ import { GameContainer } from '../GameContainer';
 import { TextureGenerator } from '../utils/TextureGenerator';
 import type { GridCoord } from './PathManager';
 
-export const TILE_SIZE = 24;
+export let TILE_SIZE = 24;
 
 export const TileType = {
     PATH: 0,
@@ -28,16 +28,31 @@ export class MapManager {
         this.groundGraphics = new PIXI.Graphics();
         this.gridGraphics = new PIXI.Graphics();
         this.pathMask = new PIXI.Graphics();
+        this.calculateTileSize();
         this.updateDimensions();
     }
 
+    private calculateTileSize() {
+        // Dynamic scaling: target ~40-50 columns for desktop, ~25-30 for mobile
+        const screenWidth = window.innerWidth;
+        if (screenWidth < 600) {
+            TILE_SIZE = Math.floor(screenWidth / 25);
+        } else if (screenWidth < 1200) {
+            TILE_SIZE = Math.floor(screenWidth / 35);
+        } else {
+            TILE_SIZE = 24; // Standard Elite feel
+        }
+        TILE_SIZE = Math.max(16, Math.min(32, TILE_SIZE)); // Constraint boundaries
+    }
+
     private updateDimensions() {
+        this.calculateTileSize();
         // MANDATE: NO PARTIAL BOXES. 
         const width = Math.floor(window.innerWidth / TILE_SIZE) * TILE_SIZE;
         const height = Math.floor(window.innerHeight / TILE_SIZE) * TILE_SIZE;
         
-        this.cols = width / TILE_SIZE;
-        this.rows = height / TILE_SIZE;
+        this.cols = Math.floor(width / TILE_SIZE);
+        this.rows = Math.floor(height / TILE_SIZE);
         this.initGrid();
     }
 
