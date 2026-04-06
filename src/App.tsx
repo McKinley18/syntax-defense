@@ -86,9 +86,9 @@ function App() {
 
   // POLLING WAVE STATE TO TRIGGER TUTORIAL END
   useEffect(() => {
-    const waveNum = game?.waveManager.waveNumber || 1;
-    if (isTutorialActive && gamePhase === 'PREP' && tutorialStep === 3 && waveNum === 2 && !isWaveActive) {
-       // Wave 1 finished (the single enemy) and incremented to 2
+    const waveNum = game?.waveManager.waveNumber || 0;
+    if (isTutorialActive && gamePhase === 'PREP' && tutorialStep === 3 && waveNum === 1 && !isWaveActive) {
+       // Wave 0 finished (the tutorial) and incremented to 1
        setTimeout(() => {
          setShowTutorialComplete(true);
          setIsTutorialActive(false);
