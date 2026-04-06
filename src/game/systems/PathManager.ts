@@ -46,10 +46,11 @@ export class PathManager {
 
     private attemptMacroGeneration(waveNumber: number): boolean {
         const currentTileSize = MapManager.calculateTileSize();
+        // ENSURE COLS FILL WIDTH AS MUCH AS POSSIBLE
         const visibleCols = Math.floor(window.innerWidth / currentTileSize / 2) * 2;
-        // SUBTRACT DASHBOARD (Approx 100px) FROM VISIBLE ROWS
-        const dashboardRows = Math.ceil(100 / currentTileSize);
-        const visibleRows = Math.floor((window.innerHeight - 100) / currentTileSize);
+        // MATCH CSS DASHBOARD HEIGHT: clamp(110px, 20vh, 150px)
+        const dashboardPadding = Math.max(110, Math.min(150, window.innerHeight * 0.2));
+        const visibleRows = Math.floor((window.innerHeight - dashboardPadding) / currentTileSize);
         this.microCols = visibleCols;
 
         this.playableTop = 1;

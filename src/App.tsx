@@ -4,7 +4,7 @@ import { GameStateManager, type GameMode } from './game/systems/GameStateManager
 import { TowerType, TOWER_CONFIGS } from './game/entities/Tower';
 import { VISUAL_REGISTRY } from './game/VisualRegistry';
 import { AudioManager } from './game/systems/AudioManager';
-import { TILE_SIZE } from './game/systems/MapManager';
+import { TILE_SIZE, MapManager } from './game/systems/MapManager';
 import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
@@ -57,14 +57,16 @@ function App() {
       } else if (tutorialStep === 2) {
         // Calculate dynamic tile position for a tile well above the tutorial path
         const currentTileSize = MapManager.calculateTileSize();
-        const visibleRows = Math.floor((window.innerHeight - 100) / currentTileSize);
-        const playableRows = visibleRows - 2;
-        const midY = Math.floor(playableRows / 2) + 1; // Centered path row
-        const targetY = midY - 1; // Tile above path
+        const dashboardPadding = Math.max(110, Math.min(150, window.innerHeight * 0.2));
+        const visibleRows = Math.floor((window.innerHeight - dashboardPadding) / currentTileSize);
+        const playableRows = (visibleRows - 1) - 1 + 1; // playableBottom - playableTop + 1
+        const macroRows = Math.floor(playableRows / 2);
+        const midMacroY = Math.floor(macroRows / 2);
+        const microY = 1 + midMacroY * 2; // Path top row
+        const targetY = microY - 1; // Tile directly above path
 
         // Target tile: x=5, y=targetY
         setTilePos({ x: 5 * currentTileSize, y: targetY * currentTileSize });
-
       }
     }
 
