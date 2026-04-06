@@ -109,7 +109,7 @@ body::after {
   display: flex; flex-direction: column; 
   justify-content: space-between; 
   align-items: center; 
-  padding: 8dvh 0 12dvh 0; /* MORE BOTTOM SPACE */
+  padding: 8dvh 0 15dvh 0; /* INCREASED BOTTOM SPACE */
   perspective: 1500px; 
 }
 .menu-content-centered { 

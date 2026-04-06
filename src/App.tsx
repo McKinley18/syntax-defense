@@ -61,8 +61,8 @@ function App() {
         const midMacroY = Math.floor(Math.floor(availRows / 4) / 2);
         const microCenterY = 2 + (midMacroY * 4) + 1;
         
-        // Target tile: x=5, y=microCenterY-3 (well above the path)
-        setTilePos({ x: 5 * TILE_SIZE, y: (microCenterY - 3) * TILE_SIZE });
+        // Target tile: x=5, y=microCenterY-1 (directly above the path)
+        setTilePos({ x: 5 * TILE_SIZE, y: (microCenterY - 1) * TILE_SIZE });
       }
     }
 
@@ -77,7 +77,9 @@ function App() {
 
   useEffect(() => {
     if (game) {
+      // eslint-disable-next-line react-hooks/immutability
       game.isTutorialActive = isTutorialActive;
+      // eslint-disable-next-line react-hooks/immutability
       game.tutorialStep = tutorialStep;
     }
   }, [isTutorialActive, tutorialStep, game]);
@@ -142,7 +144,10 @@ function App() {
         // TIE TUTORIAL CALLBACK
         if (g.towerManager) {
           g.towerManager.onTowerPlaced = () => {
-            setTutorialStep(prev => prev === 2 ? 3 : prev);
+            if (isTutorialActive) {
+              setTutorialStep(3);
+              setShowCombatIntel(true);
+            }
           };
         }
 
@@ -427,22 +432,6 @@ function App() {
               </div>
             </>
           )}
-          {tutorialStep === 3 && !showCombatIntel && gamePhase === 'PREP' && (
-            <>
-              <div className="tutorial-highlight" 
-                style={{
-                  top: 'calc(35% + 65px)', 
-                  left: '50%', 
-                  transform: 'translate(-50%, -50%)', 
-                  width: '360px', 
-                  height: '50px', 
-                  pointerEvents: 'auto', 
-                  cursor: 'pointer'
-                }}
-                onClick={executeWave}
-              ></div>
-            </>
-          )}
           {tutorialStep === 3 && showCombatIntel && (
             <>
               <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
@@ -472,8 +461,7 @@ function App() {
                       </div>
                       <button className="blue-button" onClick={() => {
                         setShowCombatIntel(false);
-                        AudioManager.getInstance().playUiClick();
-                        game?.waveManager.startWave();
+                        executeWave();
                       }} style={{marginTop: '10px', padding: '8px 20px', fontSize: '0.7rem'}}>COMMENCE DEFENSE</button>
                   </div>
                 </div>
@@ -697,6 +685,7 @@ function App() {
                   setShowTutorialComplete(false);
                   setIsTutorialActive(false);
                   setTutorialStep(0);
+                  setShowCombatIntel(false);
                   GameStateManager.getInstance().resetGame('STANDARD');
                   startNewGame('STANDARD');
                 }} style={{marginTop: '20px', width: '100%', padding: '12px'}}>EXIT TUTORIAL & START REAL GAME</button>
