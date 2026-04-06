@@ -28,31 +28,28 @@ export class MapManager {
         this.groundGraphics = new PIXI.Graphics();
         this.gridGraphics = new PIXI.Graphics();
         this.pathMask = new PIXI.Graphics();
-        this.calculateTileSize();
         this.updateDimensions();
     }
 
-    private calculateTileSize() {
-        // Dynamic scaling: target ~40-50 columns for desktop, ~25-30 for mobile
+    public static calculateTileSize(): number {
         const screenWidth = window.innerWidth;
+        let size = 24;
         if (screenWidth < 600) {
-            TILE_SIZE = Math.floor(screenWidth / 25);
+            size = Math.floor(screenWidth / 25);
         } else if (screenWidth < 1200) {
-            TILE_SIZE = Math.floor(screenWidth / 35);
+            size = Math.floor(screenWidth / 35);
         } else {
-            TILE_SIZE = 24; // Standard Elite feel
+            size = 24;
         }
-        TILE_SIZE = Math.max(16, Math.min(32, TILE_SIZE)); // Constraint boundaries
+        return Math.max(16, Math.min(32, size));
     }
 
     private updateDimensions() {
-        this.calculateTileSize();
-        // MANDATE: NO PARTIAL BOXES. 
-        const width = Math.floor(window.innerWidth / TILE_SIZE) * TILE_SIZE;
-        const height = Math.floor(window.innerHeight / TILE_SIZE) * TILE_SIZE;
+        TILE_SIZE = MapManager.calculateTileSize();
+        // MANDATE: FORCE EVEN COLS FOR 2-TILE PATH ALIGNMENT
+        this.cols = Math.floor(window.innerWidth / TILE_SIZE / 2) * 2;
+        this.rows = Math.floor(window.innerHeight / TILE_SIZE);
         
-        this.cols = Math.floor(width / TILE_SIZE);
-        this.rows = Math.floor(height / TILE_SIZE);
         this.initGrid();
     }
 

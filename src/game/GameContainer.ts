@@ -77,8 +77,8 @@ export class GameContainer {
         this.app.stage.addChild(this.uiLayer);
 
         this.particleManager = new ParticleManager(this);
-        this.pathManager = new PathManager();
         this.mapManager = new MapManager(this);
+        this.pathManager = new PathManager();
         this.towerManager = new TowerManager(this);
         this.waveManager = new WaveManager(this);
         this.inputHandler = new InputHandler();
