@@ -165,21 +165,22 @@ export class MapManager {
         }
 
         // 3. BINARY FLOW (Only inside path)
-        if (!this.binarySprite) {
-            const tex = TextureGenerator.getInstance().binaryTexture;
-            if (tex) {
-                this.binarySprite = new PIXI.TilingSprite({
-                    texture: tex,
-                    width: this.cols * TILE_SIZE,
-                    height: this.rows * TILE_SIZE
-                });
-                this.binarySprite.alpha = 0.4;
-                this.game.groundLayer.addChild(this.binarySprite);
-                this.binarySprite.mask = this.pathMask;
-            }
-        } else {
-            this.binarySprite.width = this.cols * TILE_SIZE;
-            this.binarySprite.height = this.rows * TILE_SIZE;
+        if (this.binarySprite) {
+            this.game.groundLayer.removeChild(this.binarySprite);
+            this.binarySprite.destroy();
+            this.binarySprite = null;
+        }
+        
+        const tex = TextureGenerator.getInstance().binaryTexture;
+        if (tex) {
+            this.binarySprite = new PIXI.TilingSprite({
+                texture: tex,
+                width: this.cols * TILE_SIZE,
+                height: this.rows * TILE_SIZE
+            });
+            this.binarySprite.alpha = 0.4;
+            this.game.groundLayer.addChild(this.binarySprite);
+            this.binarySprite.mask = this.pathMask;
         }
     }
 

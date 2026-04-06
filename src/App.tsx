@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { GameContainer } from './game/GameContainer';
 import { GameStateManager, type GameMode } from './game/systems/GameStateManager';
 import { TowerType, TOWER_CONFIGS } from './game/entities/Tower';
 import { VISUAL_REGISTRY } from './game/VisualRegistry';
 import { AudioManager } from './game/systems/AudioManager';
+import { TILE_SIZE } from './game/systems/MapManager';
 import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
@@ -43,6 +44,36 @@ function App() {
   const [showTutorialComplete, setShowTutorialComplete] = useState(false);
   const [showRadiusExplanation, setShowRadiusExplanation] = useState(false);
   const [showCombatIntel, setShowCombatIntel] = useState(false);
+  
+  const [tutorialTargetRect, setTutorialTargetRect] = useState<DOMRect | null>(null);
+  const firstTurretRef = useRef<HTMLDivElement>(null);
+  const [tilePos, setTilePos] = useState({ x: 0, y: 0 });
+
+  // DYNAMIC TUTORIAL POSITIONING
+  useEffect(() => {
+    if (isTutorialActive) {
+      if (tutorialStep === 1 && firstTurretRef.current) {
+        setTutorialTargetRect(firstTurretRef.current.getBoundingClientRect());
+      } else if (tutorialStep === 2) {
+        // Calculate dynamic tile position for a tile well above the tutorial path
+        const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
+        const availRows = visibleRows - 10;
+        const midMacroY = Math.floor(Math.floor(availRows / 4) / 2);
+        const microCenterY = 2 + (midMacroY * 4) + 1;
+        
+        // Target tile: x=5, y=microCenterY-3 (well above the path)
+        setTilePos({ x: 5 * TILE_SIZE, y: (microCenterY - 3) * TILE_SIZE });
+      }
+    }
+
+    const handleResize = () => {
+      if (isTutorialActive && tutorialStep === 1 && firstTurretRef.current) {
+        setTutorialTargetRect(firstTurretRef.current.getBoundingClientRect());
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isTutorialActive, tutorialStep]);
 
   useEffect(() => {
     if (game) {
@@ -327,13 +358,27 @@ function App() {
           <div className="rank-tag" style={{position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0, 255, 204, 0.1)', border: '1px solid rgba(0, 255, 204, 0.4)', color: 'var(--neon-cyan)', padding: '5px 15px', zIndex: 16000, fontSize: '0.6rem'}}>
             TUTORIAL MODE ACTIVE
           </div>
-          {tutorialStep === 1 && !showRadiusExplanation && (
+          {tutorialStep === 1 && !showRadiusExplanation && tutorialTargetRect && (
             <>
               <div className="tutorial-highlight" 
-                style={{bottom: '12px', left: '215px', width: '175px', height: '85px', pointerEvents: 'auto', cursor: 'pointer'}}
+                style={{
+                  top: tutorialTargetRect.top - 5, 
+                  left: tutorialTargetRect.left - 5, 
+                  width: tutorialTargetRect.width + 10, 
+                  height: tutorialTargetRect.height + 10, 
+                  pointerEvents: 'auto', 
+                  cursor: 'pointer'
+                }}
                 onClick={() => selectTurret(0)}
               ></div>
-              <div className="tutorial-pointer" style={{bottom: '105px', left: '215px', width: '175px', pointerEvents: 'auto'}}>SELECT PULSE MG</div>
+              <div className="tutorial-pointer" 
+                style={{
+                  top: tutorialTargetRect.top - 80, 
+                  left: tutorialTargetRect.left + (tutorialTargetRect.width / 2) - 87, 
+                  width: '175px', 
+                  pointerEvents: 'auto'
+                }}
+              >SELECT PULSE MG</div>
             </>
           )}
           {showRadiusExplanation && (
@@ -359,8 +404,25 @@ function App() {
           )}
           {tutorialStep === 2 && !showRadiusExplanation && (
             <>
-              <div className="tutorial-highlight" style={{top: '144px', left: '120px', width: '24px', height: '24px', borderRadius: '0', pointerEvents: 'none'}}></div>
-              <div className="tutorial-pointer" style={{top: '55px', left: '57px', width: '150px', pointerEvents: 'none', flexDirection: 'column'}}>
+              <div className="tutorial-highlight" 
+                style={{
+                  top: tilePos.y, 
+                  left: tilePos.x, 
+                  width: TILE_SIZE, 
+                  height: TILE_SIZE, 
+                  borderRadius: '0', 
+                  pointerEvents: 'none'
+                }}
+              ></div>
+              <div className="tutorial-pointer" 
+                style={{
+                  top: tilePos.y - 65, 
+                  left: tilePos.x - (150 / 2) + (TILE_SIZE / 2), 
+                  width: '150px', 
+                  pointerEvents: 'none', 
+                  flexDirection: 'column'
+                }}
+              >
                 <span>DEPLOY NODE NEAR PATH</span>
               </div>
             </>
@@ -711,7 +773,13 @@ function App() {
                   }
                   
                   return (
-                    <div key={type} className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} data-type={type} onClick={() => unlocked && selectTurret(type)}>
+                    <div 
+                      key={type} 
+                      ref={type === 0 ? firstTurretRef : null}
+                      className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} 
+                      data-type={type} 
+                      onClick={() => unlocked && selectTurret(type)}
+                    >
                       {!unlocked && <div className="lock-icon">🔒</div>}
                       <div className="hotkey-badge">{type + 1}</div>
                       <div className="mini-turret"><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div></div></div>
