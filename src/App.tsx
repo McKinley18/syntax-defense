@@ -11,6 +11,20 @@ import './App.css';
 type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
 type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC';
 
+const TerminalText = ({ text, speed = 15 }: { text: string, speed?: number }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedText(text.slice(0, i));
+      i++;
+      if (i > text.length) clearInterval(interval);
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
+  return <span>{displayedText}</span>;
+};
+
 function App() {
   const [screen, setScreen] = useState<ScreenState>('MENU');
   const [infoTab, setInfoTab] = useState<InfoTab>('LORE');
@@ -700,7 +714,7 @@ function App() {
             <div className="victory-overlay ui-layer">
               <div className="popup-title">INCOMING THREAT</div>
               <div className="manual-text" style={{fontSize: '0.65rem', color: '#aaa', margin: '15px 0'}}>
-                &gt; A SINGLE GLIDER SIGNATURE HAS BREACHED THE FIREWALL. NEUTRALIZE IT BEFORE IT REACHES THE CORE.
+                &gt; <TerminalText text="A SINGLE GLIDER SIGNATURE HAS BREACHED THE FIREWALL. NEUTRALIZE IT BEFORE IT REACHES THE CORE." />
               </div>
               <button className="massive-exec-button" onClick={() => {
                 setShowTutorial(false);
@@ -712,13 +726,15 @@ function App() {
             <div className="victory-overlay ui-layer">
               <div className="popup-title">MAINFRAME SECURED</div>
               <div className="manual-text" style={{fontSize: '0.65rem', color: '#aaa', margin: '15px 0'}}>
-                &gt; INITIAL THREAT NEUTRALIZED. THE SYSTEM IS NOW PREPARING FOR FULL-SCALE RANDOMIZED THREATS.
+                &gt; <TerminalText text="INITIAL THREAT NEUTRALIZED. THE SYSTEM IS NOW PREPARING FOR FULL-SCALE RANDOMIZED THREATS." />
               </div>
               <button className="massive-exec-button" onClick={() => {
                 setShowTutorialComplete(false);
                 setIsTutorialActive(false);
                 localStorage.setItem('syntax_tutorial_done', 'true');
-                game?.waveManager.prepareWave(true);
+                GameStateManager.getInstance().resetGame('STANDARD'); // FORCE WAVE 1
+                game?.waveManager.prepareWave(false); // Prep the new path for Wave 1
+                setShowWaveSummaryPopup(false);
                 setShowCombatIntel(true); 
               }}>START GAME</button>
             </div>

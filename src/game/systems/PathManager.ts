@@ -46,15 +46,13 @@ export class PathManager {
 
     private attemptMacroGeneration(waveNumber: number): boolean {
         const currentTileSize = MapManager.calculateTileSize();
-        // ENSURE COLS FILL WIDTH AS MUCH AS POSSIBLE
         const visibleCols = Math.floor(window.innerWidth / currentTileSize / 2) * 2;
-        // MATCH CSS DASHBOARD HEIGHT: clamp(110px, 20vh, 150px)
         const dashboardPadding = Math.max(110, Math.min(150, window.innerHeight * 0.2));
         const visibleRows = Math.floor((window.innerHeight - dashboardPadding) / currentTileSize);
         this.microCols = visibleCols;
 
         this.playableTop = 1;
-        const playableBottom = visibleRows - 1; 
+        const playableBottom = visibleRows - 2; // EXTRA BUFFER
         const playableRows = playableBottom - this.playableTop + 1;
 
         if (playableRows < 4) return false;
@@ -89,9 +87,6 @@ export class PathManager {
         const complexityFactor = 0.3 + (Math.random() * 0.2); 
         const targetLength = Math.floor(macroCols * macroRows * complexityFactor * wealthMult);
 
-        const forwardWeight = 10 + Math.random() * 10;
-        const verticalWeight = 5 + Math.random() * 15;
-
         const dfs = (mx: number, my: number): boolean => {
             if (mx === macroCols - 1) {
                 if (path.length >= Math.min(macroCols, targetLength / 2)) {
@@ -105,9 +100,9 @@ export class PathManager {
             path.push({ x: mx, y: my });
 
             const dirs = [
-                { dx: 1, dy: 0, weight: forwardWeight },   
-                { dx: 0, dy: 1, weight: verticalWeight },  
-                { dx: 0, dy: -1, weight: verticalWeight }, 
+                { dx: 1, dy: 0, weight: 15 },   
+                { dx: 0, dy: 1, weight: 10 },  
+                { dx: 0, dy: -1, weight: 10 }, 
                 { dx: -1, dy: 0, weight: 1 }   
             ];
 
@@ -118,12 +113,18 @@ export class PathManager {
                 const ny = my + d.dy;
                 
                 if (nx >= 0 && nx < macroCols && ny >= 0 && ny < macroRows) {
-                    // MANDATE: Only entrance and exit touch screen sides
                     if (nx === 0 && mx !== 0) continue; 
-                    if (nx === macroCols - 1 && mx !== macroCols - 2) continue; // Only touch right at the very end
-                    
                     if (!visited.has(`${nx},${ny}`)) {
-                        if (dfs(nx, ny)) return true;
+                        // STRICT ISOLATION: Check neighbors to prevent "thick" paths
+                        let neighborCount = 0;
+                        const checkDirs = [{dx:1, dy:0}, {dx:-1, dy:0}, {dx:0, dy:1}, {dx:0, dy:-1}];
+                        for (const cd of checkDirs) {
+                            if (visited.has(`${nx + cd.dx},${ny + cd.dy}`)) neighborCount++;
+                        }
+                        
+                        if (neighborCount === 1) { // Only the current node should be a neighbor
+                            if (dfs(nx, ny)) return true;
+                        }
                     }
                 }
             }
