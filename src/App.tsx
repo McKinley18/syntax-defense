@@ -533,7 +533,12 @@ function App() {
                         <div className="card-detail-box">
                           <div className="label">{v.name}</div>
                           <div className="stats">HP: {v.baseHp} // SPD: {v.speed}x // PRIORITY: {v.priority}</div>
-                          <div className="desc">{v.name === 'GLIDER' ? 'Rapid packet stream. Low integrity.' : v.name === 'STRIDER' ? 'Staggered burst unit. Medium threat.' : v.name === 'BEHEMOTH' ? 'Heavy bulk data. High defensive priority.' : 'Core-Breaker. High entropy Boss unit.'}</div>
+                          <div className="desc">{
+                            v.name === 'GLIDER' ? 'Rapid packet stream. Low integrity.' : 
+                            v.name === 'STRIDER' ? 'Staggered burst unit. Medium threat.' : 
+                            v.name === 'BEHEMOTH' ? 'Heavy bulk data. High defensive priority.' : 
+                            'Core-Breaker. High entropy Boss unit.'
+                          }</div>
                         </div>
                       </div>
                     ))}
