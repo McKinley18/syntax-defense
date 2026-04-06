@@ -7,7 +7,7 @@ type SwarmPattern = 'sustained_stream' | 'bulk_breach' | 'staggered_burst';
 
 export class WaveManager {
     public enemies: Enemy[] = [];
-    public waveNumber: number = 1;
+    public waveNumber: number = 0; // START AT 0 FOR TUTORIAL
     public isWaveActive: boolean = false;
     
     private spawnTimer: number = 0;

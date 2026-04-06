@@ -7,7 +7,7 @@ export class GameStateManager {
     
     public credits: number = 850; 
     public integrity: number = 20;
-    public currentWave: number = 1;
+    public currentWave: number = 0; // START AT 0
     public gameMode: GameMode = 'STANDARD';
     public phase: GamePhase = 'PREP'; 
     public activeGlitch: GlitchType = 'NONE';
@@ -146,7 +146,7 @@ export class GameStateManager {
         const bonus = this.getRankBonus();
         this.credits = (mode === 'HARDCORE' || mode === 'ECO_CHALLENGE') ? 1000 : (850 + bonus);
         this.integrity = mode === 'SUDDEN_DEATH' ? 1 : 20;
-        this.currentWave = 1;
+        this.currentWave = 1; // RESET TO LEVEL 1 FOR REAL GAMES
         this.repairCost = 500;
         this.interestRate = mode === 'HARDCORE' ? 0 : 0.10;
         this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, total: 0 };

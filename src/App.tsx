@@ -214,7 +214,16 @@ function App() {
     wakeAudioSystem();
     AudioManager.getInstance().playUiClick();
     cleanupGame();
-    GameStateManager.getInstance().resetGame(mode);
+    
+    const tutorialDone = localStorage.getItem('syntax_tutorial_done') === 'true';
+    if (!tutorialDone) {
+      GameStateManager.getInstance().currentWave = 0; // FORCE LEVEL 0
+      setIsTutorialActive(true);
+      setTutorialStep(0);
+    } else {
+      GameStateManager.getInstance().resetGame(mode);
+    }
+    
     setIsVictorious(false);
     setScreen('GAME');
   };
