@@ -47,24 +47,26 @@ export class PathManager {
     private attemptMacroGeneration(waveNumber: number): boolean {
         const currentTileSize = MapManager.calculateTileSize();
         const visibleCols = Math.floor(window.innerWidth / currentTileSize / 2) * 2;
-        const visibleRows = Math.floor(window.innerHeight / currentTileSize);
+        // SUBTRACT DASHBOARD (Approx 100px) FROM VISIBLE ROWS
+        const dashboardRows = Math.ceil(100 / currentTileSize);
+        const visibleRows = Math.floor((window.innerHeight - 100) / currentTileSize);
         this.microCols = visibleCols;
 
         this.playableTop = 1;
-        const playableBottom = visibleRows - 2;
+        const playableBottom = visibleRows - 1; 
         const playableRows = playableBottom - this.playableTop + 1;
 
         if (playableRows < 4) return false;
 
-        // TUTORIAL OVERRIDE: STRAIGHT PATH FROM LEFT TO RIGHT (Wave 0 only)
+        // TUTORIAL OVERRIDE: CENTERED STRAIGHT PATH
         if (waveNumber === 0) {
-            const midY = Math.floor(playableRows / 2);
+            const macroRows = Math.floor(playableRows / 2);
+            const midMacroY = Math.floor(macroRows / 2);
             this.macroPath = [];
             const macroCols = Math.floor(visibleCols / 2);
-            const macroY = Math.floor(midY / 2);
             
             for (let mx = 0; mx < macroCols; mx++) {
-                this.macroPath.push({ x: mx, y: macroY });
+                this.macroPath.push({ x: mx, y: midMacroY });
             }
             
             this.buildMicroPathFromMacro(this.macroPath);

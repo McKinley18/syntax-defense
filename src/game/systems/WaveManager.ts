@@ -71,13 +71,15 @@ export class WaveManager {
 
         if (this.game.isTutorialActive) {
             this.enemiesToSpawn = 1;
-            // WE NEED IT TO SURVIVE LONGER FOR DEMO
+            // WE NEED IT TO SURVIVE LONGER FOR DEMO - FORCE GLIDER
             setTimeout(() => {
                 if (this.enemies.length > 0) {
                     const e = this.enemies[0];
+                    // Manual override to GLIDER visuals and properties if needed
+                    // For now, spawnEnemy handles the selection, we just tune the stats
                     e.maxHealth = 140;
                     e.health = 140;
-                    e.speed = 0.8; // Slow it down so it takes hits visibly
+                    e.speed = 0.8; 
                 }
             }, 100);
         } else if (this.waveNumber % 10 === 0) {
@@ -181,7 +183,9 @@ export class WaveManager {
 
     private spawnEnemy() {
         let type: EnemyType = EnemyType.GLIDER;
-        if (this.waveNumber % 10 === 0) {
+        if (this.game.isTutorialActive) {
+            type = EnemyType.GLIDER;
+        } else if (this.waveNumber % 10 === 0) {
             type = EnemyType.FRACTAL;
         } else {
             const rand = Math.random();

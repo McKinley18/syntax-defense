@@ -56,13 +56,15 @@ function App() {
         setTutorialTargetRect(firstTurretRef.current.getBoundingClientRect());
       } else if (tutorialStep === 2) {
         // Calculate dynamic tile position for a tile well above the tutorial path
-        const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
-        const availRows = visibleRows - 10;
-        const midMacroY = Math.floor(Math.floor(availRows / 4) / 2);
-        const microCenterY = 2 + (midMacroY * 4) + 1;
-        
-        // Target tile: x=5, y=microCenterY-1 (directly above the path)
-        setTilePos({ x: 5 * TILE_SIZE, y: (microCenterY - 1) * TILE_SIZE });
+        const currentTileSize = MapManager.calculateTileSize();
+        const visibleRows = Math.floor((window.innerHeight - 100) / currentTileSize);
+        const playableRows = visibleRows - 2;
+        const midY = Math.floor(playableRows / 2) + 1; // Centered path row
+        const targetY = midY - 1; // Tile above path
+
+        // Target tile: x=5, y=targetY
+        setTilePos({ x: 5 * currentTileSize, y: targetY * currentTileSize });
+
       }
     }
 
@@ -141,6 +143,8 @@ function App() {
     }
   }, [game, isTutorialActive]);
 
+  const [showWaveSummaryPopup, setShowWaveSummaryPopup] = useState(false);
+
   useEffect(() => {
     if (screen === 'GAME' && !game && !isInitializing) {
       async function init() {
@@ -163,6 +167,11 @@ function App() {
           setGamePhase(state.phase); 
           setRank(state.architectRank);
           setWaveSummary(state.lastWaveSummary);
+
+          // WAVE STATS TRIGGER (After Wave 1+)
+          if (state.phase === 'PREP' && state.currentWave >= 1 && state.lastWaveSummary && !showWaveSummaryPopup && !showCombatIntel) {
+             setShowWaveSummaryPopup(true);
+          }
 
           if (state.currentWave > 50 && state.gameMode !== 'ENDLESS') {
             setIsVictorious(true);
@@ -693,78 +702,105 @@ function App() {
             </div>
           )}
           {showTutorial && !isVictorious && (
-            <div className="pause-overlay-locked">
-              <div className="pause-content" style={{padding: '15px 25px', maxWidth: '450px', gap: '5px'}}>
-                <div className="rank-tag" style={{marginBottom: '0'}}>SYSTEM INITIALIZATION</div>
-                <h2 className="pause-title" style={{margin: '0', fontSize: '1.3rem'}}>INSTRUCTIONS</h2>
-                <div className="game-summary" style={{marginTop: '2px'}}>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '5px 0', fontSize: '0.75rem'}}>&gt; DEPLOYMENT: SELECT A NODE AND TAP A GRID TILE TO BUILD.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '5px 0', fontSize: '0.75rem'}}>&gt; OVERCLOCK: TAP PLACED NODES TO UPGRADE CORE SYSTEMS.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '5px 0', fontSize: '0.75rem'}}>&gt; RECLAMATION: NODES DE-MATERIALIZE AFTER EVERY SWARM.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '5px 0', fontSize: '0.75rem'}}>&gt; SIGNATURES: USE FROST OR TESLA TO REVEAL INVISIBLE GHOSTS.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '5px 0', fontSize: '0.75rem'}}>&gt; SYNERGY: BUILD IDENTICAL NODES NEARBY FOR +10% DMG LINKS.</p>
-                  <p style={{color: '#fff', fontWeight: 900, margin: '5px 0', fontSize: '0.75rem'}}>&gt; ECONOMY: EARN 10% INTEREST BY SAVING YOUR TOKENS.</p>
-                </div>
-                <div className="pause-options row" style={{marginTop: '15px'}}>
-                  <button className="blue-button" onClick={() => dismissTutorial(false)}>GOT IT</button>
-                  <button className="blue-button" onClick={() => dismissTutorial(true)} style={{fontSize: '0.5rem'}}>DON'T SHOW AGAIN</button>
-                </div>
+            <div className="victory-overlay ui-layer">
+              <div className="popup-title">INCOMING THREAT</div>
+              <div className="manual-text" style={{fontSize: '0.65rem', color: '#aaa', margin: '15px 0'}}>
+                &gt; A SINGLE GLIDER SIGNATURE HAS BREACHED THE FIREWALL. NEUTRALIZE IT BEFORE IT REACHES THE CORE.
               </div>
+              <button className="massive-exec-button" onClick={() => {
+                setShowTutorial(false);
+                setTutorialStep(1);
+              }}>START ONBOARDING</button>
             </div>
           )}
           {showTutorialComplete && (
-            <div className="pause-overlay-locked">
-              <div className="pause-content" style={{width: '450px', padding: '15px 25px', border: '2px solid var(--neon-cyan)', gap: '5px'}}>
-                <div className="rank-tag" style={{background: 'var(--neon-cyan)', color: '#000', marginBottom: 0}}>INITIALIZATION COMPLETE</div>
-                <h2 className="pause-title" style={{margin: '5px 0'}}>MISSION OBJECTIVE</h2>
-                <div className="manual-text" style={{fontSize: '0.75rem', lineHeight: '1.5', marginTop: '5px'}}>
-                  <p style={{margin: '6px 0'}}>&gt; YOU HAVE SUCCESSFULLY SECURED THE GRID FOR THIS INITIAL SWARM.</p>
-                  <p style={{margin: '6px 0'}}>&gt; WARNING: SUBSEQUENT VIRAL PACKETS WILL BE FASTER AND MORE NUMEROUS.</p>
-                  <p style={{margin: '6px 0'}}>&gt; RE-DEPLOY YOUR TURRETS WISELY EVERY WAVE TO MANAGE YOUR CAPITAL.</p>
-                  <p style={{margin: '6px 0'}}>&gt; MAINTAIN THE SYNTAX. PROTECT THE CORE.</p>
-                </div>
-                <button className="blue-button" onClick={() => {
-                  localStorage.setItem('syntax_tutorial_done', 'true');
-                  setShowTutorialComplete(false);
-                  setIsTutorialActive(false);
-                  setTutorialStep(0);
-                  setShowCombatIntel(false);
-                  GameStateManager.getInstance().resetGame('STANDARD');
-                  startNewGame('STANDARD');
-                }} style={{marginTop: '20px', width: '100%', padding: '12px'}}>EXIT TUTORIAL & START REAL GAME</button>
+            <div className="victory-overlay ui-layer">
+              <div className="popup-title">MAINFRAME SECURED</div>
+              <div className="manual-text" style={{fontSize: '0.65rem', color: '#aaa', margin: '15px 0'}}>
+                &gt; INITIAL THREAT NEUTRALIZED. THE SYSTEM IS NOW PREPARING FOR FULL-SCALE RANDOMIZED THREATS.
               </div>
+              <button className="massive-exec-button" onClick={() => {
+                setShowTutorialComplete(false);
+                setIsTutorialActive(false);
+                localStorage.setItem('syntax_tutorial_done', 'true');
+                game?.waveManager.prepareWave(true);
+                setShowCombatIntel(true); 
+              }}>START GAME</button>
             </div>
           )}
           {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={quitToMenu}>RETURN TO ROOT</button></div></div>}
           {isPaused && integrity > 0 && !isVictorious && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title">PAUSED</h2><div className="pause-options"><button className="blue-button" onClick={() => setIsPaused(false)}>RESUME</button><button className="blue-button" onClick={saveAndQuit} disabled={isWaveActive} style={{opacity: isWaveActive ? 0.5 : 1}}>SAVE & EXIT</button><button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300'}}>ABANDON</button></div></div></div>}
           
-          {gamePhase === 'PREP' && !isPaused && integrity > 0 && !showTutorial && !showTutorialComplete && !isTutorialActive && (
-            <div className="pre-wave-overlay">
-              {wave > 1 && (
-                <div className="wave-summary-ledger" style={{width: '100%', marginBottom: '10px', borderBottom: '1px solid #333', paddingBottom: '15px'}}>
-                  <div style={{fontSize: '0.7rem', color: 'var(--neon-cyan)', marginBottom: '8px', textAlign: 'center', letterSpacing: '2px'}}>PREVIOUS WAVE ANALYSIS</div>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>KILLS:</span> <span style={{color: 'var(--neon-green)'}}>+{waveSummary.kills}c</span></div>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>INTEREST:</span> <span style={{color: 'var(--neon-green)'}}>+{waveSummary.interest}c</span></div>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#fff', marginBottom: '4px'}}><span>PERFECT BONUS:</span> <span style={{color: waveSummary.perfectBonus > 0 ? 'var(--neon-green)' : '#666'}}>{waveSummary.perfectBonus > 0 ? `+${waveSummary.perfectBonus}c` : '0c'}</span></div>
-                  <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 900, color: 'var(--neon-blue)', marginTop: '8px', borderTop: '1px dashed #333', paddingTop: '8px'}}><span>TOTAL INCOME:</span> <span>+{waveSummary.total}c</span></div>
-                </div>
-              )}
-              <div className="intel-header">SWARM SIGNATURES DETECTED</div>
-              <div className="intel-grid-horizontal">
-                {upcomingEnemies.map(type => {
-                  const config = VISUAL_REGISTRY[type as keyof typeof VISUAL_REGISTRY];
+      {/* WAVE SUMMARY POPUP (Level 1+) */}
+      {gamePhase === 'PREP' && waveSummary && wave >= 1 && showWaveSummaryPopup && !isPaused && integrity > 0 && !isTutorialActive && (
+        <div className="victory-overlay ui-layer">
+          <div className="popup-title">WAVE {wave} COMPLETE</div>
+          <div className="stats-grid">
+            <div className="stats-item">
+              <div className="stats-label">VIRUSES PURGED</div>
+              <div className="stats-value">+{waveSummary.kills}</div>
+            </div>
+            <div className="stats-item">
+              <div className="stats-label">REFUND CREDIT</div>
+              <div className="stats-value">+{waveSummary.refunds}c</div>
+            </div>
+            <div className="stats-item">
+              <div className="stats-label">INTEREST EARNED</div>
+              <div className="stats-value">+{waveSummary.interest}c</div>
+            </div>
+            <div className="stats-item">
+              <div className="stats-label">TOTAL INCOME</div>
+              <div className="stats-value">+{waveSummary.total}c</div>
+            </div>
+          </div>
+          <button className="massive-exec-button" onClick={() => {
+            setShowWaveSummaryPopup(false);
+            setShowCombatIntel(true);
+          }}>VIEW NEXT SWARM INTEL</button>
+        </div>
+      )}
+
+      {/* COMBAT INTEL POPUP (Level 1+) */}
+      {gamePhase === 'PREP' && !showWaveSummaryPopup && showCombatIntel && !isPaused && integrity > 0 && !isTutorialActive && (
+        <div className="pre-wave-overlay ui-layer">
+          <div className="popup-title">SWARM DATA DETECTED</div>
+          <div className="wave-summary-ledger">
+             <div className="intel-header">MISSION: {waveName}</div>
+             <div className="intel-grid-horizontal">
+                {upcomingEnemies.map((type, idx) => {
+                  const reg = VISUAL_REGISTRY[EnemyType[type] as keyof typeof VISUAL_REGISTRY];
                   return (
-                    <div key={type} className="intel-card-modern">
-                      <div className={`shape ${config.shape}`} style={{ background: config.colorHex }}></div>
-                      <span className="intel-label">{config.name}</span>
+                    <div key={idx} className="intel-card-modern">
+                      <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex } : { background: reg.colorHex }}></div>
+                      <div className="intel-label">{reg.name}</div>
                     </div>
                   );
                 })}
-              </div>
-              <div className="game-summary-slim"><p style={{color: '#fff', fontWeight: 900}}>&gt; LINK IDENTICAL TURRETS FOR +10% DMG SYNERGY.</p></div>
-              <button className="blue-button massive-exec-button" onClick={executeWave}>EXECUTE DEFENSE PROTOCOL</button>
-            </div>
-          )}
+             </div>
+          </div>
+          <button className="massive-exec-button" onClick={() => {
+            setShowCombatIntel(false);
+            executeWave();
+          }}>EXECUTE DEFENSE PROTOCOL</button>
+        </div>
+      )}
+
+      {/* TUTORIAL SUCCESS OVERLAY */}
+      {showTutorialComplete && (
+        <div className="victory-overlay ui-layer">
+          <div className="popup-title">MAINFRAME SECURED</div>
+          <div className="manual-text" style={{fontSize: '0.65rem', color: '#aaa', margin: '15px 0'}}>
+            &gt; INITIAL THREAT NEUTRALIZED. THE SYSTEM IS NOW PREPARING FOR FULL-SCALE RANDOMIZED THREATS.
+          </div>
+          <button className="massive-exec-button" onClick={() => {
+            setShowTutorialComplete(false);
+            setIsTutorialActive(false);
+            localStorage.setItem('syntax_tutorial_done', 'true');
+            game?.waveManager.prepareWave(true);
+            setShowCombatIntel(true); 
+          }}>START GAME</button>
+        </div>
+      )}
 
           <div className="tactical-dashboard">
             <div className="dashboard-left">
