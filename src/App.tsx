@@ -802,6 +802,7 @@ function App() {
           </div>
           <button className="massive-exec-button" onClick={() => {
             setShowWaveSummaryPopup(false);
+            game?.waveManager.prepareWave(); // INCREMENT AND PREP NEXT PATH
             setShowCombatIntel(true);
           }}>VIEW NEXT SWARM INTEL</button>
         </div>

@@ -155,8 +155,14 @@ export class WaveManager {
         if (this.enemiesToSpawn === 0 && this.enemies.length === 0 && !this.hasProcessedEnd) {
             this.hasProcessedEnd = true; 
             this.isWaveActive = false;
-            if (this.waveNumber > 0) this.isSummaryActive = true; 
-            this.prepareWave(); 
+            
+            if (this.waveNumber > 0) {
+                this.isSummaryActive = true; 
+                // DO NOT call prepareWave yet - wait for player to click "NEXT" in UI
+            } else {
+                // Tutorial special case - auto-increment or handle via tutorial success
+                this.prepareWave(); 
+            }
         }
     }
 
