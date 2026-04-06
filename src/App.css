@@ -109,7 +109,7 @@ body::after {
   display: flex; flex-direction: column; 
   justify-content: space-between; 
   align-items: center; 
-  padding: 8dvh 0 15dvh 0; /* INCREASED BOTTOM SPACE */
+  padding: 8dvh 0 20dvh 0; /* MAXIMIZED BOTTOM SPACE */
   perspective: 1500px; 
 }
 .menu-content-centered { 
@@ -276,6 +276,26 @@ body::after {
   max-height: 70dvh; overflow-y: auto;
   box-shadow: 0 0 30px rgba(0, 102, 255, 0.2);
 }
+
+.intel-grid-horizontal {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap; /* ALLOW WRAPPING */
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .pre-wave-overlay { padding: 15px; gap: 10px; }
+  .wave-summary-ledger { padding: 8px !important; }
+  .wave-summary-ledger div { font-size: 0.55rem !important; }
+  .intel-card-modern { width: 60px !important; }
+  .intel-card-modern .shape { width: 16px !important; height: 16px !important; }
+  .intel-label { font-size: 0.5rem !important; }
+  .massive-exec-button { font-size: 0.8rem !important; padding: 12px !important; }
+  .intel-header { font-size: 0.6rem !important; }
+}
+
 .intel-card-modern { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 80px; text-align: center; }
 .intel-label { font-size: 0.7rem; color: #fff; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
 /* TUTORIAL SYSTEM */
