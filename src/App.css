@@ -124,16 +124,21 @@ body::after {
   flex: 1;
 }
 .menu-title-static { 
-  font-family: 'Arial Black', sans-serif; font-size: clamp(2.5rem, 10vw, 5rem); 
+  font-family: 'Arial Black', sans-serif; font-size: clamp(2.2rem, 12vw, 5rem); 
   font-weight: 900; line-height: 0.85; text-align: center; color: var(--neon-blue); 
   margin-bottom: 0; transform: rotateX(45deg) translateZ(50px); 
   text-shadow: 0 1px 0 #0044bb, 0 3px 0 #002299, 0 0 30px rgba(0, 102, 255, 0.8);
+  width: 100%;
 }
 .menu-title-static span { display: inline-block; transition: color 0.05s; }
 
 .rank-tag { font-size: 0.6rem; color: #55aaaa; font-weight: 900; letter-spacing: 2px; margin-bottom: 5px; background: rgba(0,102,255,0.1); padding: 4px 12px; border: 1px solid rgba(0,102,255,0.3); }
 
-.menu-options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 90vw; max-width: 500px; pointer-events: auto; }
+.menu-options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 92vw; max-width: 500px; pointer-events: auto; }
+@media (max-width: 480px) {
+  .menu-options-grid { grid-template-columns: 1fr; gap: 10px; }
+  .primary-btn { grid-column: span 1 !important; }
+}
 .menu-options-grid.compact { margin-top: -4vh; /* PHYSICAL PULL-UP */ }
 
 /* MALFUNCTIONS */
