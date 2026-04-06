@@ -149,7 +149,7 @@ function App() {
         setGame(g);
         setIsInitializing(false);
         const tutorialDone = localStorage.getItem('syntax_tutorial_done');
-        if (!tutorialDone && g.waveManager.waveNumber === 1) {
+        if (!tutorialDone && g.waveManager.waveNumber === 0) {
           setShowTutorial(true);
         }
 
