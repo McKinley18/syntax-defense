@@ -787,10 +787,10 @@ function App() {
               <div className="system-error-msg">SYSTEM ERROR</div>
             ) : (
               <div className="menu-options-grid compact">
-                <button className="cyan-menu-btn primary-btn" onClick={() => startNewGame('STANDARD')}>INITIALIZE STANDARD</button>
+                <button className="cyan-menu-btn primary-btn" onClick={() => { wakeAudioSystem(); startNewGame('STANDARD'); }}>INITIALIZE STANDARD</button>
                 <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setIsTypingComplete(false); setScreen('MODES'); }}>ADVANCED PROTOCOLS</button>
-                <button className="cyan-menu-btn" onClick={loadGame}>RESTORE SESSION</button>
-                <button className="cyan-menu-btn" onClick={() => openArchive('LORE')}>SYSTEM INFO</button>
+                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); loadGame(); }}>RESTORE SESSION</button>
+                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); openArchive('LORE'); }}>SYSTEM INFO</button>
                 <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
               </div>
             )}

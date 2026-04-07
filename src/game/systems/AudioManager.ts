@@ -23,123 +23,118 @@ export class AudioManager {
     public init() {
         if (this.ctx) return;
         try {
-            this.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+            const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+            this.ctx = new AudioContextClass();
             this.masterGain = this.ctx.createGain();
-            this.masterGain.gain.value = 0.5;
+            this.masterGain.gain.value = 0.7; // INCREASED VOLUME
             this.masterGain.connect(this.ctx.destination);
 
-            // Initialize Music Engine
             MusicManager.getInstance().init(this.ctx, this.masterGain);
             if (!this.isAmbientMuted) {
                 MusicManager.getInstance().start();
             }
+            console.log("SYNTAX_AUDIO_ENGINE: ONLINE");
         } catch (e) {
-            console.warn("AUDIO_INIT_FAILED:", e);
+            console.error("SYNTAX_AUDIO_ENGINE: INITIALIZATION_FAILED", e);
         }
     }
 
     public async resume() {
         if (!this.ctx) this.init();
-        if (this.ctx?.state === 'suspended') {
+        if (this.ctx && this.ctx.state === 'suspended') {
             await this.ctx.resume();
+            console.log("SYNTAX_AUDIO_ENGINE: RESUMED");
         }
         if (!this.isAmbientMuted) {
             MusicManager.getInstance().start();
         }
     }
 
-    public isSuspended(): boolean {
-        return !this.ctx || this.ctx.state === 'suspended';
-    }
-
     public playUiClick() {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const time = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'square';
-        osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.04);
-        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.04);
-        osc.connect(gain); gain.connect(this.masterGain!);
-        osc.start(); osc.stop(this.ctx.currentTime + 0.04);
+        osc.frequency.setValueAtTime(1500, time);
+        osc.frequency.exponentialRampToValueAtTime(800, time + 0.05);
+        gain.gain.setValueAtTime(0.15, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        osc.start(time);
+        osc.stop(time + 0.05);
     }
 
     public playBreach() {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const time = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(80, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.3);
-        osc.connect(gain); gain.connect(this.masterGain!);
-        osc.start(); osc.stop(this.ctx.currentTime + 0.3);
-    }
-
-    public playFirePulse() {
-        if (!this.ctx || this.isSfxMuted) return;
-        this.playProcedural(440, 220, 0.05, 'square', 0.08);
-    }
-
-    public playFireFrost() {
-        if (!this.ctx || this.isSfxMuted) return;
-        this.playProcedural(880, 1200, 0.1, 'sine', 0.05);
-    }
-
-    public playFireBlast() {
-        if (!this.ctx || this.isSfxMuted) return;
-        this.playProcedural(150, 40, 0.2, 'sawtooth', 0.1);
-    }
-
-    public playFireRail() {
-        if (!this.ctx || this.isSfxMuted) return;
-        this.playProcedural(2000, 100, 0.15, 'triangle', 0.1);
-    }
-
-    public playFireTesla() {
-        if (!this.ctx || this.isSfxMuted) return;
-        this.playProcedural(600, 800, 0.08, 'sawtooth', 0.06);
-    }
-
-    private playProcedural(startFreq: number, endFreq: number, duration: number, type: OscillatorType, vol: number) {
-        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(endFreq, this.ctx.currentTime + duration);
-        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-        osc.connect(gain); gain.connect(this.masterGain!);
-        osc.start(); osc.stop(this.ctx.currentTime + duration);
+        osc.frequency.setValueAtTime(120, time);
+        osc.frequency.linearRampToValueAtTime(40, time + 0.4);
+        gain.gain.setValueAtTime(0.4, time);
+        gain.gain.linearRampToValueAtTime(0, time + 0.4);
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        osc.start(time);
+        osc.stop(time + 0.4);
     }
 
     public playPlacement() {
-        this.playProcedural(220, 880, 0.1, 'sine', 0.15);
+        this.playProcedural(300, 900, 0.1, 'sine', 0.2);
     }
 
     public playPurge() {
-        this.playProcedural(1200, 100, 0.15, 'triangle', 0.08);
+        this.playProcedural(1000, 50, 0.2, 'sawtooth', 0.15);
+    }
+
+    public playFirePulse() {
+        this.playProcedural(600, 200, 0.06, 'square', 0.1);
+    }
+
+    public playFireFrost() {
+        this.playProcedural(800, 1200, 0.12, 'sine', 0.08);
+    }
+
+    public playFireBlast() {
+        this.playProcedural(200, 60, 0.25, 'sawtooth', 0.12);
+    }
+
+    public playFireTesla() {
+        this.playProcedural(1200, 1500, 0.08, 'triangle', 0.07);
+    }
+
+    public playFireRail() {
+        this.playProcedural(2500, 100, 0.15, 'square', 0.12);
+    }
+
+    private playProcedural(start: number, end: number, dur: number, type: OscillatorType, vol: number) {
+        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(start, time);
+        osc.frequency.exponentialRampToValueAtTime(end, time + dur);
+        gain.gain.setValueAtTime(vol, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        osc.start(time);
+        osc.stop(time + dur);
     }
 
     public playGlitchBuzz() {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(2500, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
-        osc.connect(gain); gain.connect(this.masterGain!);
-        osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+        this.playProcedural(2000, 100, 0.1, 'square', 0.05);
     }
 
     public toggleSfx() {
         this.isSfxMuted = !this.isSfxMuted;
         localStorage.setItem('syntax_sfx_muted', String(this.isSfxMuted));
+        if (!this.isSfxMuted) this.playUiClick();
     }
 
     public toggleAmbient() {
@@ -148,12 +143,6 @@ export class AudioManager {
         if (this.isAmbientMuted) {
             MusicManager.getInstance().stop();
         } else {
-            MusicManager.getInstance().start();
-        }
-    }
-
-    public startAmbient() {
-        if (!this.isAmbientMuted) {
             MusicManager.getInstance().start();
         }
     }
