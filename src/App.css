@@ -132,6 +132,7 @@ body::after {
   animation: error-flash 0.15s infinite; 
 }
 @keyframes error-flash { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
 .main-menu { width: 100vw; height: 100dvh; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 7dvh 0 25dvh 0; perspective: 1500px; }
 .menu-content-centered { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2.5vh; z-index: 100; position: relative; }
 
@@ -150,7 +151,6 @@ body::after {
 .menu-options-grid.compact { margin-top: -2vh; }
 
 .menu-title-static { 
-...
   font-family: 'Arial Black', sans-serif; font-size: clamp(2rem, 12vw, 4.5rem); 
   font-weight: 900; line-height: 0.8; text-align: center; color: #00ffff !important; 
   transform-style: preserve-3d; transform: translate(-5px, -5px);
@@ -160,8 +160,7 @@ body::after {
 }
 
 .rank-tag { 
-  font-size: 0.75rem; /* SLIGHTLY BIGGER TACTICAL INTEL */
-  color: #55aaaa; font-weight: 900; letter-spacing: 2px; 
+  font-size: 0.75rem; color: #55aaaa; font-weight: 900; letter-spacing: 2px; 
   background: #000; padding: 4px 12px; border: 1px solid rgba(0,102,255,0.3); 
   box-shadow: 1px 1px 0 rgba(0, 102, 255, 0.3), 2px 2px 0 rgba(0, 102, 255, 0.2);
   margin-top: 15px;
@@ -219,10 +218,9 @@ body::after {
 .integrity-fill { height: 100%; transition: width 0.4s; }
 .status-text-line { font-size: 0.7rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
 
-/* REBUILT FLOATING OVERLAYS - PERFECTLY CENTERED IN PLAY AREA & CONSTRAINED */
+/* 6. REBUILT FLOATING OVERLAYS - PERFECTLY CENTERED IN PLAY AREA & CONSTRAINED */
 .pre-wave-overlay, .victory-overlay, .pause-content {
   position: fixed; 
-  /* Center in the area ABOVE the dashboard */
   top: calc((100dvh - var(--dashboard-height)) / 2) !important;
   left: 50% !important; 
   transform: translate(-50%, -50%) !important;
@@ -231,19 +229,12 @@ body::after {
   width: 90vw; max-width: 420px; 
   display: flex; flex-direction: column; align-items: center; 
   gap: 6px; 
-  /* DYNAMIC HEIGHT: Ensures it never touches the dashboard */
   max-height: calc(100dvh - var(--dashboard-height) - 30px) !important; 
   overflow-y: auto !important; 
   pointer-events: auto !important;
   box-shadow: 0 0 60px rgba(0, 102, 255, 0.6);
   z-index: 20000;
 }
-
-/* Specific overrides for Pause to ensure no scroll if not needed */
-.pause-content { 
-  overflow-y: auto !important; 
-}
-
 .pre-wave-overlay::-webkit-scrollbar, .victory-overlay::-webkit-scrollbar, .pause-content::-webkit-scrollbar { width: 6px; }
 .pre-wave-overlay::-webkit-scrollbar-thumb, .victory-overlay::-webkit-scrollbar-thumb, .pause-content::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 3px; }
 
@@ -267,32 +258,11 @@ body::after {
 .intel-card-large .card-label .name { font-size: 0.7rem; font-weight: 900; color: var(--neon-cyan); }
 .intel-card-large .card-label .desc { font-size: 0.5rem; color: #888; font-weight: bold; }
 
-.popup-title { color: var(--neon-cyan); font-weight: 900; font-size: 1rem; letter-spacing: 2px; border-bottom: 1px solid #333; width: 100%; text-align: center; padding-bottom: 3px; margin-bottom: 0px; }
+.popup-title { color: var(--neon-cyan); font-weight: 900; font-size: 1.1rem; letter-spacing: 2px; border-bottom: 1px solid #333; width: 100%; text-align: center; padding-bottom: 4px; margin-bottom: 0px; }
 
-.pause-overlay-locked { 
-  position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); 
-  display: flex; justify-content: center; align-items: center; z-index: 40000; 
-}
-.pause-content { 
-  background: #050505; border: 2px solid var(--neon-blue); padding: 15px; 
-  display: flex; flex-direction: column; align-items: center; gap: 10px; 
-  max-width: 360px; width: 90%; 
-  /* NATURAL HEIGHT FOR PAUSE - PERFECT CENTER */
-}
-/* CUSTOM SCROLLBAR FOR OVERLAYS (EXCEPT PAUSE) */
-.victory-overlay::-webkit-scrollbar, .pre-wave-overlay::-webkit-scrollbar { width: 6px; }
-
-.pause-title { 
-  font-size: 1.4rem !important; 
-  color: var(--neon-cyan);
-  margin: 5px 0;
-}
-.pause-options.grid-options { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 8px; 
-  width: 100%; 
-}
+.pause-overlay-locked { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 40000; }
+.pause-title { font-size: 1.4rem !important; color: var(--neon-cyan); margin: 5px 0; }
+.pause-options.grid-options { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 
 /* MINI MODELS */
 .mini-turret { position: relative; width: 32px; height: 32px; display: block; margin: 0 auto; flex-shrink: 0; }
@@ -348,7 +318,7 @@ body::after {
 
 .back-btn { margin-top: 20px !important; width: 200px !important; }
 
-/* TUTORIAL HIGHLIGHT */
+/* TUTORIAL POINTER */
 .tutorial-highlight {
   position: absolute;
   border: 2px solid var(--neon-cyan);
@@ -362,7 +332,6 @@ body::after {
   100% { opacity: 1; transform: scale(1.02); }
 }
 
-/* TUTORIAL POINTER */
 .tutorial-pointer {
   position: absolute; color: var(--neon-cyan); font-weight: 900; font-size: 0.85rem; z-index: 15002;
   display: flex; flex-direction: column; align-items: center; gap: 5px; 

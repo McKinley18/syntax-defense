@@ -158,6 +158,13 @@ export class PathManager {
             if (i === macroPath.length - 1) {
                 // Ensure it reaches the absolute right edge
                 this.endNodePos = new PIXI.Point(window.innerWidth, (microY + 1) * TILE_SIZE);
+                
+                // Add padding cells to ensure the black path rects reach the edge
+                let lastX = microX;
+                while (lastX < this.microCols) {
+                    lastX += 2;
+                    this.pathCells.push({ x: lastX, y: microY });
+                }
             }
         }
     }

@@ -120,9 +120,9 @@ export class MapManager {
                 this.gridGraphics.moveTo(x * TILE_SIZE, y * TILE_SIZE);
                 this.gridGraphics.lineTo(x * TILE_SIZE, (y + 1) * TILE_SIZE);
                 this.gridGraphics.stroke({
-                    width: 2,
+                    width: 2.5,
                     color: 0x0066ff,
-                    alpha: isBorder ? 0.8 : 0.5
+                    alpha: isBorder ? 1.0 : 0.7
                 });
             }
         }
@@ -140,9 +140,9 @@ export class MapManager {
                 this.gridGraphics.moveTo(x * TILE_SIZE, y * TILE_SIZE);
                 this.gridGraphics.lineTo((x + 1) * TILE_SIZE, y * TILE_SIZE);
                 this.gridGraphics.stroke({
-                    width: 2,
+                    width: 2.5,
                     color: 0x0066ff,
-                    alpha: isBorder ? 0.8 : 0.5
+                    alpha: isBorder ? 1.0 : 0.7
                 });
             }
         }

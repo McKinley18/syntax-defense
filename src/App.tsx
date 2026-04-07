@@ -80,7 +80,7 @@ function App() {
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
   const [upcomingEnemies, setUpcomingEnemies] = useState<number[]>([]);
-  const [waveSummary, setWaveSummary] = useState<WaveSummary>({ kills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 });
+  const [waveSummary, setWaveSummary] = useState<WaveSummary>({ kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 });
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
   const [isVictorious, setIsVictorious] = useState(false);
   const [resetStatus, setResetStatus] = useState("");

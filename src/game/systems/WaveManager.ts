@@ -158,6 +158,7 @@ export class WaveManager {
         if (this.enemiesToSpawn === 0 && this.enemies.length === 0 && !this.hasProcessedEnd) {
             this.hasProcessedEnd = true; 
             this.isWaveActive = false;
+            GameStateManager.getInstance().phase = 'PREP'; // TRIGGER UI TRANSITION
             
             if (this.waveNumber > 0) {
                 this.isSummaryActive = true; 
