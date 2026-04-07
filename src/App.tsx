@@ -770,10 +770,12 @@ function App() {
               <div className="enc-content">
                 <div className="info-hub">
                   {archiveCategory === 'NONE' ? (
-                    <div className="menu-options-grid" style={{marginTop: '20px', width: '100%', maxWidth: '600px'}}>
-                      <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('TACTICAL'); setInfoTab('VIRAL DB'); }}>TACTICAL DATABASE</button>
-                      <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('HANDBOOK'); setInfoTab('LOGIC'); }}>SYSTEM HANDBOOK</button>
-                      <button className="cyan-menu-btn primary-btn" onClick={() => { setArchiveCategory('MANIFEST'); setInfoTab('LORE'); }}>MAINFRAME MANIFEST</button>
+                    <div style={{display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%'}}>
+                      <div className="menu-options-grid" style={{width: '100%', maxWidth: '600px'}}>
+                        <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('TACTICAL'); setInfoTab('VIRAL DB'); }}>TACTICAL DATABASE</button>
+                        <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('HANDBOOK'); setInfoTab('LOGIC'); }}>SYSTEM HANDBOOK</button>
+                        <button className="cyan-menu-btn primary-btn" onClick={() => { setArchiveCategory('MANIFEST'); setInfoTab('LORE'); }}>MAINFRAME MANIFEST</button>
+                      </div>
                     </div>
                   ) : (
                     <>
