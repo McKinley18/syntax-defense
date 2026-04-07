@@ -589,9 +589,9 @@ function App() {
                           {[0, 1, 2, 3].map(type => {
                             const reg = VISUAL_REGISTRY[type as EnemyType];
                             return (
-                              <div key={type} className="intel-card-large">
+                              <div key={type} className="intel-card-large" data-enemy={type}>
                                 <div className="card-viz">
-                                  <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '24px', borderLeftWidth: '12px', borderRightWidth: '12px' } : { background: reg.colorHex, width: '22px', height: '22px' }}></div>
+                                  <div className="mini-enemy"></div>
                                 </div>
                                 <div className="card-label">
                                   <div className="name">{reg.name}</div>
@@ -973,14 +973,18 @@ function App() {
           <div className="manual-text" style={{fontSize: '0.95rem', color: 'var(--neon-blue)', marginBottom: '15px'}}>
             &gt; INITIATING ANALYTICS FOR MISSION: {waveName}... SCANNING VIRAL SIGNATURES...
           </div>
-          <div className="intel-grid-horizontal" style={{margin: '10px 0', width: '100%', justifyContent: 'center', flexWrap: 'wrap'}}>
+          <div className="intel-grid-2x2">
             {upcomingEnemies.map((type, idx) => {
               const reg = VISUAL_REGISTRY[type as EnemyType];
               if (!reg) return null;
               return (
-                <div key={idx} className="intel-card-modern" style={{width: '85px', margin: '5px', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                  <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex } : { background: reg.colorHex }}></div>
-                  <div className="intel-label" style={{fontSize: '0.65rem', marginTop: '5px', color: '#fff', fontWeight: 900}}>{reg.name}</div>
+                <div key={idx} className="intel-card-large" data-enemy={type}>
+                  <div className="card-viz">
+                    <div className="mini-enemy"></div>
+                  </div>
+                  <div className="card-label">
+                    <div className="name">{reg.name}</div>
+                  </div>
                 </div>
               );
             })}

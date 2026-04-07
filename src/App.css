@@ -239,9 +239,11 @@ body::after {
 .pre-wave-overlay::-webkit-scrollbar-thumb, .victory-overlay::-webkit-scrollbar-thumb, .pause-content::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 3px; }
 
 .intel-grid-2x2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-direction: row; /* LEFT TO RIGHT */
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
   width: 100%;
   margin-top: 10px;
 }
@@ -249,14 +251,24 @@ body::after {
   background: rgba(0, 102, 255, 0.05);
   border: 1px solid rgba(0, 102, 255, 0.2);
   display: flex;
+  flex-direction: column; /* STACK VIZ OVER LABEL */
   align-items: center;
-  gap: 10px;
-  padding: 8px;
+  gap: 8px;
+  padding: 10px;
+  width: 95px;
 }
-.intel-card-large .card-viz { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.intel-card-large .card-label { display: flex; flex-direction: column; }
-.intel-card-large .card-label .name { font-size: 0.7rem; font-weight: 900; color: var(--neon-cyan); }
-.intel-card-large .card-label .desc { font-size: 0.5rem; color: #888; font-weight: bold; }
+.intel-card-large .card-viz { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.intel-card-large .card-label { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.intel-card-large .card-label .name { font-size: 0.65rem; font-weight: 900; color: var(--neon-cyan); }
+.intel-card-large .card-label .desc { font-size: 0.45rem; color: #888; font-weight: bold; margin-top: 2px; }
+
+/* MINI ENEMY MODELS */
+.mini-enemy { position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+[data-enemy="0"] .mini-enemy::before { content: ''; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 20px solid var(--neon-cyan); filter: drop-shadow(0 0 5px var(--neon-cyan)); }
+[data-enemy="1"] .mini-enemy::before { content: ''; width: 18px; height: 18px; background: #00ffcc; border-radius: 50%; box-shadow: 0 0 10px #00ffcc; }
+[data-enemy="1"] .mini-enemy::after { content: ''; position: absolute; width: 26px; height: 26px; border: 1px dashed #00ffcc; border-radius: 50%; animation: rotate-phone 4s infinite linear; }
+[data-enemy="2"] .mini-enemy::before { content: ''; width: 22px; height: 22px; background: #ffcc00; border: 2px solid #fff; box-shadow: 0 0 12px #ffcc00; }
+[data-enemy="3"] .mini-enemy::before { content: ''; width: 24px; height: 24px; background: #ff3300; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); box-shadow: 0 0 15px #ff3300; }
 
 .popup-title { color: var(--neon-cyan); font-weight: 900; font-size: 1.1rem; letter-spacing: 2px; border-bottom: 1px solid #333; width: 100%; text-align: center; padding-bottom: 4px; margin-bottom: 0px; }
 

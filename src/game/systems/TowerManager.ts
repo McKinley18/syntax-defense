@@ -12,14 +12,17 @@ export class TowerManager {
     public onTowerPlaced: (() => void) | null = null;
     
     private previewGraphics: PIXI.Graphics;
+    private previewTurret: PIXI.Container;
     private linkGraphics: PIXI.Graphics;
     private game: GameContainer;
 
     constructor(game: GameContainer) {
         this.game = game;
         this.previewGraphics = new PIXI.Graphics();
+        this.previewTurret = new PIXI.Container();
         this.linkGraphics = new PIXI.Graphics();
         this.game.uiLayer.addChild(this.previewGraphics);
+        this.game.uiLayer.addChild(this.previewTurret);
         this.game.effectLayer.addChild(this.linkGraphics);
         this.setupPlacementInput();
     }
@@ -27,11 +30,19 @@ export class TowerManager {
     public startPlacement(type: TowerType) {
         this.isPlacing = true;
         this.selectedTurretType = type;
+        
+        // Setup visual for preview
+        this.previewTurret.removeChildren();
+        const dummy = new Tower(type, 0, 0);
+        this.previewTurret.addChild(dummy.container);
+        this.previewTurret.alpha = 0.6;
+        this.previewTurret.visible = true;
     }
 
     public cancelPlacement() {
         this.isPlacing = false;
         this.previewGraphics.clear();
+        this.previewTurret.visible = false;
     }
 
     private setupPlacementInput() {
@@ -40,6 +51,7 @@ export class TowerManager {
         this.game.app.stage.on('globalpointermove', (e) => {
             if (!this.isPlacing) {
                 this.previewGraphics.clear();
+                this.previewTurret.visible = false;
                 return;
             }
             const worldPos = this.game.viewport.toLocal(e.global);
@@ -63,16 +75,16 @@ export class TowerManager {
                             GameStateManager.getInstance().addCredits(-cost);
                             AudioManager.getInstance().playPlacement();
                             
-                            if (this.onTowerPlaced) this.onTowerPlaced(); // TRIGGER TUTORIAL
+                            if (this.onTowerPlaced) this.onTowerPlaced(); 
                             
                             this.isPlacing = false;
                             this.previewGraphics.clear();
+                            this.previewTurret.visible = false;
                             e.preventDefault();
                         }
                     }
                 }
             } else {
-                // TOWER INTERACTION (Upgrade)
                 const tower = this.getTowerAt(worldPos.x, worldPos.y);
                 if (tower) {
                     this.tryUpgradeTower(tower);
@@ -84,15 +96,10 @@ export class TowerManager {
     private getAdjustedCost(type: TowerType): number {
         const state = GameStateManager.getInstance();
         const base = TOWER_CONFIGS[type].cost;
-        
-        // SUPPLY & DEMAND PRICING
         const count = this.getTowerCount(type);
         const supplyMultiplier = count >= 4 ? 1.15 : 1.0;
-        
         let cost = Math.floor(base * supplyMultiplier);
         if (state.gameMode === 'HARDCORE') cost = Math.floor(cost * 1.5);
-        
-        // SMART LOGIC: Recovery pricing
         if (state.integrity < 10 && state.gameMode !== 'SUDDEN_DEATH') cost = Math.floor(cost * 0.85);
         return cost;
     }
@@ -100,7 +107,6 @@ export class TowerManager {
     private tryUpgradeTower(tower: Tower) {
         if (tower.level >= 3) return;
         const upgradeCost = Math.floor(this.getAdjustedCost(tower.type) * (tower.level === 1 ? 1.5 : 2.0));
-        
         if (GameStateManager.getInstance().credits >= upgradeCost) {
             if (tower.upgrade()) {
                 AudioManager.getInstance().playUiClick();
@@ -120,24 +126,18 @@ export class TowerManager {
 
     private recalculateLinks() {
         this.linkGraphics.clear();
-        // Reset all bonuses
         this.towers.forEach(t => t.linkBonus = 0);
-
         for (let i = 0; i < this.towers.length; i++) {
             for (let j = i + 1; j < this.towers.length; j++) {
                 const t1 = this.towers[i];
                 const t2 = this.towers[j];
-
                 if (t1.type === t2.type) {
                     const dx = t1.container.x - t2.container.x;
                     const dy = t1.container.y - t2.container.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-
-                    if (dist < TILE_SIZE * 2.5) { // Adjacent or near-adjacent
+                    if (dist < TILE_SIZE * 2.5) {
                         t1.linkBonus = Math.min(0.3, t1.linkBonus + 0.1);
                         t2.linkBonus = Math.min(0.3, t2.linkBonus + 0.1);
-
-                        // Draw Link Visual
                         this.linkGraphics.moveTo(t1.container.x, t1.container.y);
                         this.linkGraphics.lineTo(t2.container.x, t2.container.y);
                         this.linkGraphics.stroke({ width: 1, color: t1.config.color, alpha: 0.4 });
@@ -157,18 +157,20 @@ export class TowerManager {
         const gy = Math.floor(wy / TILE_SIZE);
         const sx = gx * TILE_SIZE;
         const sy = gy * TILE_SIZE;
-        const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
+        
+        const center = this.game.mapManager.getTileCenter(wx, wy);
+        this.previewTurret.position.set(center.x, center.y);
+        this.previewTurret.visible = true;
 
+        const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
         const isBoundary = gy <= 0 || gy >= visibleRows - 1;
         const isBuildable = this.game.mapManager.isBuildable(wx, wy) && !this.getTowerAt(wx, wy) && !isBoundary;
         const config = TOWER_CONFIGS[this.selectedTurretType];
 
-        // Radius
         this.previewGraphics.circle(sx + TILE_SIZE/2, sy + TILE_SIZE/2, config.range * TILE_SIZE);
         this.previewGraphics.fill({ color: config.color, alpha: 0.1 });
         this.previewGraphics.stroke({ width: 1, color: config.color, alpha: 0.3 });
 
-        // Snap Box with Interactive Grid Pulse
         this.previewGraphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
         if (isBuildable) {
             const pulse = 0.2 + Math.abs(Math.sin(Date.now() / 200)) * 0.3;
@@ -192,24 +194,13 @@ export class TowerManager {
             let towerValue = baseCost;
             if (t.level >= 2) towerValue += Math.floor(baseCost * 1.5);
             if (t.level >= 3) towerValue += Math.floor(baseCost * 2.0);
-            
-            if (GameStateManager.getInstance().gameMode === 'HARDCORE') {
-                towerValue = Math.floor(towerValue * 1.5);
-            }
-            if (GameStateManager.getInstance().integrity < 10 && GameStateManager.getInstance().gameMode !== 'SUDDEN_DEATH') {
-                towerValue = Math.floor(towerValue * 0.85);
-            }
-            
+            if (GameStateManager.getInstance().gameMode === 'HARDCORE') towerValue = Math.floor(towerValue * 1.5);
+            if (GameStateManager.getInstance().integrity < 10 && GameStateManager.getInstance().gameMode !== 'SUDDEN_DEATH') towerValue = Math.floor(towerValue * 0.85);
             totalRefund += Math.floor(towerValue * 0.75);
-
             this.game.towerLayer.removeChild(t.container);
             t.container.destroy({ children: true });
         });
-
-        if (totalRefund > 0) {
-            GameStateManager.getInstance().addCredits(totalRefund, 'refund');
-        }
-
+        if (totalRefund > 0) GameStateManager.getInstance().addCredits(totalRefund, 'refund');
         this.towers = [];
         this.linkGraphics.clear();
     }
