@@ -101,47 +101,55 @@ function App() {
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
 
-  // ADVANCED CINEMATIC BOOT STATE
+  // ULTIMATE BOOT SEQUENCE STATE
   const [bootPhase, setBootPhase] = useState(0); 
   const [bootProgress, setBootProgress] = useState(0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
-  const [statusGlitched, setStatusGlitched] = useState(false);
-  const [readyGlitchStep, setReadyGlitchStep] = useState(0); // 0: None, 1: Ready to... 2: WIPE USER... 3: INITIALIZE...
+  const [showAuthorized, setShowAuthorized] = useState(false);
+  const [showPreserve, setShowPreserve] = useState(false);
+  const [wipeOverlay, setWipeOverlay] = useState(false);
+  const [finalGlitchStep, setFinalGlitchStep] = useState(0); // 0: None, 1: Ready to... 2: WIPE... 3: Initialize...
 
   useEffect(() => {
     if (audioReady) return;
 
-    if (bootPhase === 2) { // LOAD BAR
-      const timer = setInterval(() => {
-        setBootProgress(p => {
-          if (p >= 100) {
-            clearInterval(timer);
-            setTimeout(() => setBootPhase(3), 800);
-            return 100;
-          }
-          return p + 1;
-        });
-      }, 35);
-      return () => clearInterval(timer);
-    } else if (bootPhase === 3) { // TYPING SYSTEM TEXT ONE BY ONE
-      const logs = [
-        "MOUNTING KERNEL_CORE_V2.7",
-        "DECRYPTING THREAT_SIGNATURES.DB",
-        "CALIBRATING GRID_SENSOR",
-        "AUTHENTICATING ARCHITECT CLEARANCE"
-      ];
-      let i = 0;
-      const itv = setInterval(() => {
-        if (i < logs.length) {
-          setBootLogs(prev => [...prev, logs[i]]);
-          AudioManager.getInstance().playTypeClick();
-          i++;
-        } else {
-          clearInterval(itv);
-          setTimeout(() => setBootPhase(4), 1500);
-        }
-      }, 700);
-      return () => clearInterval(itv);
+    if (bootPhase === 1) { // BLINK AFTER CONNECT
+        setTimeout(() => setShowAuthorized(true), 1500);
+        setTimeout(() => setBootPhase(2), 2500);
+    } else if (bootPhase === 3) { // BLINK AFTER INITIATE
+        setTimeout(() => setShowPreserve(true), 1500);
+        setTimeout(() => setBootPhase(4), 2500);
+    } else if (bootPhase === 4) { // LOAD BAR
+        const timer = setInterval(() => {
+            setBootProgress(p => {
+                if (p >= 100) {
+                    clearInterval(timer);
+                    setTimeout(() => setBootPhase(5), 800);
+                    return 100;
+                }
+                return p + 2;
+            });
+        }, 40);
+        return () => clearInterval(timer);
+    } else if (bootPhase === 5) { // 4 LOG LINES
+        const logs = [
+            "MOUNTING KERNEL_CORE_V2.7",
+            "DECRYPTING THREAT_SIGNATURES.DB",
+            "CALIBRATING GRID_SENSOR",
+            "AUTHENTICATING ARCHITECT CLEARANCE"
+        ];
+        let i = 0;
+        const itv = setInterval(() => {
+            if (i < logs.length) {
+                setBootLogs(prev => [...prev, logs[i]]);
+                AudioManager.getInstance().playTypeClick();
+                i++;
+            } else {
+                clearInterval(itv);
+                setTimeout(() => setBootPhase(6), 1500);
+            }
+        }, 700);
+        return () => clearInterval(itv);
     }
   }, [bootPhase, audioReady]);
 
@@ -504,15 +512,16 @@ function App() {
           {/* BOOT LOG AREA (TOP LEFT) */}
           <div style={{position: 'absolute', top: '20px', left: '20px', textAlign: 'left', fontFamily: 'monospace'}}>
             <div style={{color: '#00ff66', fontSize: '0.85rem', marginBottom: '8px'}}>
-              &gt; <TerminalText text="CONNECT TO REMOTE_DEVICE" speed={35} onComplete={() => setTimeout(() => setBootPhase(1), 1500)} />
-              {bootPhase >= 1 && <span style={{color: '#00ff66'}}>[AUTHORIZED]</span>}
+              &gt; <TerminalText text="CONNECT TO REMOTE_DEVICE:" speed={35} onComplete={() => setBootPhase(1)} />
+              {showAuthorized && <span style={{color: '#00ff66', marginLeft: '5px'}}>[AUTHORIZED]</span>}
             </div>
-            {bootPhase >= 1 && (
+            {bootPhase >= 2 && (
               <div style={{color: '#00ff66', fontSize: '0.85rem', marginBottom: '15px'}}>
-                &gt; <TerminalText text="INITIATE DEFENSE_PROTOCOLS --PRESERVE_SYSTEM" speed={30} delay={1000} onComplete={() => setTimeout(() => setBootPhase(2), 1500)} />
+                &gt; <TerminalText text="INITIATE DEFENSE_PROTOCOLS:" speed={30} onComplete={() => setBootPhase(3)} />
+                {showPreserve && <span style={{color: '#00ff66', marginLeft: '5px'}}>PRESERVE_SYSTEM</span>}
               </div>
             )}
-            {bootPhase >= 2 && (
+            {bootPhase >= 4 && (
               <div style={{width: '250px', height: '15px', border: '1px solid #00ff66', position: 'relative', overflow: 'hidden', marginBottom: '15px'}}>
                 <div style={{height: '100%', background: '#00ff66', width: `${bootProgress}%`}}></div>
                 <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: bootProgress > 50 ? '#000' : '#00ff66', fontWeight: 900}}>
@@ -520,50 +529,31 @@ function App() {
                 </div>
               </div>
             )}
-            {bootPhase >= 3 && bootLogs.map((log, i) => (
+            {bootPhase >= 5 && bootLogs.map((log, i) => (
               <div key={i} style={{color: '#00ff66', fontSize: '0.75rem', marginBottom: '4px'}}>
                 &gt; {log}
               </div>
             ))}
-            {bootPhase >= 5 && (
-              <div style={{color: '#00ff66', fontSize: '0.75rem'}}>
-                &gt; <TerminalText 
-                    text={statusGlitched ? "STATUS: SUCCESSFUL. CAUTION: THREATS IMMINENT." : "STATUS:"} 
-                    speed={25} 
-                    stopAtChar={statusGlitched ? -1 : 7}
-                    onComplete={() => {
-                        if (!statusGlitched) {
-                            setTimeout(() => {
-                                setIsDistorted(true);
-                                AudioManager.getInstance().playGlitchBuzz();
-                                setStatusGlitched(true);
-                                setTimeout(() => setIsDistorted(false), 100);
-                            }, 2000);
-                        } else {
-                            setTimeout(() => setBootPhase(8), 2000);
-                        }
-                    }} 
-                />
-              </div>
-            )}
-            {bootPhase >= 8 && (
+            {bootPhase >= 6 && (
               <div style={{color: '#00ff66', fontSize: '0.75rem', marginTop: '10px'}}>
                 &gt; <TerminalText 
-                    text={readyGlitchStep === 3 ? "READY TO INITIALIZE SYSTEM" : (readyGlitchStep === 2 ? "READY TO WIPE USER SYSTEM" : "READY TO ")} 
+                    text={finalGlitchStep === 3 ? "READY TO INITIALIZE SYSTEM" : (finalGlitchStep === 2 ? "READY TO WIPE USER SYSTEM" : "READY TO ")} 
                     speed={25}
                     onComplete={() => {
-                        if (readyGlitchStep === 0) {
-                            setReadyGlitchStep(1);
+                        if (finalGlitchStep === 0) {
+                            setFinalGlitchStep(1);
                             setTimeout(() => {
+                                setWipeOverlay(true);
                                 setIsDistorted(true);
                                 AudioManager.getInstance().playGlitchBuzz();
-                                setReadyGlitchStep(2);
+                                setFinalGlitchStep(2);
                                 setTimeout(() => {
+                                    setWipeOverlay(false);
                                     setIsDistorted(false);
-                                    setReadyGlitchStep(3);
-                                    setTimeout(() => setBootPhase(10), 1500);
-                                }, 200);
-                            }, 1000);
+                                    setFinalGlitchStep(3);
+                                    setTimeout(() => setBootPhase(10), 2000);
+                                }, 250);
+                            }, 1500);
                         }
                     }}
                 />
@@ -578,6 +568,13 @@ function App() {
               <div className="manual-text" style={{fontSize: '1.1rem', color: 'var(--neon-blue)', animation: 'error-flash 1s infinite', marginTop: '10px', fontWeight: 900}}>
                 &gt; CLICK TO INITIALIZE MAINFRAME
               </div>
+            </div>
+          )}
+
+          {/* SYSTEM WIPE FLASH OVERLAY */}
+          {wipeOverlay && (
+            <div style={{position: 'fixed', inset: 0, background: 'rgba(255, 51, 0, 0.4)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <h1 className="system-error-msg" style={{fontSize: '6rem', color: '#fff', textShadow: '0 0 20px #ff0000'}}>SYSTEM WIPE</h1>
             </div>
           )}
         </div>
