@@ -9,6 +9,7 @@ import { TILE_SIZE, MapManager } from './game/systems/MapManager';
 import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
+type ArchiveCategory = 'NONE' | 'TACTICAL' | 'HANDBOOK' | 'MANIFEST';
 type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'RANKS' | 'CREDITS';
 
 const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: string, speed?: number, onComplete?: () => void, delay?: number }) => {
@@ -60,6 +61,7 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: strin
 
 function App() {
   const [screen, setScreen] = useState<ScreenState>('MENU');
+  const [archiveCategory, setArchiveCategory] = useState<ArchiveCategory>('NONE');
   const [infoTab, setInfoTab] = useState<InfoTab>('LORE');
   const [credits, setCredits] = useState(850);
   const [integrity, setIntegrity] = useState(20);
@@ -418,10 +420,11 @@ function App() {
     return false;
   };
 
-  const openArchive = (tab: InfoTab) => {
+  const openArchive = (tab: InfoTab = 'LORE') => {
     wakeAudioSystem();
     AudioManager.getInstance().playUiClick();
     setIsTypingComplete(false);
+    setArchiveCategory('NONE');
     setInfoTab(tab);
     setScreen('ARCHIVE');
   };
@@ -759,178 +762,203 @@ function App() {
       {screen === 'ARCHIVE' && (
         <div className="encyclopedia ui-layer">
           <div className="enc-header">
-            <TerminalText key="archive-title" text="MAINFRAME DATA ARCHIVE" delay={800} onComplete={() => setIsTypingComplete(true)} />
-            {isTypingComplete && <span> // {infoTab}</span>}
+            <TerminalText key={`archive-title-${archiveCategory}`} text={archiveCategory === 'NONE' ? "MAINFRAME DATA ARCHIVE" : `ARCHIVE // ${archiveCategory}`} delay={800} onComplete={() => setIsTypingComplete(true)} />
+            {isTypingComplete && archiveCategory !== 'NONE' && <span> // {infoTab}</span>}
           </div>
           {isTypingComplete && (
             <>
               <div className="enc-content">
                 <div className="info-hub">
-                  <div className="info-tabs">
-                    <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
-                    <button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL DB')}>VIRUSES</button>
-                    <button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => setInfoTab('PROTOCOLS')}>TURRETS</button>
-                    <button className={infoTab === 'SYSTEM MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM MODES')}>MODES</button>
-                    <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
-                    <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
-                    <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button>
-                    <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button>
-                  </div>
-                  <div className="info-body">
-                    {infoTab === 'LORE' && (
-                      <div className="manual-text">
-                        <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p>
-                        <p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p>
-                        <p>&gt; THE KERNEL IS THE LAST REMAINING BASTION OF PURE LOGIC. IF IT FALLS, THE DIGITAL UNIVERSE WILL DESCEND INTO PERMANENT ENTROPY.</p>
-                        <p>&gt; YOU ARE THE SYSTEM ARCHITECT. YOUR MISSION IS TO DEPLOY DEFENSE NODES AND PURGE THE SWARMS BEFORE THEY BREACH THE CORE MEMORY BANKS.</p>
+                  {archiveCategory === 'NONE' ? (
+                    <div className="menu-options-grid" style={{marginTop: '20px', width: '100%', maxWidth: '600px'}}>
+                      <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('TACTICAL'); setInfoTab('VIRAL DB'); }}>TACTICAL DATABASE</button>
+                      <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('HANDBOOK'); setInfoTab('LOGIC'); }}>SYSTEM HANDBOOK</button>
+                      <button className="cyan-menu-btn primary-btn" onClick={() => { setArchiveCategory('MANIFEST'); setInfoTab('LORE'); }}>MAINFRAME MANIFEST</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="info-tabs">
+                        {archiveCategory === 'TACTICAL' && (
+                          <>
+                            <button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL DB')}>VIRUSES</button>
+                            <button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => setInfoTab('PROTOCOLS')}>TURRETS</button>
+                            <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
+                          </>
+                        )}
+                        {archiveCategory === 'HANDBOOK' && (
+                          <>
+                            <button className={infoTab === 'SYSTEM MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM MODES')}>MODES</button>
+                            <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
+                            <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button>
+                          </>
+                        )}
+                        {archiveCategory === 'MANIFEST' && (
+                          <>
+                            <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
+                            <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button>
+                          </>
+                        )}
+                        <button className="back-tab-btn" onClick={() => { setArchiveCategory('NONE'); setIsTypingComplete(false); }} style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}}>BACK</button>
                       </div>
-                    )}
-                    {infoTab === 'VIRAL DB' && (
-                      <div className="visual-grid">
-                        {Object.values(VISUAL_REGISTRY).map(v => (
-                          <div key={v.name} className="visual-card-large">
-                            <div className="card-visual-box">
-                              <div className={`shape ${v.shape}`} style={v.shape === 'triangle' ? { borderBottomColor: v.colorHex } : { background: v.colorHex }}></div>
-                            </div>
-                            <div className="card-detail-box">
-                              <div className="label">{v.name}</div>
-                              <div className="stats">HP: {v.baseHp} // SPD: {v.speed}x // PRIORITY: {v.priority}</div>
-                              <div className="desc">{
-                                v.name === 'GLIDER' ? 'Rapid packet stream. Low integrity.' : 
-                                v.name === 'STRIDER' ? 'Staggered burst unit. Medium threat.' : 
-                                v.name === 'BEHEMOTH' ? 'Heavy bulk data. High defensive priority.' : 
-                                'Core-Breaker. High entropy Boss unit.'
-                              }</div>
-                            </div>
+                      <div className="info-body">
+                        {infoTab === 'LORE' && (
+                          <div className="manual-text">
+                            <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p>
+                            <p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p>
+                            <p>&gt; THE KERNEL IS THE LAST REMAINING BASTION OF PURE LOGIC. IF IT FALLS, THE DIGITAL UNIVERSE WILL DESCEND INTO PERMANENT ENTROPY.</p>
+                            <p>&gt; YOU ARE THE SYSTEM ARCHITECT. YOUR MISSION IS TO DEPLOY DEFENSE NODES AND PURGE THE SWARMS BEFORE THEY BREACH THE CORE MEMORY BANKS.</p>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                    {infoTab === 'PROTOCOLS' && (
-                      <div className="visual-grid">
-                        {Object.keys(TOWER_CONFIGS).map(key => {
-                          const type = parseInt(key) as TowerType;
-                          const cfg = TOWER_CONFIGS[type];
-                          return (
-                            <div key={key} className="visual-card-large">
-                              <div className="card-visual-box">
-                                <div className="mini-turret" data-type={type} style={{transform: 'scale(1.2)'}}>
-                                  <div className="mini-base"></div>
-                                  <div className="mini-head">
-                                    <div className="mini-weapon"></div>
-                                    <div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div>
-                                  </div>
+                        )}
+                        {infoTab === 'VIRAL DB' && (
+                          <div className="visual-grid">
+                            {Object.values(VISUAL_REGISTRY).map(v => (
+                              <div key={v.name} className="visual-card-large">
+                                <div className="card-visual-box">
+                                  <div className={`shape ${v.shape}`} style={v.shape === 'triangle' ? { borderBottomColor: v.colorHex } : { background: v.colorHex }}></div>
+                                </div>
+                                <div className="card-detail-box">
+                                  <div className="label">{v.name}</div>
+                                  <div className="stats">HP: {v.baseHp} // SPD: {v.speed}x // PRIORITY: {v.priority}</div>
+                                  <div className="desc">{
+                                    v.name === 'GLIDER' ? 'Rapid packet stream. Low integrity.' : 
+                                    v.name === 'STRIDER' ? 'Staggered burst unit. Medium threat.' : 
+                                    v.name === 'BEHEMOTH' ? 'Heavy bulk data. High defensive priority.' : 
+                                    'Core-Breaker. High entropy Boss unit.'
+                                  }</div>
                                 </div>
                               </div>
-                              <div className="card-detail-box">
-                                <div className="label">{cfg.name}</div>
-                                <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range} // COST: {cfg.cost}c</div>
-                                <div className="desc">{
-                                  type === 0 ? 'Rapid-fire logic pulse. Standard frontline defense.' :
-                                  type === 1 ? 'Cryo-cycle beam. Applies 50% movement reduction.' :
-                                  type === 2 ? 'High-voltage bridge. Arc damage to 3 adjacent targets.' :
-                                  type === 3 ? 'Sub-atomic accelerator. High damage + Reveal stealth.' :
-                                  'Global system buffer. Grants +25% DMG to all linked nodes.'
-                                }</div>
-                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {infoTab === 'PROTOCOLS' && (
+                          <div className="visual-grid">
+                            {Object.keys(TOWER_CONFIGS).map(key => {
+                              const type = parseInt(key) as TowerType;
+                              const cfg = TOWER_CONFIGS[type];
+                              return (
+                                <div key={key} className="visual-card-large">
+                                  <div className="card-visual-box">
+                                    <div className="mini-turret" data-type={type} style={{transform: 'scale(1.2)'}}>
+                                      <div className="mini-base"></div>
+                                      <div className="mini-head">
+                                        <div className="mini-weapon"></div>
+                                        <div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="card-detail-box">
+                                    <div className="label">{cfg.name}</div>
+                                    <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range} // COST: {cfg.cost}c</div>
+                                    <div className="desc">{
+                                      type === 0 ? 'Rapid-fire logic pulse. Standard frontline defense.' :
+                                      type === 1 ? 'Cryo-cycle beam. Applies 50% movement reduction.' :
+                                      type === 2 ? 'High-voltage bridge. Arc damage to 3 adjacent targets.' :
+                                      type === 3 ? 'Sub-atomic accelerator. High damage + Reveal stealth.' :
+                                      'Global system buffer. Grants +25% DMG to all linked nodes.'
+                                    }</div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {infoTab === 'SYSTEM MODES' && (
+                          <div className="manual-text">
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">HARDCORE:</span>
+                              <span className="entry-content">NO INTEREST REWARDS. UNIT COSTS INCREASED BY 50%. STARTING CAPITAL REDUCED. ONLY FOR ELITE SYSTEM ARCHITECTS.</span>
                             </div>
-                          );
-                        })}
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">ECO CHALLENGE:</span>
+                              <span className="entry-content">VIRUSES PROVIDE ZERO TOKENS UPON DELETION. ALL INCOME IS DERIVED FROM THE 10% INTEREST COMPOUNDING SYSTEM.</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">SUDDEN DEATH:</span>
+                              <span className="entry-content">SYSTEM INTEGRITY SET TO 1. A SINGLE VIRAL BREACH WILL TERMINATE THE SESSION IMMEDIATELY.</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">ENDLESS LOOP:</span>
+                              <span className="entry-content">NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS AS THE LOOP CONTINUES.</span>
+                            </div>
+                          </div>
+                        )}
+                        {infoTab === 'THREATS' && (
+                          <div className="manual-text">
+                            <div className="manual-entry"><span className="entry-label cyan">ELITE SIGNATURES:</span><span className="entry-content">EVERY 5 SWARMS, MINI-BOSSES WITH 3.5x HP MATERIALIZE.</span></div>
+                            <div className="manual-entry"><span className="entry-label cyan">GHOST PACKETS:</span><span className="entry-content">INVISIBLE ON THE GRID SENSOR. REVEALED BY FROST RAY OR TESLA RADIUS.</span></div>
+                            <div className="manual-entry"><span className="entry-label cyan">BOSS CORE:</span><span className="entry-content">FRACTAL VIRUSES DEAL 10 UNITS OF DAMAGE TO KERNEL UPON BREACH.</span></div>
+                          </div>
+                        )}
+                        {infoTab === 'LOGIC' && (
+                          <div className="manual-text">
+                            <div className="manual-entry"><span className="entry-label cyan">DATA LINKS:</span><span className="entry-content">PLACING IDENTICAL TURRETS ADJACENT FORMS A SYNERGY LINK (+10% DMG).</span></div>
+                            <div className="manual-entry"><span className="entry-label cyan">OVERCLOCKING:</span><span className="entry-content">TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS (3 LEVELS).</span></div>
+                            <div className="manual-entry"><span className="entry-label cyan">INTEREST:</span><span className="entry-content">MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST PER SWARM.</span></div>
+                            <div className="manual-entry"><span className="entry-label cyan">KERNEL OVERDRIVE:</span><span className="entry-content">CORE SHOCKWAVE PURGES NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</span></div>
+                          </div>
+                        )}
+                        {infoTab === 'RANKS' && (
+                          <div className="manual-text">
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">INITIATE:</span>
+                              <span className="entry-content">STARTING RANK. NO BONUS.</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">SCRIPTER:</span>
+                              <span className="entry-content">1,000 XP REQUIRED. +50 TOKEN STARTING BONUS.</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">SYS_ARCHITECT:</span>
+                              <span className="entry-content">5,000 XP REQUIRED. +100 TOKEN STARTING BONUS.</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">SENIOR_ENGR:</span>
+                              <span className="entry-content">10,000 XP REQUIRED. +150 TOKEN STARTING BONUS.</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">ELITE_ARCHITECT:</span>
+                              <span className="entry-content">25,000 XP REQUIRED. +200 TOKEN STARTING BONUS.</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">CORE_GUARDIAN:</span>
+                              <span className="entry-content">50,000 XP REQUIRED. +300 TOKEN STARTING BONUS.</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">GOD_MOD_ADMIN:</span>
+                              <span className="entry-content">100,000 XP REQUIRED. +500 TOKEN STARTING BONUS.</span>
+                            </div>
+                            <div style={{marginTop: '20px', color: '#888', fontSize: '0.7rem'}}>
+                              &gt; XP IS EARNED BY COMPLETING WAVES. HARDCORE MODE GRANTS 2x XP PER WAVE.
+                            </div>
+                          </div>
+                        )}
+                        {infoTab === 'CREDITS' && (
+                          <div className="manual-text">
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">SYSTEM OWNER:</span>
+                              <span className="entry-content">CHRIS MCKINLEY</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">ARCHITECT:</span>
+                              <span className="entry-content">CHRIS MCKINLEY</span>
+                            </div>
+                            <div className="manual-entry">
+                              <span className="entry-label cyan">BUILD ENGINE:</span>
+                              <span className="entry-content">SYNTAX V2.6.0 [ELITE]</span>
+                            </div>
+                            <div style={{marginTop: '30px', borderTop: '1px solid #222', paddingTop: '20px', color: '#666', fontSize: '0.7rem'}}>
+                              &gt; ALL SYSTEM ASSETS, CORE LOGIC, AND INTELLECTUAL PROPERTY CONTAINED WITHIN THIS MAINFRAME ARE THE SOLE PROPERTY OF THE SYSTEM OWNER. UNAUTHORIZED REPLICATION OR BREACH OF THIS SYNTAX IS STRICTLY PROHIBITED.
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {infoTab === 'SYSTEM MODES' && (
-                      <div className="manual-text">
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">HARDCORE:</span>
-                          <span className="entry-content">NO INTEREST REWARDS. UNIT COSTS INCREASED BY 50%. STARTING CAPITAL REDUCED. ONLY FOR ELITE SYSTEM ARCHITECTS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">ECO CHALLENGE:</span>
-                          <span className="entry-content">VIRUSES PROVIDE ZERO TOKENS UPON DELETION. ALL INCOME IS DERIVED FROM THE 10% INTEREST COMPOUNDING SYSTEM.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SUDDEN DEATH:</span>
-                          <span className="entry-content">SYSTEM INTEGRITY SET TO 1. A SINGLE VIRAL BREACH WILL TERMINATE THE SESSION IMMEDIATELY.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">ENDLESS LOOP:</span>
-                          <span className="entry-content">NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS AS THE LOOP CONTINUES.</span>
-                        </div>
-                      </div>
-                    )}
-                    {infoTab === 'THREATS' && (
-                      <div className="manual-text">
-                        <div className="manual-entry"><span className="entry-label cyan">ELITE SIGNATURES:</span><span className="entry-content">EVERY 5 SWARMS, MINI-BOSSES WITH 3.5x HP MATERIALIZE.</span></div>
-                        <div className="manual-entry"><span className="entry-label cyan">GHOST PACKETS:</span><span className="entry-content">INVISIBLE ON THE GRID SENSOR. REVEALED BY FROST RAY OR TESLA RADIUS.</span></div>
-                        <div className="manual-entry"><span className="entry-label cyan">BOSS CORE:</span><span className="entry-content">FRACTAL VIRUSES DEAL 10 UNITS OF DAMAGE TO KERNEL UPON BREACH.</span></div>
-                      </div>
-                    )}
-                    {infoTab === 'LOGIC' && (
-                      <div className="manual-text">
-                        <div className="manual-entry"><span className="entry-label cyan">DATA LINKS:</span><span className="entry-content">PLACING IDENTICAL TURRETS ADJACENT FORMS A SYNERGY LINK (+10% DMG).</span></div>
-                        <div className="manual-entry"><span className="entry-label cyan">OVERCLOCKING:</span><span className="entry-content">TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS (3 LEVELS).</span></div>
-                        <div className="manual-entry"><span className="entry-label cyan">INTEREST:</span><span className="entry-content">MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST PER SWARM.</span></div>
-                        <div className="manual-entry"><span className="entry-label cyan">KERNEL OVERDRIVE:</span><span className="entry-content">CORE SHOCKWAVE PURGES NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</span></div>
-                      </div>
-                    )}
-                    {infoTab === 'RANKS' && (
-                      <div className="manual-text">
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">INITIATE:</span>
-                          <span className="entry-content">STARTING RANK. NO BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SCRIPTER:</span>
-                          <span className="entry-content">1,000 XP REQUIRED. +50 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SYS_ARCHITECT:</span>
-                          <span className="entry-content">5,000 XP REQUIRED. +100 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SENIOR_ENGR:</span>
-                          <span className="entry-content">10,000 XP REQUIRED. +150 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">ELITE_ARCHITECT:</span>
-                          <span className="entry-content">25,000 XP REQUIRED. +200 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">CORE_GUARDIAN:</span>
-                          <span className="entry-content">50,000 XP REQUIRED. +300 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">GOD_MOD_ADMIN:</span>
-                          <span className="entry-content">100,000 XP REQUIRED. +500 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div style={{marginTop: '20px', color: '#888', fontSize: '0.7rem'}}>
-                          &gt; XP IS EARNED BY COMPLETING WAVES. HARDCORE MODE GRANTS 2x XP PER WAVE.
-                        </div>
-                      </div>
-                    )}
-                    {infoTab === 'CREDITS' && (
-                      <div className="manual-text">
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SYSTEM OWNER:</span>
-                          <span className="entry-content">CHRIS MCKINLEY</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">ARCHITECT:</span>
-                          <span className="entry-content">CHRIS MCKINLEY</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">BUILD ENGINE:</span>
-                          <span className="entry-content">SYNTAX V2.6.0 [ELITE]</span>
-                        </div>
-                        <div style={{marginTop: '30px', borderTop: '1px solid #222', paddingTop: '20px', color: '#666', fontSize: '0.7rem'}}>
-                          &gt; ALL SYSTEM ASSETS, CORE LOGIC, AND INTELLECTUAL PROPERTY CONTAINED WITHIN THIS MAINFRAME ARE THE SOLE PROPERTY OF THE SYSTEM OWNER. UNAUTHORIZED REPLICATION OR BREACH OF THIS SYNTAX IS STRICTLY PROHIBITED.
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
-              <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>TERMINATE</button>
+              {archiveCategory === 'NONE' ? (
+                <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>TERMINATE</button>
+              ) : null}
             </>
           )}
         </div>

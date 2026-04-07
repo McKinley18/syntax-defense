@@ -338,6 +338,20 @@ body::after {
 .info-tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; border-bottom: 1px solid #222; padding-bottom: 10px; }
 .info-tabs button { background: rgba(0, 102, 255, 0.1); border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 6px 15px; font-family: inherit; font-size: 0.75rem; font-weight: 900; cursor: pointer; transition: all 0.2s; box-shadow: 1px 1px 0 var(--neon-blue); transform: translate(-1px, -1px); }
 .info-tabs button.active { background: var(--neon-blue); color: #fff; box-shadow: none; transform: translate(0, 0); }
+
+.back-tab-btn {
+  background: rgba(255, 51, 0, 0.1) !important;
+  border: 1px solid var(--neon-red) !important;
+  color: var(--neon-red) !important;
+  padding: 6px 15px; font-family: inherit;
+  font-size: 0.75rem; font-weight: 900;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 1px 1px 0 var(--neon-red);
+  transform: translate(-1px, -1px);
+  margin-left: auto; /* Push to the right */
+}
+.back-tab-btn:hover { background: var(--neon-red) !important; color: #fff !important; }
+
 .info-body { width: 100%; text-align: left; min-height: 200px; }
 
 .visual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; width: 100%; }
