@@ -25,6 +25,8 @@ export class GameStateManager {
     
     public totalXP: number = 0;
     public architectRank: string = "INITIATE";
+    public lifetimeKills: number = 0;
+    public highestWave: number = 0;
 
     public lastWaveSummary: WaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
 
@@ -32,6 +34,7 @@ export class GameStateManager {
 
     private constructor() {
         this.loadXP();
+        this.loadHallOfFame();
     }
 
     public static getInstance(): GameStateManager {
@@ -48,6 +51,7 @@ export class GameStateManager {
         if (reason === 'kill') {
             this.lastWaveSummary.kills += amount;
             this.lastWaveSummary.totalKills++; 
+            this.lifetimeKills++;
         }
         else if (reason === 'interest') this.lastWaveSummary.interest += amount;
         else if (reason === 'perfect') this.lastWaveSummary.perfectBonus += amount;
@@ -62,19 +66,36 @@ export class GameStateManager {
         this.integrity = Math.max(0, this.integrity - amount);
         this.integrityLostThisWave = true;
         if (this.integrity === 0) {
+            if (this.currentWave > this.highestWave) {
+                this.highestWave = this.currentWave;
+                this.saveHallOfFame();
+            }
             localStorage.removeItem('syntax_defense_save');
         }
     }
 
     public calculateRank(): string {
         const xp = this.totalXP;
-        if (xp > 100000) return "GOD_MOD_ADMIN";
-        if (xp > 50000) return "CORE_GUARDIAN";
-        if (xp > 25000) return "ELITE_ARCHITECT";
-        if (xp > 10000) return "SENIOR_ENGR";
-        if (xp > 5000) return "SYS_ARCHITECT";
-        if (xp > 1000) return "SCRIPTER";
+        if (xp >= 100000) return "GOD_MOD_ADMIN";
+        if (xp >= 50000) return "CORE_GUARDIAN";
+        if (xp >= 25000) return "ELITE_ARCHITECT";
+        if (xp >= 10000) return "SENIOR_ENGR";
+        if (xp >= 5000) return "SYS_ARCHITECT";
+        if (xp >= 1000) return "SCRIPTER";
         return "INITIATE";
+    }
+
+    public getRankBadge(): string {
+        const rank = this.calculateRank();
+        switch(rank) {
+            case "GOD_MOD_ADMIN":   return "[ < ★ > ]";
+            case "CORE_GUARDIAN":   return "[ < + > ]";
+            case "ELITE_ARCHITECT": return "[ « » ]";
+            case "SENIOR_ENGR":     return "[ | | ]";
+            case "SYS_ARCHITECT":   return "[ / / ]";
+            case "SCRIPTER":        return "[ - - ]";
+            default:                return "[ . . ]";
+        }
     }
 
     public getRankBonus(): number {
@@ -100,6 +121,23 @@ export class GameStateManager {
         }
     }
 
+    public saveHallOfFame() {
+        const data = {
+            lifetimeKills: this.lifetimeKills,
+            highestWave: this.highestWave
+        };
+        localStorage.setItem('syntax_hall_of_fame', JSON.stringify(data));
+    }
+
+    public loadHallOfFame() {
+        const raw = localStorage.getItem('syntax_hall_of_fame');
+        if (raw) {
+            const data = JSON.parse(raw);
+            this.lifetimeKills = data.lifetimeKills || 0;
+            this.highestWave = data.highestWave || 0;
+        }
+    }
+
     public repairKernel(): boolean {
         if (this.gameMode === 'SUDDEN_DEATH') return false; 
         if (this.credits >= this.repairCost && this.integrity < 20) {
@@ -118,7 +156,12 @@ export class GameStateManager {
         const waveXP = this.currentWave * 50 * (this.gameMode === 'HARDCORE' ? 2 : 1);
         this.totalXP += waveXP;
         this.saveXP();
+        this.saveHallOfFame(); // SAVE LIFETIME KILLS
         this.architectRank = this.calculateRank();
+
+        if (this.currentWave > this.highestWave) {
+            this.highestWave = this.currentWave;
+        }
 
         // PERFECT WAVE BONUS
         if (!this.integrityLostThisWave && this.gameMode !== 'HARDCORE') {
@@ -138,7 +181,7 @@ export class GameStateManager {
         this.integrityLostThisWave = false;
         this.activeGlitch = 'NONE';
 
-        if (Math.random() < 0.2) {
+        if (Math.random() < 0.25) { // SLIGHTLY INCREASED CHANCE
             const glitches: GlitchType[] = ['OVERCLOCK', 'LAG_SPIKE', 'SYSTEM_DRAIN'];
             this.activeGlitch = glitches[Math.floor(Math.random() * glitches.length)];
         }

@@ -191,6 +191,31 @@ body::after {
 .menu-title-static.flicker-active { animation: hardware-dim 0.1s infinite; }
 @keyframes hardware-dim { 0% { opacity: 1; filter: brightness(1); } 50% { opacity: 0.6; filter: brightness(0.5); } 100% { opacity: 1; filter: brightness(1); } }
 
+/* GLITCH TINTS */
+.grid-background.glitch-overclock { background: rgba(0, 255, 102, 0.08) !important; filter: contrast(1.2) brightness(1.1); }
+.grid-background.glitch-lag { background: rgba(170, 0, 255, 0.08) !important; filter: saturate(1.5); }
+.grid-background.glitch-drain { background: rgba(255, 153, 0, 0.08) !important; filter: sepia(0.5); }
+
+/* HALL OF FAME */
+.hof-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+}
+.hof-card {
+  background: rgba(0, 102, 255, 0.05);
+  border: 1px solid rgba(0, 102, 255, 0.2);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.hof-label { font-size: 0.8rem; color: #888; font-weight: 900; letter-spacing: 2px; }
+.hof-value { font-size: 1.4rem; color: var(--neon-cyan); font-weight: 900; text-shadow: 0 0 10px var(--neon-cyan); }
+
+.rank-badge { font-family: monospace; color: var(--neon-cyan); margin-right: 10px; font-weight: 900; }
+
 /* 4. REBUILT TACTICAL DASHBOARD */
 .tactical-dashboard {
   position: fixed; bottom: 0; left: 0; width: 100vw; height: var(--dashboard-height);

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { GameContainer } from './game/GameContainer';
-import { GameStateManager, type GameMode, type WaveSummary } from './game/systems/GameStateManager';
+import { GameStateManager, type GameMode, type WaveSummary, type GlitchType } from './game/systems/GameStateManager';
 import { Tower, TowerType, TOWER_CONFIGS } from './game/entities/Tower';
 import { EnemyType } from './game/entities/Enemy';
 import { VISUAL_REGISTRY } from './game/VisualRegistry';
@@ -10,7 +10,7 @@ import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
 type ArchiveCategory = 'NONE' | 'TACTICAL' | 'HANDBOOK' | 'MANIFEST';
-type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'RANKS' | 'CREDITS';
+type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'RANKS' | 'HALL_OF_FAME' | 'CREDITS';
 
 const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: string, speed?: number, onComplete?: () => void, delay?: number }) => {
   const [displayedText, setDisplayedText] = useState("");
@@ -83,18 +83,23 @@ function App() {
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
   const [upcomingEnemies, setUpcomingEnemies] = useState<number[]>([]);
+  const [activeGlitch, setActiveGlitch] = useState<GlitchType>('NONE');
   const [waveSummary, setWaveSummary] = useState<WaveSummary>({ kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 });
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
+  const [rankBadge, setRankBadge] = useState(GameStateManager.getInstance().getRankBadge());
+  const [lifetimeKills, setLifetimeKills] = useState(0);
+  const [highestWave, setHighestWave] = useState(0);
   const [isVictorious, setIsVictorious] = useState(false);
   const [resetStatus, setResetStatus] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
 
   // INTERACTIVE TUTORIAL STATE
-  const [tutorialStep, setTutorialStep] = useState(0); 
+  const [tutorialStep, setTutorialStep] = useState(0); // 0: Off, 1: MG Select, 2: MG Place, 3: Upgrade, 4: Glitch Intro, 5: Combat Intro, 6: Destruct, 7: Eco
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [showTutorialComplete, setShowTutorialComplete] = useState(false);
   const [showRadiusExplanation, setShowRadiusExplanation] = useState(false);
   const [showUpgradeBrief, setShowUpgradeBrief] = useState(false);
+  const [showGlitchBrief, setShowGlitchBrief] = useState(false);
   const [showCombatIntel, setShowCombatIntel] = useState(false);
   const [showEconomyBrief, setShowEconomyBrief] = useState(false);
   
@@ -104,10 +109,8 @@ function App() {
   const dashboardCenterRef = useRef<HTMLDivElement>(null);
   const [tilePos, setTilePos] = useState({ x: 0, y: 0 });
 
-  // DYNAMIC TUTORIAL POSITIONING
   useEffect(() => {
     if (!isTutorialActive) return;
-
     const updateTutorialState = () => {
       if (tutorialStep === 1 && firstTurretRef.current) {
         if (dashboardCenterRef.current) dashboardCenterRef.current.scrollLeft = 0;
@@ -127,16 +130,11 @@ function App() {
         setTilePos(placedTurretRef.current);
       }
     };
-
     updateTutorialState();
     const interval = setInterval(updateTutorialState, 100);
     const handleResize = () => updateTutorialState();
     window.addEventListener('resize', handleResize);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => { clearInterval(interval); window.removeEventListener('resize', handleResize); };
   }, [isTutorialActive, tutorialStep]);
 
   useEffect(() => {
@@ -148,11 +146,10 @@ function App() {
     }
   }, [isTutorialActive, tutorialStep, game]);
 
-  // POLLING WAVE STATE TO TRIGGER TUTORIAL END
   useEffect(() => {
     const waveNum = game?.waveManager.waveNumber || 0;
-    if (isTutorialActive && gamePhase === 'PREP' && tutorialStep === 5 && waveNum === 1 && !isWaveActive) {
-       setTutorialStep(6);
+    if (isTutorialActive && gamePhase === 'PREP' && tutorialStep === 6 && waveNum === 1 && !isWaveActive) {
+       setTutorialStep(7);
        setShowEconomyBrief(true);
     }
   }, [isTutorialActive, gamePhase, tutorialStep, isWaveActive, game]);
@@ -162,61 +159,16 @@ function App() {
   };
 
   useEffect(() => {
-    const handleFirstInteraction = () => {
-      wakeAudioSystem();
-      window.removeEventListener('click', handleFirstInteraction);
-      window.removeEventListener('touchstart', handleFirstInteraction);
-    };
-    window.addEventListener('click', handleFirstInteraction);
-    window.addEventListener('touchstart', handleFirstInteraction);
-    return () => {
-      window.removeEventListener('click', handleFirstInteraction);
-      window.removeEventListener('touchstart', handleFirstInteraction);
-    };
-  }, []);
-
-  useEffect(() => {
     const lockOrientation = async () => {
       try {
-        const screenObj = window.screen as unknown as { orientation?: { lock: (mode: string) => Promise<void> } };
+        const screenObj = window.screen as any;
         if (screen !== 'MENU' && screenObj.orientation?.lock) {
           await screenObj.orientation.lock('landscape');
         }
-      } catch {
-        // Ignore lock errors
-      }
+      } catch {}
     };
     lockOrientation();
   }, [screen]);
-
-  useEffect(() => {
-    if (game && game.waveManager) {
-      game.waveManager.onWaveEnd = () => {
-        setShowWaveSummaryPopup(true);
-      };
-    }
-  }, [game]);
-
-  useEffect(() => {
-    if (game && game.towerManager) {
-      game.towerManager.onTowerPlaced = () => {
-        if (isTutorialActive) {
-          const center = game.mapManager.getTileCenter(game.app.renderer.events.pointer.global.x, game.app.renderer.events.pointer.global.y);
-          placedTurretRef.current = { x: center.x, y: center.y };
-          setTutorialStep(3); 
-          setShowUpgradeBrief(true);
-        }
-      };
-
-      game.towerManager.onTowerSelected = (tower) => {
-        setSelectedTower(tower);
-        if (isTutorialActive && tutorialStep === 3 && tower) {
-          setTutorialStep(4); 
-          setShowCombatIntel(true);
-        }
-      };
-    }
-  }, [game, isTutorialActive, tutorialStep]);
 
   const [showWaveSummaryPopup, setShowWaveSummaryPopup] = useState(false);
 
@@ -232,6 +184,23 @@ function App() {
           setShowTutorial(true);
         }
 
+        g.towerManager.onTowerPlaced = () => {
+          if (isTutorialActive) {
+            const center = g.mapManager.getTileCenter(g.app.renderer.events.pointer.global.x, g.app.renderer.events.pointer.global.y);
+            placedTurretRef.current = { x: center.x, y: center.y };
+            setTutorialStep(3); 
+            setShowUpgradeBrief(true);
+          }
+        };
+
+        g.towerManager.onTowerSelected = (tower) => {
+          setSelectedTower(tower);
+          if (isTutorialActive && tutorialStep === 3 && tower) {
+            setTutorialStep(4); 
+            setShowGlitchBrief(true);
+          }
+        };
+
         const interval = setInterval(() => {
           const state = GameStateManager.getInstance();
           setCredits(state.credits);
@@ -241,7 +210,11 @@ function App() {
           setGameMode(state.gameMode);
           setGamePhase(state.phase); 
           setRank(state.architectRank);
+          setRankBadge(state.getRankBadge());
+          setActiveGlitch(state.activeGlitch);
           setWaveSummary(state.lastWaveSummary);
+          setLifetimeKills(state.lifetimeKills);
+          setHighestWave(state.highestWave);
 
           if (g.waveManager.isSummaryActive && !showWaveSummaryPopup) {
              setShowCombatIntel(false);
@@ -249,31 +222,21 @@ function App() {
              setShowWaveSummaryPopup(true);
              g.waveManager.isSummaryActive = false; 
           }
-
           if (state.currentWave > 50 && state.gameMode !== 'ENDLESS') {
             setIsVictorious(true);
             setIsPaused(true);
           }
-
           if (g.waveManager) {
             setWave(g.waveManager.waveNumber);
             setIsWaveActive(g.waveManager.isWaveActive);
             setUpcomingEnemies(g.waveManager.upcomingEnemies);
           }
         }, 100);
-
         return () => clearInterval(interval);
       }
       init();
     }
-  }, [screen, game, isInitializing]);
-
-  useEffect(() => {
-    if (game) {
-      game.isPaused = isPaused;
-      game.isFastForward = isFastForward;
-    }
-  }, [isPaused, isFastForward, game]);
+  }, [screen, game, isInitializing, isTutorialActive, tutorialStep, showWaveSummaryPopup]);
 
   useEffect(() => {
     const triggerAtmospheric = () => {
@@ -293,11 +256,17 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (game) {
+      game.isPaused = isPaused;
+      game.isFastForward = isFastForward;
+    }
+  }, [isPaused, isFastForward, game]);
+
   const startNewGame = (mode: GameMode) => {
     wakeAudioSystem();
     AudioManager.getInstance().playUiClick();
     cleanupGame();
-    
     const tutorialDone = localStorage.getItem('syntax_tutorial_done') === 'true';
     if (!tutorialDone) {
       GameStateManager.getInstance().currentWave = 0; 
@@ -307,7 +276,6 @@ function App() {
       GameStateManager.getInstance().resetGame(mode);
       setShowCombatIntel(true); 
     }
-    
     setIsVictorious(false);
     setScreen('GAME');
   };
@@ -338,6 +306,7 @@ function App() {
     setShowSettingsInGame(false);
     setShowEconomyBrief(false);
     setShowUpgradeBrief(false);
+    setShowGlitchBrief(false);
     setSelectedTower(null);
   };
 
@@ -377,13 +346,11 @@ function App() {
 
   const selectTurret = (type: number) => {
     if (isTutorialActive && tutorialStep === 1 && type !== 0) return; 
-
     AudioManager.getInstance().playUiClick();
     setSelectedTurret(type);
     if (game?.towerManager) {
       game.towerManager.startPlacement(type as TowerType);
     }
-    
     if (isTutorialActive && tutorialStep === 1 && type === 0) {
       setShowRadiusExplanation(true);
     }
@@ -402,12 +369,11 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, isPaused, wave]);
 
   const executeWave = () => {
-    if (isTutorialActive && tutorialStep === 4) {
-       setTutorialStep(5);
+    if (isTutorialActive && tutorialStep === 5) {
+       setTutorialStep(6);
     }
     AudioManager.getInstance().playUiClick();
     game?.waveManager.startWave();
@@ -448,8 +414,7 @@ function App() {
   const systemStatusText = integrity > 15 ? "STATUS: STABLE" : integrity > 5 ? "STATUS: DEGRADED" : "STATUS: CRITICAL";
   const sysStatusColor = integrity > 15 ? "#00ffcc" : integrity > 5 ? "#ffcc00" : "#ff3300";
 
-  const showGridEffects = screen === 'MENU';
-  const showCssGrid = screen !== 'GAME';
+  const glitchClass = activeGlitch === 'OVERCLOCK' ? 'glitch-overclock' : activeGlitch === 'LAG_SPIKE' ? 'glitch-lag' : activeGlitch === 'SYSTEM_DRAIN' ? 'glitch-drain' : '';
 
   return (
     <div className="game-wrapper">
@@ -462,27 +427,24 @@ function App() {
         <div className="rotate-icon">📱</div>
       </div>
       
-      {showCssGrid && (
-        <div className={`grid-background ${showGridEffects && isDistorted ? 'distorted' : ''} ${showGridEffects && isFlickering ? 'flicker-active' : ''}`}>
-          <div className="grid-lines"></div>
-          {showGridEffects && (
-            <div className="grid-glows">
-              <div className="glow-bit comet-right glow-1" style={{top: '15%'}}></div>
-              <div className="glow-bit comet-left glow-2" style={{top: '40%'}}></div>
-              <div className="glow-bit comet-down glow-3" style={{left: '30%'}}></div>
-              <div className="glow-bit comet-up glow-4" style={{left: '70%'}}></div>
-              <div className="grid-sweep"></div>
-            </div>
-          )}
-        </div>
-      )}
+      <div className={`grid-background ${screen === 'MENU' && isDistorted ? 'distorted' : ''} ${screen === 'MENU' && isFlickering ? 'flicker-active' : ''} ${glitchClass}`}>
+        <div className="grid-lines"></div>
+        {screen === 'MENU' && (
+          <div className="grid-glows">
+            <div className="glow-bit comet-right glow-1" style={{top: '15%'}}></div>
+            <div className="glow-bit comet-left glow-2" style={{top: '40%'}}></div>
+            <div className="glow-bit comet-down glow-3" style={{left: '30%'}}></div>
+            <div className="glow-bit comet-up glow-4" style={{left: '70%'}}></div>
+            <div className="grid-sweep"></div>
+          </div>
+        )}
+      </div>
 
-      {/* INTERACTIVE TUTORIAL OVERLAYS */}
       {isTutorialActive && (
-        <div className="tutorial-mask" style={{ pointerEvents: (showTutorial || showTutorialComplete || showRadiusExplanation || showCombatIntel || showEconomyBrief || showUpgradeBrief || (tutorialStep === 1 && !showRadiusExplanation) || (tutorialStep === 3 && !showUpgradeBrief)) ? 'auto' : 'none' }}>
+        <div className="tutorial-mask" style={{ pointerEvents: (showTutorial || showTutorialComplete || showRadiusExplanation || showCombatIntel || showEconomyBrief || showUpgradeBrief || showGlitchBrief || (tutorialStep === 1 && !showRadiusExplanation) || (tutorialStep === 3 && !showUpgradeBrief)) ? 'auto' : 'none' }}>
           
           {showTutorial && !isVictorious && (
-            <div className="victory-overlay ui-layer" style={{paddingBottom: '30px'}}>
+            <div className="victory-overlay ui-layer">
               <div className="popup-title">INCOMING THREAT</div>
               <div className="manual-text" style={{fontSize: '0.7rem', color: '#aaa', margin: '10px 0'}}>
                 &gt; <TerminalText 
@@ -504,25 +466,8 @@ function App() {
 
           {tutorialStep === 1 && !showRadiusExplanation && tutorialTargetRect && (
             <>
-              <div className="tutorial-highlight" 
-                style={{
-                  top: tutorialTargetRect.top - 5, 
-                  left: tutorialTargetRect.left - 5, 
-                  width: tutorialTargetRect.width + 10, 
-                  height: tutorialTargetRect.height + 10, 
-                  pointerEvents: 'auto', 
-                  cursor: 'pointer'
-                }}
-                onClick={() => selectTurret(0)}
-              ></div>
-              <div className="tutorial-pointer" 
-                style={{
-                  top: tutorialTargetRect.top - 10, 
-                  left: tutorialTargetRect.left + (tutorialTargetRect.width / 2), 
-                  width: '175px', 
-                  pointerEvents: 'auto'
-                }}
-              >SELECT PULSE MG</div>
+              <div className="tutorial-highlight" style={{ top: tutorialTargetRect.top-5, left: tutorialTargetRect.left-5, width: tutorialTargetRect.width+10, height: tutorialTargetRect.height+10, pointerEvents: 'auto', cursor: 'pointer' }} onClick={() => selectTurret(0)}></div>
+              <div className="tutorial-pointer" style={{ top: tutorialTargetRect.top-10, left: tutorialTargetRect.left+(tutorialTargetRect.width/2), width: '175px', pointerEvents: 'auto' }}>SELECT PULSE MG</div>
             </>
           )}
 
@@ -536,41 +481,20 @@ function App() {
                     <p style={{margin: '8px 0'}}>DEPLOY VARIED NODES TO COUNTER DIFFERENT THREATS:</p>
                     <div style={{marginTop: '10px', display: 'grid', gridTemplateColumns: '70px 1fr', gap: '8px'}}>
                       <span style={{color: 'var(--neon-cyan)'}}>PULSE MG:</span> <span>STANDARD FIRE</span>
-                      <span style={{color: 'var(--neon-green)'}}>FROST:</span> <span>SLOW EFFECT (LVL 4)</span>
+                      <span style={{color: '#00ff66'}}>FROST:</span> <span>SLOW EFFECT (LVL 4)</span>
                       <span style={{color: 'var(--neon-blue)'}}>TESLA:</span> <span>CHAIN DMG (LVL 8)</span>
                       <span style={{color: 'var(--neon-red)'}}>RAILGUN:</span> <span>STEALTH REVEAL (LVL 15)</span>
                     </div>
                   </div>
-                  <button className="blue-button" onClick={() => {
-                    setShowRadiusExplanation(false);
-                    setTutorialStep(2); 
-                  }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+                  <button className="blue-button" onClick={() => { setShowRadiusExplanation(false); setTutorialStep(2); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
                </div>
             </div>
           )}
 
           {tutorialStep === 2 && !showRadiusExplanation && (
             <>
-              <div className="tutorial-highlight" 
-                style={{
-                  top: tilePos.y, 
-                  left: tilePos.x, 
-                  width: TILE_SIZE, 
-                  height: TILE_SIZE, 
-                  borderRadius: '0', 
-                  pointerEvents: 'none'
-                }}
-              ></div>
-              <div className="tutorial-pointer" 
-                style={{
-                  top: tilePos.y - 10, 
-                  left: tilePos.x + (TILE_SIZE / 2), 
-                  width: '150px', 
-                  pointerEvents: 'none'
-                }}
-              >
-                DEPLOY NODE HERE
-              </div>
+              <div className="tutorial-highlight" style={{ top: tilePos.y, left: tilePos.x, width: TILE_SIZE, height: TILE_SIZE, borderRadius: '0', pointerEvents: 'none' }}></div>
+              <div className="tutorial-pointer" style={{ top: tilePos.y-10, left: tilePos.x+(TILE_SIZE/2), width: '150px', pointerEvents: 'none' }}>DEPLOY NODE HERE</div>
             </>
           )}
 
@@ -583,66 +507,42 @@ function App() {
                     <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '10px'}}>&gt; TAPPING A PLACED NODE OPENS THE UPGRADE INTERFACE.</p>
                     <p style={{margin: '8px 0'}}>OVERCLOCKING INCREASES DAMAGE AND ENGAGEMENT RADIUS. EACH NODE HAS 3 PROGRESSION LEVELS.</p>
                   </div>
-                  <button className="blue-button" onClick={() => {
-                    setShowUpgradeBrief(false);
-                    setTutorialStep(3); 
-                  }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+                  <button className="blue-button" onClick={() => { setShowUpgradeBrief(false); setTutorialStep(3); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
                </div>
             </div>
           )}
 
           {tutorialStep === 3 && !showUpgradeBrief && (
             <>
-              <div className="tutorial-pointer" 
-                style={{
-                  top: tilePos.y - 10, 
-                  left: tilePos.x, 
-                  width: '150px', 
-                  pointerEvents: 'none'
-                }}
-              >
-                TAP TO UPGRADE
-              </div>
-              <div 
-                style={{ position: 'absolute', top: tilePos.y, left: tilePos.x - TILE_SIZE/2, width: TILE_SIZE*2, height: TILE_SIZE*2, pointerEvents: 'auto', cursor: 'pointer' }}
-                onClick={() => { 
-                  if (game?.towerManager.towers[0]) {
-                    setSelectedTower(game.towerManager.towers[0]);
-                    setTutorialStep(4);
-                    setShowCombatIntel(true);
-                  }
-                }}
-              ></div>
+              <div className="tutorial-pointer" style={{ top: tilePos.y-10, left: tilePos.x, width: '150px', pointerEvents: 'none' }}>TAP TO UPGRADE</div>
+              <div style={{ position: 'absolute', top: tilePos.y, left: tilePos.x-TILE_SIZE/2, width: TILE_SIZE*2, height: TILE_SIZE*2, pointerEvents: 'auto', cursor: 'pointer' }} onClick={() => { if (game?.towerManager.towers[0]) { setSelectedTower(game.towerManager.towers[0]); setTutorialStep(4); setShowGlitchBrief(true); } }}></div>
             </>
+          )}
+
+          {showGlitchBrief && (
+            <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
+               <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
+                  <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.75rem'}}>MALFUNCTION PROTOCOL</div>
+                  <h2 className="pause-title" style={{fontSize: '1.4rem', margin: '5px 0'}}>SYSTEM GLITCHES</h2>
+                  <div className="manual-text" style={{fontSize: '0.7rem', lineHeight: '1.4'}}>
+                    <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '10px'}}>&gt; THE SYSTEM MAY EXPERIENCE RANDOM DATA INSTABILITIES.</p>
+                    <p style={{margin: '8px 0'}}>GLITCHES LIKE 'LAG SPIKES' SLOW ALL UNITS, WHILE 'SYSTEM DRAINS' TEMPORARILY DISABLE INTEREST ACCRUAL.</p>
+                  </div>
+                  <button className="blue-button" onClick={() => { setShowGlitchBrief(false); setTutorialStep(5); setShowCombatIntel(true); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+               </div>
+            </div>
           )}
 
           {showCombatIntel && (
             <div className="pause-overlay-locked" style={{zIndex: 17000}}>
               <div className="victory-overlay ui-layer" style={{paddingBottom: '50px'}}>
                 <div className="popup-title">SECURITY BRIEFING</div>
-                
-                <div className="manual-text" style={{margin: '10px 0'}}>
-                  &gt; <TerminalText 
-                    key="tutorial-intel-text"
-                    text="A SINGLE GLIDER SIGNATURE IS APPROACHING. NEUTRALIZE IT TO MAINTAIN KERNEL STABILITY." 
-                    delay={800}
-                    onComplete={() => setIsTypingComplete(true)}
-                  />
-                </div>
-
+                <div className="manual-text" style={{margin: '10px 0'}}>&gt; <TerminalText key="tutorial-intel-text" text="A SINGLE GLIDER SIGNATURE IS APPROACHING. NEUTRALIZE IT TO MAINTAIN KERNEL STABILITY." delay={800} onComplete={() => setIsTypingComplete(true)} /></div>
                 {isTypingComplete && (
                   <>
                     <div style={{display: 'flex', alignItems: 'center', gap: '15px', margin: '10px 0', background: 'rgba(0, 255, 255, 0.05)', padding: '15px', borderLeft: '2px solid var(--neon-cyan)', width: '100%'}}>
-                      <div style={{flex: 1, fontSize: '0.7rem', color: '#fff'}}>
-                        &gt; <TerminalText 
-                          key="tutorial-integrity-text"
-                          text="MONITOR INTEGRITY: EACH BREACH CAUSES PERMANENT DATA LOSS." 
-                          delay={200}
-                          onComplete={() => setShowTutorialComplete(true)} 
-                        />
-                      </div>
+                      <div style={{flex: 1, fontSize: '0.7rem', color: '#fff'}}>&gt; <TerminalText key="tutorial-integrity-text" text="MONITOR INTEGRITY: EACH BREACH CAUSES PERMANENT DATA LOSS." delay={200} onComplete={() => setShowTutorialComplete(true)} /></div>
                     </div>
-
                     {showTutorialComplete && (
                       <div style={{paddingBottom: '40px', width: '100%'}}>
                         <div className="manual-text" style={{fontSize: '0.7rem', color: 'var(--neon-blue)', marginTop: '10px'}}>&gt;&gt; KNOWN THREAT SIGNATURES:</div>
@@ -651,23 +551,13 @@ function App() {
                             const reg = VISUAL_REGISTRY[type as EnemyType];
                             return (
                               <div key={type} className="intel-card-minimal">
-                                <div className="symbol-only">
-                                  <div 
-                                    className={`shape ${reg.shape}`} 
-                                    style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '20px', borderLeftWidth: '10px', borderRightWidth: '10px' } : { background: reg.colorHex, width: '20px', height: '20px' }}
-                                  ></div>
-                                </div>
+                                <div className="symbol-only"><div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '20px', borderLeftWidth: '10px', borderRightWidth: '10px' } : { background: reg.colorHex, width: '20px', height: '20px' }}></div></div>
                                 <div className="intel-label-small">{reg.name}</div>
                               </div>
                             );
                           })}
                         </div>
-                        <button className="massive-exec-button" style={{marginTop: '15px'}} onClick={() => {
-                          setShowCombatIntel(false);
-                          setIsTypingComplete(false);
-                          setShowTutorialComplete(false);
-                          executeWave(); 
-                        }}>COMMENCE DEFENSE</button>
+                        <button className="massive-exec-button" style={{marginTop: '15px'}} onClick={() => { setShowCombatIntel(false); setIsTypingComplete(false); setShowTutorialComplete(false); executeWave(); }}>COMMENCE DEFENSE</button>
                       </div>
                     )}
                   </>
@@ -678,38 +568,14 @@ function App() {
 
           {showEconomyBrief && (
             <div className="pause-overlay-locked" style={{zIndex: 17000}}>
-              <div className="victory-overlay ui-layer" style={{paddingBottom: '30px'}}>
+              <div className="victory-overlay ui-layer">
                 <div className="popup-title">MAINFRAME SECURED</div>
-                <div className="manual-text" style={{margin: '10px 0'}}>
-                  &gt; <TerminalText 
-                    key="economy-intel-text"
-                    text="THREAT NEUTRALIZED. TOKENS ARE EARNED PER DELETION. MAINTAIN HIGH BALANCES TO EARN COMPOUNDING INTEREST." 
-                    delay={800}
-                    onComplete={() => setIsTypingComplete(true)}
-                  />
-                </div>
-
+                <div className="manual-text" style={{margin: '10px 0'}}>&gt; <TerminalText key="economy-intel-text" text="THREAT NEUTRALIZED. TOKENS ARE EARNED PER DELETION. MAINTAIN HIGH BALANCES TO EARN COMPOUNDING INTEREST." delay={800} onComplete={() => setIsTypingComplete(true)} /></div>
                 {isTypingComplete && (
                   <>
-                    <div style={{fontSize: '0.75rem', color: 'var(--neon-green)', fontWeight: 900, marginBottom: '15px'}}>
-                      &gt; <TerminalText 
-                        key="economy-warning-text"
-                        text="USE TOKENS WISELY: VIRAL INTENSITY INCREASES EXPONENTIALLY." 
-                        delay={200}
-                        onComplete={() => setShowTutorialComplete(true)} 
-                      />
-                    </div>
+                    <div style={{fontSize: '0.75rem', color: '#00ff66', fontWeight: 900, marginBottom: '15px'}}>&gt; <TerminalText key="economy-warning-text" text="USE TOKENS WISELY: VIRAL INTENSITY INCREASES EXPONENTIALLY." delay={200} onComplete={() => setShowTutorialComplete(true)} /></div>
                     {showTutorialComplete && (
-                      <button className="massive-exec-button" onClick={() => {
-                        setShowEconomyBrief(false);
-                        setIsTutorialActive(false);
-                        setShowTutorialComplete(false);
-                        localStorage.setItem('syntax_tutorial_done', 'true');
-                        GameStateManager.getInstance().resetGame('STANDARD');
-                        game?.waveManager.prepareWave(false);
-                        setShowWaveSummaryPopup(false);
-                        setShowCombatIntel(true);
-                      }}>CONTINUE</button>
+                      <button className="massive-exec-button" onClick={() => { setShowEconomyBrief(false); setIsTutorialActive(false); setShowTutorialComplete(false); localStorage.setItem('syntax_tutorial_done', 'true'); GameStateManager.getInstance().resetGame('STANDARD'); game?.waveManager.prepareWave(false); setShowWaveSummaryPopup(false); setShowCombatIntel(true); }}>CONTINUE</button>
                     )}
                   </>
                 )}
@@ -725,50 +591,20 @@ function App() {
           <div className="pause-content" style={{borderColor: 'var(--neon-cyan)', maxWidth: '320px'}}>
             <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>NODE CONFIGURATION</div>
             <h2 className="pause-title">{selectedTower.config.name} [LVL {selectedTower.level}]</h2>
-            
             <div className="manual-text" style={{fontSize: '0.7rem', width: '100%'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '5px'}}>
-                <span>CURRENT DAMAGE:</span>
-                <span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.damage}</span>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '15px'}}>
-                <span>ENGAGEMENT RANGE:</span>
-                <span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.range}u</span>
-              </div>
-              
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '5px'}}><span>CURRENT DAMAGE:</span><span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.damage}</span></div>
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '15px'}}><span>ENGAGEMENT RANGE:</span><span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.range}u</span></div>
               {selectedTower.level < 3 ? (
                 <div style={{background: 'rgba(0, 255, 255, 0.05)', padding: '10px', border: '1px solid #222', marginBottom: '15px'}}>
-                  <div style={{color: 'var(--neon-green)', fontWeight: 900, marginBottom: '5px'}}>&gt; NEXT LEVEL OVERCLOCK:</div>
+                  <div style={{color: '#00ff66', fontWeight: 900, marginBottom: '5px'}}>&gt; NEXT LEVEL OVERCLOCK:</div>
                   <div style={{fontSize: '0.6rem'}}>+50% DMG // +15% RANGE</div>
                   <div style={{marginTop: '8px', textAlign: 'right', fontWeight: 900}}>COST: {game?.towerManager.getUpgradeCost(selectedTower)}c</div>
                 </div>
-              ) : (
-                <div style={{color: 'var(--neon-blue)', textAlign: 'center', marginBottom: '15px'}}>MAX CORE LEVEL REACHED</div>
-              )}
+              ) : ( <div style={{color: 'var(--neon-blue)', textAlign: 'center', marginBottom: '15px'}}>MAX CORE LEVEL REACHED</div> )}
             </div>
-
             <div className="pause-options grid-options">
-              <button 
-                className="blue-button" 
-                onClick={() => {
-                  if (game?.towerManager.tryUpgradeTower(selectedTower)) {
-                    setSelectedTower(null);
-                  }
-                }}
-                disabled={selectedTower.level >= 3 || !!(game && credits < game.towerManager.getUpgradeCost(selectedTower))}
-              >
-                OVERCLOCK
-              </button>
-              <button 
-                className="blue-button" 
-                style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}}
-                onClick={() => {
-                  game?.towerManager.sellTower(selectedTower);
-                  setSelectedTower(null);
-                }}
-              >
-                RECYCLE
-              </button>
+              <button className="blue-button" onClick={() => { if (game?.towerManager.tryUpgradeTower(selectedTower)) setSelectedTower(null); }} disabled={selectedTower.level >= 3 || !!(game && credits < game.towerManager.getUpgradeCost(selectedTower))}>OVERCLOCK</button>
+              <button className="blue-button" style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}} onClick={() => { game?.towerManager.sellTower(selectedTower); setSelectedTower(null); }}>RECYCLE</button>
               <button className="blue-button" style={{gridColumn: 'span 2'}} onClick={() => setSelectedTower(null)}>CANCEL</button>
             </div>
           </div>
@@ -778,14 +614,8 @@ function App() {
       {screen === 'MENU' && (
         <div className="main-menu ui-layer">
           <div className="menu-content-centered">
-            <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''} ${isFlickering ? 'flicker-active' : ''}`}>
-              SYNTAX
-              <br/>
-              DEFENSE
-            </h1>
-            {isDistorted ? (
-              <div className="system-error-msg">SYSTEM ERROR</div>
-            ) : (
+            <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''} ${isFlickering ? 'flicker-active' : ''}`}>SYNTAX<br/>DEFENSE</h1>
+            {isDistorted ? ( <div className="system-error-msg">SYSTEM ERROR</div> ) : (
               <div className="menu-options-grid compact">
                 <button className="cyan-menu-btn primary-btn" onClick={() => { wakeAudioSystem(); startNewGame('STANDARD'); }}>INITIALIZE STANDARD</button>
                 <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setIsTypingComplete(false); setScreen('MODES'); }}>ADVANCED PROTOCOLS</button>
@@ -794,35 +624,21 @@ function App() {
                 <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
               </div>
             )}
-            <div className="rank-tag">RANK: {rank}</div>
+            <div className="rank-tag"><span className="rank-badge">{rankBadge}</span> RANK: {rank}</div>
           </div>
         </div>
       )}
 
       {screen === 'MODES' && (
         <div className="encyclopedia ui-layer">
-          <div className="enc-header">
-            <TerminalText key="modes-title" text="SELECT ADVANCED PROTOCOL" delay={800} onComplete={() => setIsTypingComplete(true)} />
-          </div>
+          <div className="enc-header"><TerminalText key="modes-title" text="SELECT ADVANCED PROTOCOL" delay={800} onComplete={() => setIsTypingComplete(true)} /></div>
           {isTypingComplete && (
             <>
               <div className="menu-options-grid" style={{marginTop: '20px', maxWidth: '800px', gridTemplateColumns: 'repeat(2, 1fr)'}}>
-                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>
-                  <div className="mode-title">HARDCORE</div>
-                  <div className="mode-desc">NO INTEREST. 50% UNIT COST INCREASE. REDUCED CAPITAL.</div>
-                </button>
-                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}>
-                  <div className="mode-title">SUDDEN DEATH</div>
-                  <div className="mode-desc">CORE INTEGRITY SET TO 1. A SINGLE BREACH ENDS THE SESSION.</div>
-                </button>
-                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('ENDLESS')}>
-                  <div className="mode-title">ENDLESS LOOP</div>
-                  <div className="mode-desc">NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS.</div>
-                </button>
-                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('ECO_CHALLENGE')}>
-                  <div className="mode-title">ECO CHALLENGE</div>
-                  <div className="mode-desc">NO DELETION BOUNTIES. ALL INCOME FROM 10% INTEREST SYSTEM.</div>
-                </button>
+                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}><div className="mode-title">HARDCORE</div><div className="mode-desc">NO INTEREST. 50% UNIT COST INCREASE. REDUCED CAPITAL.</div></button>
+                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}><div className="mode-title">SUDDEN DEATH</div><div className="mode-desc">CORE INTEGRITY SET TO 1. A SINGLE BREACH ENDS THE SESSION.</div></button>
+                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('ENDLESS')}><div className="mode-title">ENDLESS LOOP</div><div className="mode-desc">NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS.</div></button>
+                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('ECO_CHALLENGE')}><div className="mode-title">ECO CHALLENGE</div><div className="mode-desc">NO DELETION BOUNTIES. ALL INCOME FROM 10% INTEREST SYSTEM.</div></button>
               </div>
               <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>RETURN TO ROOT</button>
             </>
@@ -832,9 +648,7 @@ function App() {
 
       {screen === 'SETTINGS' && (
         <div className="encyclopedia ui-layer">
-          <div className="enc-header">
-            <TerminalText key="settings-title" text="SYSTEM CONFIGURATION CENTER" delay={800} onComplete={() => setIsTypingComplete(true)} />
-          </div>
+          <div className="enc-header"><TerminalText key="settings-title" text="SYSTEM CONFIGURATION CENTER" delay={800} onComplete={() => setIsTypingComplete(true)} /></div>
           {isTypingComplete && (
             <>
               <div className="enc-content">
@@ -844,36 +658,26 @@ function App() {
                       <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px'}}>AUDIO CHANNELS</h3>
                       <div style={{display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px'}}>
                         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
-                          <div>
-                            <div style={{color: '#fff', fontWeight: 900}}>SFX ENGINE</div>
-                            <div style={{fontSize: '0.6rem', color: '#888'}}>UI Beeps, Tactical SFX, Breaches</div>
-                          </div>
+                          <div><div style={{color: '#fff', fontWeight: 900}}>SFX ENGINE</div><div style={{fontSize: '0.6rem', color: '#888'}}>UI Beeps, Tactical SFX, Breaches</div></div>
                           <button className="blue-button" onClick={toggleSfx} style={{width: '120px'}}>{sfxMuted ? 'DISABLED' : 'ENABLED'}</button>
                         </div>
                         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
-                          <div>
-                            <div style={{color: '#fff', fontWeight: 900}}>MUSIC ENGINE</div>
-                            <div style={{fontSize: '0.6rem', color: '#888'}}>Rhythmic Cyber-Soundtrack</div>
-                          </div>
+                          <div><div style={{color: '#fff', fontWeight: 900}}>MUSIC ENGINE</div><div style={{fontSize: '0.6rem', color: '#888'}}>Rhythmic Cyber-Soundtrack</div></div>
                           <button className="blue-button" onClick={toggleAmbient} style={{width: '120px'}}>{ambientMuted ? 'DISABLED' : 'ENABLED'}</button>
                         </div>
                       </div>
                       <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM DIAGNOSTICS</h3>
                       <div style={{borderLeft: '4px solid var(--neon-blue)', paddingLeft: '20px', background: 'rgba(0,102,255,0.05)', padding: '20px', marginTop: '20px'}}>
-                        <div>BUILD ID: v2.4.3 ELITE</div>
+                        <div>BUILD ID: v2.7.0 ELITE</div>
                         <div>MAINFRAME STATUS: {systemStatusText}</div>
                         <div>KERNEL STABILITY: {((integrity / 20) * 100).toFixed(0)}%</div>
-                        <div>LATENCY: 0.04ms</div>
-                        <div>LOCAL CACHE: ACTIVE</div>
+                        <div>LIFETIME PURGES: {lifetimeKills}</div>
+                        <div>RECORD WAVE: {highestWave}</div>
                       </div>
                       <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>DEBUG TOOLS</h3>
                       <div style={{marginTop: '20px', display: 'flex', alignItems: 'center', gap: '15px'}}>
-                        <button className="blue-button" onClick={() => {
-                          localStorage.removeItem('syntax_tutorial_done');
-                          setResetStatus("TUTORIAL DATA PURGED. START NEW GAME TO RE-INITIALIZE.");
-                          setTimeout(() => setResetStatus(""), 4000);
-                        }} style={{width: '200px', borderColor: 'var(--neon-cyan)'}}>RESET TUTORIAL</button>
-                        {resetStatus && <span style={{color: 'var(--neon-green)', fontSize: '0.65rem', fontWeight: 900}}>&gt; {resetStatus}</span>}
+                        <button className="blue-button" onClick={() => { localStorage.removeItem('syntax_tutorial_done'); setResetStatus("TUTORIAL DATA PURGED. START NEW GAME TO RE-INITIALIZE."); setTimeout(() => setResetStatus(""), 4000); }} style={{width: '200px', borderColor: 'var(--neon-cyan)'}}>RESET TUTORIAL</button>
+                        {resetStatus && <span style={{color: '#00ff66', fontSize: '0.65rem', fontWeight: 900}}>&gt; {resetStatus}</span>}
                       </div>
                     </div>
                   </div>
@@ -887,10 +691,7 @@ function App() {
 
       {screen === 'ARCHIVE' && (
         <div className="encyclopedia ui-layer">
-          <div className="enc-header">
-            <TerminalText key={`archive-title-${archiveCategory}`} text={archiveCategory === 'NONE' ? "MAINFRAME DATA ARCHIVE" : `ARCHIVE // ${archiveCategory}`} delay={800} onComplete={() => setIsTypingComplete(true)} />
-            {isTypingComplete && archiveCategory !== 'NONE' && <span> // {infoTab}</span>}
-          </div>
+          <div className="enc-header"><TerminalText key={`archive-title-${archiveCategory}`} text={archiveCategory === 'NONE' ? "MAINFRAME DATA ARCHIVE" : `ARCHIVE // ${archiveCategory}`} delay={800} onComplete={() => setIsTypingComplete(true)} />{isTypingComplete && archiveCategory !== 'NONE' && <span> // {infoTab}</span>}</div>
           {isTypingComplete && (
             <>
               <div className="enc-content">
@@ -906,166 +707,32 @@ function App() {
                   ) : (
                     <>
                       <div className="info-tabs">
-                        {archiveCategory === 'TACTICAL' && (
-                          <>
-                            <button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL DB')}>VIRUSES</button>
-                            <button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => setInfoTab('PROTOCOLS')}>TURRETS</button>
-                            <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
-                          </>
-                        )}
-                        {archiveCategory === 'HANDBOOK' && (
-                          <>
-                            <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
-                            <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button>
-                          </>
-                        )}
-                        {archiveCategory === 'MANIFEST' && (
-                          <>
-                            <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
-                            <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button>
-                          </>
-                        )}
+                        {archiveCategory === 'TACTICAL' && ( <><button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL DB')}>VIRUSES</button><button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => setInfoTab('PROTOCOLS')}>TURRETS</button><button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button></> )}
+                        {archiveCategory === 'HANDBOOK' && ( <><button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button><button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button></> )}
+                        {archiveCategory === 'MANIFEST' && ( <><button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button><button className={infoTab === 'HALL_OF_FAME' ? 'active' : ''} onClick={() => setInfoTab('HALL_OF_FAME')}>RECORDS</button><button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button></> )}
                         <button className="back-tab-btn" onClick={() => { setArchiveCategory('NONE'); setIsTypingComplete(false); }} style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}}>BACK</button>
                       </div>
                       <div className="info-body">
-                        {infoTab === 'LORE' && (
-                          <div className="manual-text">
-                            <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p>
-                            <p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p>
-                            <p>&gt; THE KERNEL IS THE LAST REMAINING BASTION OF PURE LOGIC. IF IT FALLS, THE DIGITAL UNIVERSE WILL DESCEND INTO PERMANENT ENTROPY.</p>
-                            <p>&gt; YOU ARE THE SYSTEM ARCHITECT. YOUR MISSION IS TO DEPLOY DEFENSE NODES AND PURGE THE SWARMS BEFORE THEY BREACH THE CORE MEMORY BANKS.</p>
+                        {infoTab === 'LORE' && ( <div className="manual-text"><p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p><p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p><p>&gt; THE KERNEL IS THE LAST REMAINING BASTION OF PURE LOGIC. IF IT FALLS, THE DIGITAL UNIVERSE WILL DESCEND INTO PERMANENT ENTROPY.</p><p>&gt; YOU ARE THE SYSTEM ARCHITECT. YOUR MISSION IS TO DEPLOY DEFENSE NODES AND PURGE THE SWARMS BEFORE THEY BREACH THE CORE MEMORY BANKS.</p></div> )}
+                        {infoTab === 'HALL_OF_FAME' && (
+                          <div className="hof-container">
+                            <div className="hof-card"><div className="hof-label">MAX WAVE REACHED</div><div className="hof-value">{highestWave}</div></div>
+                            <div className="hof-card"><div className="hof-label">TOTAL VIRUSES PURGED</div><div className="hof-value">{lifetimeKills.toLocaleString()}</div></div>
+                            <div className="hof-card"><div className="hof-label">ARCHITECT STATUS</div><div className="hof-value" style={{color: '#00ff66'}}>{rankBadge} {rank}</div></div>
                           </div>
                         )}
-                        {infoTab === 'VIRAL DB' && (
-                          <div className="visual-grid">
-                            {Object.values(VISUAL_REGISTRY).map(v => (
-                              <div key={v.name} className="visual-card-large">
-                                <div className="card-visual-box">
-                                  <div className={`shape ${v.shape}`} style={v.shape === 'triangle' ? { borderBottomColor: v.colorHex } : { background: v.colorHex }}></div>
-                                </div>
-                                <div className="card-detail-box">
-                                  <div className="label">{v.name}</div>
-                                  <div className="stats">HP: {v.baseHp} // SPD: {v.speed}x // PRIORITY: {v.priority}</div>
-                                  <div className="desc">{
-                                    v.name === 'GLIDER' ? 'Rapid packet stream. Low integrity.' : 
-                                    v.name === 'STRIDER' ? 'Staggered burst unit. Medium threat.' : 
-                                    v.name === 'BEHEMOTH' ? 'Heavy bulk data. High defensive priority.' : 
-                                    'Core-Breaker. High entropy Boss unit.'
-                                  }</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {infoTab === 'PROTOCOLS' && (
-                          <div className="visual-grid">
-                            {Object.keys(TOWER_CONFIGS).map(key => {
-                              const type = parseInt(key) as TowerType;
-                              const cfg = TOWER_CONFIGS[type];
-                              return (
-                                <div key={key} className="visual-card-large">
-                                  <div className="card-visual-box">
-                                    <div className="mini-turret" data-type={type} style={{transform: 'scale(1.2)'}}>
-                                      <div className="mini-base"></div>
-                                      <div className="mini-head">
-                                        <div className="mini-weapon"></div>
-                                        <div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="card-detail-box">
-                                    <div className="label">{cfg.name}</div>
-                                    <div className="stats">DMG: {cfg.damage} // RNG: {cfg.range} // COST: {cfg.cost}c</div>
-                                    <div className="desc">{
-                                      type === 0 ? 'Rapid-fire logic pulse. Standard frontline defense.' :
-                                      type === 1 ? 'Cryo-cycle beam. Applies 50% movement reduction.' :
-                                      type === 2 ? 'High-voltage bridge. Arc damage to 3 adjacent targets.' :
-                                      type === 3 ? 'Sub-atomic accelerator. High damage + Reveal stealth.' :
-                                      'Global system buffer. Grants +25% DMG to all linked nodes.'
-                                    }</div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {infoTab === 'THREATS' && (
-                          <div className="manual-text">
-                            <div className="manual-entry"><span className="entry-label cyan">ELITE SIGNATURES:</span><span className="entry-content">EVERY 5 SWARMS, MINI-BOSSES WITH 3.5x HP MATERIALIZE.</span></div>
-                            <div className="manual-entry"><span className="entry-label cyan">GHOST PACKETS:</span><span className="entry-content">INVISIBLE ON THE GRID SENSOR. REVEALED BY FROST RAY OR TESLA RADIUS.</span></div>
-                            <div className="manual-entry"><span className="entry-label cyan">BOSS CORE:</span><span className="entry-content">FRACTAL VIRUSES DEAL 10 UNITS OF DAMAGE TO KERNEL UPON BREACH.</span></div>
-                          </div>
-                        )}
-                        {infoTab === 'LOGIC' && (
-                          <div className="manual-text">
-                            <div className="manual-entry"><span className="entry-label cyan">DATA LINKS:</span><span className="entry-content">PLACING IDENTICAL TURRETS ADJACENT FORMS A SYNERGY LINK (+10% DMG).</span></div>
-                            <div className="manual-entry"><span className="entry-label cyan">OVERCLOCKING:</span><span className="entry-content">TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS (3 LEVELS).</span></div>
-                            <div className="manual-entry"><span className="entry-label cyan">INTEREST:</span><span className="entry-content">MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST PER SWARM.</span></div>
-                            <div className="manual-entry"><span className="entry-label cyan">KERNEL OVERDRIVE:</span><span className="entry-content">CORE SHOCKWAVE PURGES NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</span></div>
-                          </div>
-                        )}
-                        {infoTab === 'RANKS' && (
-                          <div className="manual-text">
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">INITIATE:</span>
-                              <span className="entry-content">STARTING RANK. NO BONUS.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">SCRIPTER:</span>
-                              <span className="entry-content">1,000 XP REQUIRED. +50 TOKEN STARTING BONUS.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">SYS_ARCHITECT:</span>
-                              <span className="entry-content">5,000 XP REQUIRED. +100 TOKEN STARTING BONUS.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">SENIOR_ENGR:</span>
-                              <span className="entry-content">10,000 XP REQUIRED. +150 TOKEN STARTING BONUS.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">ELITE_ARCHITECT:</span>
-                              <span className="entry-content">25,000 XP REQUIRED. +200 TOKEN STARTING BONUS.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">CORE_GUARDIAN:</span>
-                              <span className="entry-content">50,000 XP REQUIRED. +300 TOKEN STARTING BONUS.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">GOD_MOD_ADMIN:</span>
-                              <span className="entry-content">100,000 XP REQUIRED. +500 TOKEN STARTING BONUS.</span>
-                            </div>
-                            <div style={{marginTop: '20px', color: '#888', fontSize: '0.7rem'}}>
-                              &gt; XP IS EARNED BY COMPLETING WAVES. HARDCORE MODE GRANTS 2x XP PER WAVE.
-                            </div>
-                          </div>
-                        )}
-                        {infoTab === 'CREDITS' && (
-                          <div className="manual-text">
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">SYSTEM OWNER:</span>
-                              <span className="entry-content">CHRIS MCKINLEY</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">ARCHITECT:</span>
-                              <span className="entry-content">CHRIS MCKINLEY</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">BUILD ENGINE:</span>
-                              <span className="entry-content">SYNTAX V2.6.0 [ELITE]</span>
-                            </div>
-                            <div style={{marginTop: '30px', borderTop: '1px solid #222', paddingTop: '20px', color: '#666', fontSize: '0.7rem'}}>
-                              &gt; ALL SYSTEM ASSETS, CORE LOGIC, AND INTELLECTUAL PROPERTY CONTAINED WITHIN THIS MAINFRAME ARE THE SOLE PROPERTY OF THE SYSTEM OWNER. UNAUTHORIZED REPLICATION OR BREACH OF THIS SYNTAX IS STRICTLY PROHIBITED.
-                            </div>
-                          </div>
-                        )}
+                        {infoTab === 'VIRAL DB' && ( <div className="visual-grid">{Object.values(VISUAL_REGISTRY).map(v => ( <div key={v.name} className="visual-card-large"><div className="card-visual-box"><div className={`shape ${v.shape}`} style={v.shape === 'triangle' ? { borderBottomColor: v.colorHex } : { background: v.colorHex }}></div></div><div className="card-detail-box"><div className="label">{v.name}</div><div className="stats">HP: {v.baseHp} // SPD: {v.speed}x // PRIORITY: {v.priority}</div><div className="desc">{ v.name === 'GLIDER' ? 'Rapid packet stream. Low integrity.' : v.name === 'STRIDER' ? 'Staggered burst unit. Medium threat.' : v.name === 'BEHEMOTH' ? 'Heavy bulk data. High defensive priority.' : 'Core-Breaker. High entropy Boss unit.' }</div></div></div> ))}</div> )}
+                        {infoTab === 'PROTOCOLS' && ( <div className="visual-grid">{Object.keys(TOWER_CONFIGS).map(key => { const type = parseInt(key) as TowerType; const cfg = TOWER_CONFIGS[type]; return ( <div key={key} className="visual-card-large"><div className="card-visual-box"><div className="mini-turret" data-type={type} style={{transform: 'scale(1.2)'}}><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div></div></div></div><div className="card-detail-box"><div className="label">{cfg.name}</div><div className="stats">DMG: {cfg.damage} // RNG: {cfg.range} // COST: {cfg.cost}c</div><div className="desc">{ type === 0 ? 'Rapid-fire logic pulse. Standard frontline defense.' : type === 1 ? 'Cryo-cycle beam. Applies 50% movement reduction.' : type === 2 ? 'High-voltage bridge. Arc damage to 3 adjacent targets.' : type === 3 ? 'Sub-atomic accelerator. High damage + Reveal stealth.' : 'Global system buffer. Grants +25% DMG to all linked nodes.' }</div></div></div> ); })}</div> )}
+                        {infoTab === 'THREATS' && ( <div className="manual-text"><div className="manual-entry"><span className="entry-label cyan">ELITE SIGNATURES:</span><span className="entry-content">EVERY 5 SWARMS, MINI-BOSSES WITH 3.5x HP MATERIALIZE.</span></div><div className="manual-entry"><span className="entry-label cyan">GHOST PACKETS:</span><span className="entry-content">INVISIBLE ON THE GRID SENSOR. REVEALED BY FROST RAY OR TESLA RADIUS.</span></div><div className="manual-entry"><span className="entry-label cyan">BOSS CORE:</span><span className="entry-content">FRACTAL VIRUSES DEAL 10 UNITS OF DAMAGE TO KERNEL UPON BREACH.</span></div></div> )}
+                        {infoTab === 'LOGIC' && ( <div className="manual-text"><div className="manual-entry"><span className="entry-label cyan">DATA LINKS:</span><span className="entry-content">PLACING IDENTICAL TURRETS ADJACENT FORMS A SYNERGY LINK (+10% DMG).</span></div><div className="manual-entry"><span className="entry-label cyan">OVERCLOCKING:</span><span className="entry-content">TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS (3 LEVELS).</span></div><div className="manual-entry"><span className="entry-label cyan">INTEREST:</span><span className="entry-content">MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST PER SWARM.</span></div><div className="manual-entry"><span className="entry-label cyan">KERNEL OVERDRIVE:</span><span className="entry-content">CORE SHOCKWAVE PURGES NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</span></div></div> )}
+                        {infoTab === 'RANKS' && ( <div className="manual-text"><div className="manual-entry"><span className="entry-label cyan">INITIATE:</span><span className="entry-content">STARTING RANK. NO BONUS.</span></div><div className="manual-entry"><span className="entry-label cyan">SCRIPTER:</span><span className="entry-content">1,000 XP REQUIRED. +50 TOKEN STARTING BONUS.</span></div><div className="manual-entry"><span className="entry-label cyan">SYS_ARCHITECT:</span><span className="entry-content">5,000 XP REQUIRED. +100 TOKEN STARTING BONUS.</span></div><div className="manual-entry"><span className="entry-label cyan">SENIOR_ENGR:</span><span className="entry-content">10,000 XP REQUIRED. +150 TOKEN STARTING BONUS.</span></div><div className="manual-entry"><span className="entry-label cyan">ELITE_ARCHITECT:</span><span className="entry-content">25,000 XP REQUIRED. +200 TOKEN STARTING BONUS.</span></div><div className="manual-entry"><span className="entry-label cyan">CORE_GUARDIAN:</span><span className="entry-content">50,000 XP REQUIRED. +300 TOKEN STARTING BONUS.</span></div><div className="manual-entry"><span className="entry-label cyan">GOD_MOD_ADMIN:</span><span className="entry-content">100,000 XP REQUIRED. +500 TOKEN STARTING BONUS.</span></div><div style={{marginTop: '20px', color: '#888', fontSize: '0.7rem'}}>&gt; XP IS EARNED BY COMPLETING WAVES. HARDCORE MODE GRANTS 2x XP PER WAVE.</div></div> )}
+                        {infoTab === 'CREDITS' && ( <div className="manual-text"><div className="manual-entry"><span className="entry-label cyan">SYSTEM OWNER:</span><span className="entry-content">CHRIS MCKINLEY</span></div><div className="manual-entry"><span className="entry-label cyan">ARCHITECT:</span><span className="entry-content">CHRIS MCKINLEY</span></div><div className="manual-entry"><span className="entry-label cyan">BUILD ENGINE:</span><span className="entry-content">SYNTAX V2.7.0 [ELITE]</span></div><div style={{marginTop: '30px', borderTop: '1px solid #222', paddingTop: '20px', color: '#666', fontSize: '0.7rem'}}>&gt; ALL SYSTEM ASSETS, CORE LOGIC, AND INTELLECTUAL PROPERTY CONTAINED WITHIN THIS MAINFRAME ARE THE SOLE PROPERTY OF THE SYSTEM OWNER. UNAUTHORIZED REPLICATION OR BREACH OF THIS SYNTAX IS STRICTLY PROHIBITED.</div></div> )}
                       </div>
                     </>
                   )}
                 </div>
               </div>
-              {archiveCategory === 'NONE' ? (
-                <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>TERMINATE</button>
-              ) : null}
+              {archiveCategory === 'NONE' ? ( <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>TERMINATE</button> ) : null}
             </>
           )}
         </div>
@@ -1077,18 +744,13 @@ function App() {
         <div className="game-overlay-active ui-layer">
           {isVictorious && (
             <div className="pause-overlay-locked" style={{zIndex: 40000}}>
-              <div className="pause-content" style={{borderColor: 'var(--neon-green)'}}>
-                <h2 className="pause-title" style={{color: 'var(--neon-green)'}}>SYSTEM SECURED</h2>
-                <div className="game-summary">
-                  <p>&gt; ALL HOSTILE DATA PACKETS PURGED.</p>
-                  <p>&gt; KERNEL INTEGRITY: {integrity}/20</p>
-                  <p>&gt; FINAL TOKENS: {credits}</p>
-                </div>
+              <div className="pause-content" style={{borderColor: '#00ff66'}}>
+                <h2 className="pause-title" style={{color: '#00ff66'}}>SYSTEM SECURED</h2>
+                <div className="game-summary"><p>&gt; ALL HOSTILE DATA PACKETS PURGED.</p><p>&gt; KERNEL INTEGRITY: {integrity}/20</p><p>&gt; FINAL TOKENS: {credits}</p></div>
                 <button className="cyan-menu-btn" onClick={quitToMenu} style={{marginTop: '20px'}}>RETURN TO ROOT</button>
               </div>
             </div>
           )}
-          
           {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={quitToMenu}>RETURN TO ROOT</button></div></div>}
           {isPaused && integrity > 0 && !isVictorious && (
             <div className="pause-overlay-locked">
@@ -1107,14 +769,8 @@ function App() {
                 <div className="pause-content small-pause">
                   <h2 className="pause-title">SETTINGS</h2>
                   <div className="manual-text" style={{width: '100%', marginBottom: '10px'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
-                      <span style={{fontSize: '0.7rem'}}>SFX</span>
-                      <button className="blue-button" onClick={toggleSfx} style={{width: '100px', fontSize: '0.6rem'}}>{sfxMuted ? 'OFF' : 'ON'}</button>
-                    </div>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                      <span style={{fontSize: '0.7rem'}}>MUSIC</span>
-                      <button className="blue-button" onClick={toggleAmbient} style={{width: '100px', fontSize: '0.6rem'}}>{ambientMuted ? 'OFF' : 'ON'}</button>
-                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}><span style={{fontSize: '0.7rem'}}>SFX</span><button className="blue-button" onClick={toggleSfx} style={{width: '100px', fontSize: '0.6rem'}}>{sfxMuted ? 'OFF' : 'ON'}</button></div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}><span style={{fontSize: '0.7rem'}}>MUSIC</span><button className="blue-button" onClick={toggleAmbient} style={{width: '100px', fontSize: '0.6rem'}}>{ambientMuted ? 'OFF' : 'ON'}</button></div>
                   </div>
                   <button className="blue-button" onClick={() => setShowSettingsInGame(false)} style={{width: '100%'}}>BACK</button>
                 </div>
@@ -1123,11 +779,9 @@ function App() {
           )}
           
       {gamePhase === 'PREP' && waveSummary && wave >= 1 && showWaveSummaryPopup && !isPaused && integrity > 0 && !isTutorialActive && (
-        <div className="victory-overlay ui-layer" style={{paddingBottom: '10px'}}>
+        <div className="victory-overlay ui-layer">
           <div className="popup-title">WAVE {wave} COMPLETE</div>
-          <div className="manual-text" style={{textAlign: 'center', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--neon-green)'}}>
-            &gt; SWARM PURGE SUCCESSFUL. ANALYSIS COMPLETE.
-          </div>
+          <div className="manual-text" style={{textAlign: 'center', marginBottom: '8px', fontSize: '0.9rem', color: '#00ff66'}}>&gt; SWARM PURGE SUCCESSFUL. ANALYSIS COMPLETE.</div>
           <div className="stats-grid">
             <div className="stats-item"><div className="stats-label">ENEMIES DELETED</div><div className="stats-value">+{waveSummary.totalKills}</div></div>
             <div className="stats-item"><div className="stats-label">TOKENS EARNED</div><div className="stats-value">+{Math.abs(waveSummary.kills)}c</div></div>
@@ -1139,23 +793,17 @@ function App() {
       )}
 
       {gamePhase === 'PREP' && !showWaveSummaryPopup && showCombatIntel && !isPaused && integrity > 0 && !isTutorialActive && (
-        <div className="pre-wave-overlay ui-layer" style={{paddingBottom: '10px'}}>
+        <div className="pre-wave-overlay ui-layer">
           <div className="popup-title">SWARM DATA DETECTED</div>
-          <div className="manual-text" style={{fontSize: '0.75rem', color: 'var(--neon-blue)', marginBottom: '10px'}}>
-            &gt; ANALYZING MISSION: {waveName}... SCANNING VIRAL SIGNATURES...
-          </div>
+          <div className="manual-text" style={{fontSize: '0.75rem', color: 'var(--neon-blue)', marginBottom: '10px'}}>&gt; ANALYZING MISSION: {waveName}... SCANNING VIRAL SIGNATURES...</div>
+          {activeGlitch !== 'NONE' && ( <div style={{fontSize: '0.7rem', color: 'var(--neon-red)', textAlign: 'center', fontWeight: 900, border: '1px solid var(--neon-red)', padding: '5px', marginBottom: '10px'}}>CAUTION: SYSTEM {activeGlitch} DETECTED</div> )}
           <div className="intel-row-horizontal">
             {upcomingEnemies.map((type, idx) => {
               const reg = VISUAL_REGISTRY[type as EnemyType];
               if (!reg) return null;
               return (
                 <div key={idx} className="intel-card-minimal">
-                  <div className="symbol-only">
-                    <div 
-                      className={`shape ${reg.shape}`} 
-                      style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '20px', borderLeftWidth: '10px', borderRightWidth: '10px' } : { background: reg.colorHex, width: '20px', height: '20px' }}
-                    ></div>
-                  </div>
+                  <div className="symbol-only"><div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '20px', borderLeftWidth: '10px', borderRightWidth: '10px' } : { background: reg.colorHex, width: '20px', height: '20px' }}></div></div>
                   <div className="intel-label-small">{reg.name}</div>
                 </div>
               );
@@ -1165,72 +813,15 @@ function App() {
         </div>
       )}
 
-      {/* --- UPGRADE OVERLAY --- */}
-      {selectedTower && (
-        <div className="pause-overlay-locked" style={{zIndex: 25000}}>
-          <div className="pause-content" style={{borderColor: 'var(--neon-cyan)', maxWidth: '320px'}}>
-            <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>NODE CONFIGURATION</div>
-            <h2 className="pause-title">{selectedTower.config.name} [LVL {selectedTower.level}]</h2>
-            
-            <div className="manual-text" style={{fontSize: '0.7rem', width: '100%'}}>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '5px'}}>
-                <span>CURRENT DAMAGE:</span>
-                <span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.damage}</span>
-              </div>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '15px'}}>
-                <span>ENGAGEMENT RANGE:</span>
-                <span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.range}u</span>
-              </div>
-              
-              {selectedTower.level < 3 ? (
-                <div style={{background: 'rgba(0, 255, 255, 0.05)', padding: '10px', border: '1px solid #222', marginBottom: '15px'}}>
-                  <div style={{color: 'var(--neon-green)', fontWeight: 900, marginBottom: '5px'}}>&gt; NEXT LEVEL OVERCLOCK:</div>
-                  <div style={{fontSize: '0.6rem'}}>+50% DMG // +15% RANGE</div>
-                  <div style={{marginTop: '8px', textAlign: 'right', fontWeight: 900}}>COST: {game?.towerManager.getUpgradeCost(selectedTower)}c</div>
-                </div>
-              ) : (
-                <div style={{color: 'var(--neon-blue)', textAlign: 'center', marginBottom: '15px'}}>MAX CORE LEVEL REACHED</div>
-              )}
-            </div>
-
-            <div className="pause-options grid-options">
-              <button 
-                className="blue-button" 
-                onClick={() => {
-                  if (game?.towerManager.tryUpgradeTower(selectedTower)) {
-                    setSelectedTower(null);
-                  }
-                }}
-                disabled={selectedTower.level >= 3 || !!(game && credits < game.towerManager.getUpgradeCost(selectedTower))}
-              >
-                OVERCLOCK
-              </button>
-              <button 
-                className="blue-button" 
-                style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}}
-                onClick={() => {
-                  game?.towerManager.sellTower(selectedTower);
-                  setSelectedTower(null);
-                }}
-              >
-                RECYCLE
-              </button>
-              <button className="blue-button" style={{gridColumn: 'span 2'}} onClick={() => setSelectedTower(null)}>CANCEL</button>
-            </div>
-          </div>
-        </div>
-      )}
-
           <div className="tactical-dashboard">
             <div className="dashboard-left">
               <div className="control-grid">
                 <button className="blue-button compact-btn" onClick={() => setIsPaused(true)}>PAUSE</button>
-                <button className={`blue-button compact-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? 'var(--neon-green)' : ''}}>FWD &gt;&gt;</button>
+                <button className={`blue-button compact-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? '#00ff66' : ''}}>FWD &gt;&gt;</button>
                 <button className={`blue-button compact-btn ${integrity <= 5 && credits >= repairCost ? 'critical-repair' : ''}`} onClick={repairKernel} disabled={credits < repairCost || integrity >= 20}>REPAIR: {repairCost}c</button>
                 <button className="blue-button compact-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>PURGE: 1000c</button>
               </div>
             </div>
-
             <div className="dashboard-center" ref={dashboardCenterRef}>
               <div className="turret-row">
                 {[0, 1, 2, 3, 4].map(type => {
@@ -1259,7 +850,6 @@ function App() {
                 })}
               </div>
             </div>
-
             <div className="dashboard-right">
               <div className="status-stack">
                 <div className="status-mission-line">LVL {isTutorialActive ? 0 : wave} // {isTutorialActive ? 'INIT' : waveName}</div>
