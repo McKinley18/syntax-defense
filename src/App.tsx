@@ -9,7 +9,7 @@ import { TILE_SIZE, MapManager } from './game/systems/MapManager';
 import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
-type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC';
+type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'CREDITS';
 
 const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: string, speed?: number, onComplete?: () => void, delay?: number }) => {
   const [displayedText, setDisplayedText] = useState("");
@@ -766,9 +766,31 @@ function App() {
                     <button className={infoTab === 'SYSTEM MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM MODES')}>MODES</button>
                     <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
                     <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
+                    <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button>
                   </div>
                   <div className="info-body">
                     {infoTab === 'LORE' && (
+...
+                    {infoTab === 'CREDITS' && (
+                      <div className="manual-text">
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">SYSTEM OWNER:</span>
+                          <span className="entry-content">CHRIS MCKINLEY</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label blue">ARCHITECT:</span>
+                          <span className="entry-content">CHRIS MCKINLEY</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label">BUILD ENGINE:</span>
+                          <span className="entry-content">SYNTAX V2.6.0 [ELITE]</span>
+                        </div>
+                        <div style={{marginTop: '30px', borderTop: '1px solid #222', paddingTop: '20px', color: '#666', fontSize: '0.7rem'}}>
+                          &gt; ALL SYSTEM ASSETS, CORE LOGIC, AND INTELLECTUAL PROPERTY CONTAINED WITHIN THIS MAINFRAME ARE THE SOLE PROPERTY OF THE SYSTEM OWNER. UNAUTHORIZED REPLICATION OR BREACH OF THIS SYNTAX IS STRICTLY PROHIBITED.
+                        </div>
+                      </div>
+                    )}
+                  </div>
                       <div className="manual-text">
                         <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p>
                         <p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p>
