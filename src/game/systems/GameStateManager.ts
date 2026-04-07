@@ -88,14 +88,25 @@ export class GameStateManager {
     public getRankBadge(): string {
         const rank = this.calculateRank();
         switch(rank) {
-            case "GOD_MOD_ADMIN":   return "[ < ★ > ]";
+            case "GOD_MOD_ADMIN":   return "[ < ❖ > ]";
             case "CORE_GUARDIAN":   return "[ < + > ]";
-            case "ELITE_ARCHITECT": return "[ « » ]";
-            case "SENIOR_ENGR":     return "[ | | ]";
+            case "ELITE_ARCHITECT": return "[ « 0 » ]";
+            case "SENIOR_ENGR":     return "[ | - | ]";
             case "SYS_ARCHITECT":   return "[ / / ]";
             case "SCRIPTER":        return "[ - - ]";
-            default:                return "[ . . ]";
+            default:                return "[ · · ]";
         }
+    }
+
+    public getNextRankXP(): number {
+        const xp = this.totalXP;
+        if (xp < 1000) return 1000;
+        if (xp < 5000) return 5000;
+        if (xp < 10000) return 10000;
+        if (xp < 25000) return 25000;
+        if (xp < 50000) return 50000;
+        if (xp < 100000) return 100000;
+        return 100000;
     }
 
     public getRankBonus(): number {

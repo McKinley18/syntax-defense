@@ -87,6 +87,8 @@ function App() {
   const [waveSummary, setWaveSummary] = useState<WaveSummary>({ kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 });
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
   const [rankBadge, setRankBadge] = useState(GameStateManager.getInstance().getRankBadge());
+  const [currentXP, setCurrentXP] = useState(GameStateManager.getInstance().totalXP);
+  const [nextRankXP, setNextRankXP] = useState(GameStateManager.getInstance().getNextRankXP());
   const [lifetimeKills, setLifetimeKills] = useState(0);
   const [highestWave, setHighestWave] = useState(0);
   const [isVictorious, setIsVictorious] = useState(false);
@@ -211,6 +213,8 @@ function App() {
           setGamePhase(state.phase); 
           setRank(state.architectRank);
           setRankBadge(state.getRankBadge());
+          setCurrentXP(state.totalXP);
+          setNextRankXP(state.getNextRankXP());
           setActiveGlitch(state.activeGlitch);
           setWaveSummary(state.lastWaveSummary);
           setLifetimeKills(state.lifetimeKills);
@@ -624,7 +628,7 @@ function App() {
                 <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
               </div>
             )}
-            <div className="rank-tag"><span className="rank-badge">{rankBadge}</span> RANK: {rank}</div>
+            <div className="rank-tag"><span className="rank-badge">{rankBadge}</span> RANK: {rank} [{currentXP.toLocaleString()} / {nextRankXP.toLocaleString()} XP]</div>
           </div>
         </div>
       )}
