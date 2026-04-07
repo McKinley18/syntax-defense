@@ -925,9 +925,9 @@ function App() {
           )}
           
       {gamePhase === 'PREP' && waveSummary && wave >= 1 && showWaveSummaryPopup && !isPaused && integrity > 0 && !isTutorialActive && (
-        <div className="victory-overlay ui-layer" style={{paddingBottom: '15px'}}>
+        <div className="victory-overlay ui-layer" style={{paddingBottom: '10px'}}>
           <div className="popup-title">WAVE {wave} COMPLETE</div>
-          <div className="manual-text" style={{textAlign: 'center', marginBottom: '15px', fontSize: '0.9rem', color: 'var(--neon-green)'}}>
+          <div className="manual-text" style={{textAlign: 'center', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--neon-green)'}}>
             &gt; SWARM PURGE SUCCESSFUL. ANALYSIS COMPLETE.
           </div>
           <div className="stats-grid">
@@ -936,7 +936,7 @@ function App() {
             <div className="stats-item"><div className="stats-label">INTEREST CREDIT</div><div className="stats-value">+{waveSummary.interest}c</div></div>
             <div className="stats-item"><div className="stats-label">TOTAL INCOME</div><div className="stats-value">+{waveSummary.total}c</div></div>
           </div>
-          <button className="massive-exec-button" style={{marginTop: '15px'}} onClick={() => { setShowWaveSummaryPopup(false); game?.waveManager.prepareWave(true); setShowCombatIntel(true); }}>VIEW NEXT SWARM INTEL</button>
+          <button className="massive-exec-button" style={{marginTop: '10px'}} onClick={() => { setShowWaveSummaryPopup(false); game?.waveManager.prepareWave(true); setShowCombatIntel(true); }}>VIEW NEXT SWARM INTEL</button>
         </div>
       )}
 

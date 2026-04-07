@@ -318,6 +318,24 @@ body::after {
 
 .back-btn { margin-top: 20px !important; width: 200px !important; }
 
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin: 5px 0;
+}
+.stats-item {
+  background: rgba(0, 255, 204, 0.05);
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.stats-label { font-size: 0.6rem; color: #888; font-weight: bold; text-transform: uppercase; }
+.stats-value { font-size: 1.1rem; font-weight: 900; color: var(--neon-cyan); }
+
 /* TUTORIAL POINTER */
 .tutorial-highlight {
   position: absolute;
