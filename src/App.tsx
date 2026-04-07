@@ -13,7 +13,7 @@ type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
 type ArchiveCategory = 'NONE' | 'TACTICAL' | 'HANDBOOK' | 'MANIFEST';
 type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'RANKS' | 'HALL_OF_FAME' | 'CREDITS';
 
-const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: string, speed?: number, onComplete?: () => void, delay?: number }) => {
+const TerminalText = ({ text, speed = 15, onComplete, delay = 0, stopAtChar = -1 }: { text: string, speed?: number, onComplete?: () => void, delay?: number, stopAtChar?: number }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isFinished, setIsFinished] = useState(false);
   const onCompleteRef = useRef(onComplete);
@@ -33,10 +33,14 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: strin
           return;
         }
         setDisplayedText(text.slice(0, i));
-        
-        // PLAY TYPING SOUND
         if (i > 0 && i <= text.length && text[i-1] !== ' ') {
           AudioManager.getInstance().playTypeClick();
+        }
+        
+        if (stopAtChar !== -1 && i === stopAtChar) {
+            clearInterval(interval);
+            if (onCompleteRef.current) onCompleteRef.current();
+            return;
         }
 
         i++;
@@ -46,17 +50,10 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: strin
           if (onCompleteRef.current) onCompleteRef.current();
         }
       }, speed);
-      return () => {
-        isCancelled = true;
-        clearInterval(interval);
-      };
+      return () => { isCancelled = true; clearInterval(interval); };
     }, delay);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(startTimeout);
-    };
-  }, [text, speed, delay]);
+    return () => { isCancelled = true; clearTimeout(startTimeout); };
+  }, [text, speed, delay, stopAtChar]);
 
   return (
     <span>
@@ -86,9 +83,8 @@ function App() {
   const [isInitializing, setIsInitializing] = useState(false);
   const [sfxMuted, setSfxMuted] = useState(AudioManager.getInstance().isSfxMuted);
   const [ambientMuted, setAmbientMuted] = useState(AudioManager.getInstance().isAmbientMuted);
-  const [sfxVol, setSfxVol] = useState(AudioManager.getInstance().sfxVolume);
-  const [musicVol, setMusicVol] = useState(AudioManager.getInstance().musicVolume);
-  const [enabledTracks, setEnabledTracks] = useState(MusicManager.getInstance().enabledTracks);
+  const [sfxVolState, setSfxVolState] = useState(AudioManager.getInstance().sfxVolume);
+  const [musicVolState, setMusicVolState] = useState(AudioManager.getInstance().musicVolume);
   const [isDistorted, setIsDistorted] = useState(false);
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
@@ -105,6 +101,64 @@ function App() {
   const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
 
+  // ADVANCED CINEMATIC BOOT STATE
+  const [bootPhase, setBootPhase] = useState(0); 
+  const [bootProgress, setBootProgress] = useState(0);
+  const [bootLogs, setBootLogs] = useState<string[]>([]);
+  const [statusGlitched, setStatusGlitched] = useState(false);
+  const [readyGlitchStep, setReadyGlitchStep] = useState(0); // 0: None, 1: Ready to... 2: WIPE USER... 3: INITIALIZE...
+
+  useEffect(() => {
+    if (audioReady) return;
+
+    if (bootPhase === 2) { // LOAD BAR
+      const timer = setInterval(() => {
+        setBootProgress(p => {
+          if (p >= 100) {
+            clearInterval(timer);
+            setTimeout(() => setBootPhase(3), 800);
+            return 100;
+          }
+          return p + 1;
+        });
+      }, 35);
+      return () => clearInterval(timer);
+    } else if (bootPhase === 3) { // TYPING SYSTEM TEXT ONE BY ONE
+      const logs = [
+        "MOUNTING KERNEL_CORE_V2.7",
+        "DECRYPTING THREAT_SIGNATURES.DB",
+        "CALIBRATING GRID_SENSOR",
+        "AUTHENTICATING ARCHITECT CLEARANCE"
+      ];
+      let i = 0;
+      const itv = setInterval(() => {
+        if (i < logs.length) {
+          setBootLogs(prev => [...prev, logs[i]]);
+          AudioManager.getInstance().playTypeClick();
+          i++;
+        } else {
+          clearInterval(itv);
+          setTimeout(() => setBootPhase(4), 1500);
+        }
+      }, 700);
+      return () => clearInterval(itv);
+    }
+  }, [bootPhase, audioReady]);
+
+  // POLL AUDIO STATUS
+  useEffect(() => {
+    const itv = setInterval(() => {
+      const ready = AudioManager.getInstance().isReady();
+      setAudioReady(ready);
+      if (ready) setScreen('MENU');
+    }, 100);
+    return () => clearInterval(itv);
+  }, []);
+
+  useEffect(() => {
+    if (screen === 'MENU') AudioManager.getInstance().init();
+  }, [screen]);
+
   // INTERACTIVE TUTORIAL STATE
   const [tutorialStep, setTutorialStep] = useState(0); 
   const [isTutorialActive, setIsTutorialActive] = useState(false);
@@ -120,21 +174,6 @@ function App() {
   const placedTurretRef = useRef<{x: number, y: number} | null>(null);
   const dashboardCenterRef = useRef<HTMLDivElement>(null);
   const [tilePos, setTilePos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    // POLL AUDIO STATUS
-    const itv = setInterval(() => {
-      setAudioReady(AudioManager.getInstance().isReady());
-    }, 100);
-    return () => clearInterval(itv);
-  }, []);
-
-  useEffect(() => {
-    // AUTO-INIT AUDIO ON MENU
-    if (screen === 'MENU') {
-      AudioManager.getInstance().init();
-    }
-  }, [screen]);
 
   useEffect(() => {
     if (!isTutorialActive) return;
@@ -166,9 +205,7 @@ function App() {
 
   useEffect(() => {
     if (game) {
-      // eslint-disable-next-line react-hooks/immutability
       game.isTutorialActive = isTutorialActive;
-      // eslint-disable-next-line react-hooks/immutability
       game.tutorialStep = tutorialStep;
     }
   }, [isTutorialActive, tutorialStep, game]);
@@ -182,7 +219,10 @@ function App() {
   }, [isTutorialActive, gamePhase, tutorialStep, isWaveActive, game]);
 
   const wakeAudioSystem = async () => {
-    await AudioManager.getInstance().resume();
+    if (bootPhase === 10) {
+      await AudioManager.getInstance().resume();
+      setScreen('MENU');
+    }
   };
 
   useEffect(() => {
@@ -272,9 +312,7 @@ function App() {
       if (type < 0.15) { 
         setIsDistorted(true);
         AudioManager.getInstance().playGlitchBuzz();
-        setTimeout(() => {
-          setIsDistorted(false);
-        }, 200);
+        setTimeout(() => setIsDistorted(false), 200);
       } else if (type < 0.40) { 
         setIsFlickering(true);
         setTimeout(() => setIsFlickering(false), 150);
@@ -372,18 +410,17 @@ function App() {
     AudioManager.getInstance().playUiClick();
   };
 
+  const [enabledTracks, setEnabledTracks] = useState(MusicManager.getInstance().enabledTracks);
   const handleSfxVol = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
-    setSfxVol(val);
+    setSfxVolState(val);
     AudioManager.getInstance().setSfxVolume(val);
   };
-
   const handleMusicVol = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
-    setMusicVol(val);
+    setMusicVolState(val);
     AudioManager.getInstance().setMusicVolume(val);
   };
-
   const toggleTrack = (id: number) => {
     AudioManager.getInstance().playUiClick();
     MusicManager.getInstance().toggleTrack(id as any);
@@ -419,17 +456,13 @@ function App() {
 
   const executeWave = () => {
     AudioManager.getInstance().playUiClick();
-    if (isTutorialActive && tutorialStep === 5) {
-       setTutorialStep(6);
-    }
+    if (isTutorialActive && tutorialStep === 5) setTutorialStep(6);
     game?.waveManager.startWave();
   };
 
   const repairKernel = () => {
     AudioManager.getInstance().playUiClick();
-    if (GameStateManager.getInstance().repairKernel()) {
-      AudioManager.getInstance().playPlacement();
-    }
+    if (GameStateManager.getInstance().repairKernel()) AudioManager.getInstance().playPlacement();
   };
 
   const useDataPurge = () => {
@@ -461,21 +494,95 @@ function App() {
 
   const systemStatusText = integrity > 15 ? "STATUS: STABLE" : integrity > 5 ? "STATUS: DEGRADED" : "STATUS: CRITICAL";
   const sysStatusColor = integrity > 15 ? "#00ffcc" : integrity > 5 ? "#ffcc00" : "#ff3300";
-
   const glitchClass = activeGlitch === 'OVERCLOCK' ? 'glitch-overclock' : activeGlitch === 'LAG_SPIKE' ? 'glitch-lag' : activeGlitch === 'SYSTEM_DRAIN' ? 'glitch-drain' : '';
 
   return (
     <div className="game-wrapper">
       {!audioReady && (
         <div className="audio-splash ui-layer" onClick={wakeAudioSystem}>
-          <div className="menu-content-centered">
-            <h1 className="menu-title-static" style={{fontSize: '3rem', opacity: 0.8}}>SYSTEM READY</h1>
-            <div className="manual-text" style={{fontSize: '1rem', color: 'var(--neon-blue)', animation: 'error-flash 1s infinite'}}>
-              &gt; CLICK TO INITIALIZE MAINFRAME
+          
+          {/* BOOT LOG AREA (TOP LEFT) */}
+          <div style={{position: 'absolute', top: '20px', left: '20px', textAlign: 'left', fontFamily: 'monospace'}}>
+            <div style={{color: '#00ff66', fontSize: '0.85rem', marginBottom: '8px'}}>
+              &gt; <TerminalText text="CONNECT TO REMOTE_DEVICE" speed={35} onComplete={() => setTimeout(() => setBootPhase(1), 1500)} />
+              {bootPhase >= 1 && <span style={{color: '#00ff66'}}>[AUTHORIZED]</span>}
             </div>
+            {bootPhase >= 1 && (
+              <div style={{color: '#00ff66', fontSize: '0.85rem', marginBottom: '15px'}}>
+                &gt; <TerminalText text="INITIATE DEFENSE_PROTOCOLS --PRESERVE_SYSTEM" speed={30} delay={1000} onComplete={() => setTimeout(() => setBootPhase(2), 1500)} />
+              </div>
+            )}
+            {bootPhase >= 2 && (
+              <div style={{width: '250px', height: '15px', border: '1px solid #00ff66', position: 'relative', overflow: 'hidden', marginBottom: '15px'}}>
+                <div style={{height: '100%', background: '#00ff66', width: `${bootProgress}%`}}></div>
+                <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: bootProgress > 50 ? '#000' : '#00ff66', fontWeight: 900}}>
+                  {bootProgress}% LOADED
+                </div>
+              </div>
+            )}
+            {bootPhase >= 3 && bootLogs.map((log, i) => (
+              <div key={i} style={{color: '#00ff66', fontSize: '0.75rem', marginBottom: '4px'}}>
+                &gt; {log}
+              </div>
+            ))}
+            {bootPhase >= 5 && (
+              <div style={{color: '#00ff66', fontSize: '0.75rem'}}>
+                &gt; <TerminalText 
+                    text={statusGlitched ? "STATUS: SUCCESSFUL. CAUTION: THREATS IMMINENT." : "STATUS:"} 
+                    speed={25} 
+                    stopAtChar={statusGlitched ? -1 : 7}
+                    onComplete={() => {
+                        if (!statusGlitched) {
+                            setTimeout(() => {
+                                setIsDistorted(true);
+                                AudioManager.getInstance().playGlitchBuzz();
+                                setStatusGlitched(true);
+                                setTimeout(() => setIsDistorted(false), 100);
+                            }, 2000);
+                        } else {
+                            setTimeout(() => setBootPhase(8), 2000);
+                        }
+                    }} 
+                />
+              </div>
+            )}
+            {bootPhase >= 8 && (
+              <div style={{color: '#00ff66', fontSize: '0.75rem', marginTop: '10px'}}>
+                &gt; <TerminalText 
+                    text={readyGlitchStep === 3 ? "READY TO INITIALIZE SYSTEM" : (readyGlitchStep === 2 ? "READY TO WIPE USER SYSTEM" : "READY TO ")} 
+                    speed={25}
+                    onComplete={() => {
+                        if (readyGlitchStep === 0) {
+                            setReadyGlitchStep(1);
+                            setTimeout(() => {
+                                setIsDistorted(true);
+                                AudioManager.getInstance().playGlitchBuzz();
+                                setReadyGlitchStep(2);
+                                setTimeout(() => {
+                                    setIsDistorted(false);
+                                    setReadyGlitchStep(3);
+                                    setTimeout(() => setBootPhase(10), 1500);
+                                }, 200);
+                            }, 1000);
+                        }
+                    }}
+                />
+              </div>
+            )}
           </div>
+
+          {/* FINAL READY MESSAGE (CENTERED) */}
+          {bootPhase === 10 && (
+            <div className="menu-content-centered" style={{transform: 'translateX(-20px)'}}>
+              <h1 className="menu-title-static" style={{fontSize: '3.5rem', opacity: 0.9}}>SYSTEM READY</h1>
+              <div className="manual-text" style={{fontSize: '1.1rem', color: 'var(--neon-blue)', animation: 'error-flash 1s infinite', marginTop: '10px', fontWeight: 900}}>
+                &gt; CLICK TO INITIALIZE MAINFRAME
+              </div>
+            </div>
+          )}
         </div>
       )}
+
       <div id="game-container"></div>
 
       <div className="orientation-warning">
@@ -500,36 +607,23 @@ function App() {
 
       {isTutorialActive && (
         <div className="tutorial-mask" style={{ pointerEvents: (showTutorial || showTutorialComplete || showRadiusExplanation || showCombatIntel || showEconomyBrief || showUpgradeBrief || showGlitchBrief || (tutorialStep === 1 && !showRadiusExplanation) || (tutorialStep === 3 && !showUpgradeBrief)) ? 'auto' : 'none' }}>
-          
           {showTutorial && !isVictorious && (
             <div className="victory-overlay ui-layer">
               <div className="popup-title">INCOMING THREAT</div>
               <div className="manual-text" style={{fontSize: '0.7rem', color: '#aaa', margin: '10px 0'}}>
-                &gt; <TerminalText 
-                  key="tutorial-text"
-                  text="A SINGLE GLIDER SIGNATURE HAS BREACHED THE FIREWALL. NEUTRALIZE IT BEFORE IT REACHES THE CORE." 
-                  delay={800}
-                  onComplete={() => setIsTypingComplete(true)}
-                />
+                &gt; <TerminalText key="tutorial-text" text="A SINGLE GLIDER SIGNATURE HAS BREACHED THE FIREWALL. NEUTRALIZE IT BEFORE IT REACHES THE CORE." delay={800} onComplete={() => setIsTypingComplete(true)} />
               </div>
               {isTypingComplete && (
-                <button className="massive-exec-button" onClick={() => {
-                  AudioManager.getInstance().playUiClick();
-                  setShowTutorial(false);
-                  setIsTypingComplete(false);
-                  setTutorialStep(1); 
-                }}>START ONBOARDING</button>
+                <button className="massive-exec-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowTutorial(false); setIsTypingComplete(false); setTutorialStep(1); }}>START ONBOARDING</button>
               )}
             </div>
           )}
-
           {tutorialStep === 1 && !showRadiusExplanation && tutorialTargetRect && (
             <>
               <div className="tutorial-highlight" style={{ top: tutorialTargetRect.top-5, left: tutorialTargetRect.left-5, width: tutorialTargetRect.width+10, height: tutorialTargetRect.height+10, pointerEvents: 'auto', cursor: 'pointer' }} onClick={() => selectTurret(0)}></div>
-              <div className="tutorial-pointer" style={{ top: tutorialTargetRect.top-10, left: tutorialTargetRect.left+(tutorialTargetRect.width/2), width: '175px', pointerEvents: 'auto' }}>SELECT PULSE MG</div>
+              <div className="tutorial-pointer" style={{ top: tutorialTargetRect.top-10, left: tutorialTargetRect.left+(tutorialTargetRect.width / 2), width: '175px', pointerEvents: 'auto' }}>SELECT PULSE MG</div>
             </>
           )}
-
           {showRadiusExplanation && (
             <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
                <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
@@ -545,18 +639,16 @@ function App() {
                       <span style={{color: 'var(--neon-red)'}}>RAILGUN:</span> <span>STEALTH REVEAL (LVL 15)</span>
                     </div>
                   </div>
-                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowRadiusExplanation(false); setTutorialStep(2); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowRadiusExplanation(false); setTutorialStep(2); }}>CONTINUE</button>
                </div>
             </div>
           )}
-
           {tutorialStep === 2 && !showRadiusExplanation && (
             <>
               <div className="tutorial-highlight" style={{ top: tilePos.y, left: tilePos.x, width: TILE_SIZE, height: TILE_SIZE, borderRadius: '0', pointerEvents: 'none' }}></div>
               <div className="tutorial-pointer" style={{ top: tilePos.y-10, left: tilePos.x+(TILE_SIZE/2), width: '150px', pointerEvents: 'none' }}>DEPLOY NODE HERE</div>
             </>
           )}
-
           {showUpgradeBrief && (
             <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
                <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
@@ -566,18 +658,16 @@ function App() {
                     <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '10px'}}>&gt; TAPPING A PLACED NODE OPENS THE UPGRADE INTERFACE.</p>
                     <p style={{margin: '8px 0'}}>OVERCLOCKING INCREASES DAMAGE AND ENGAGEMENT RADIUS. EACH NODE HAS 3 PROGRESSION LEVELS.</p>
                   </div>
-                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowUpgradeBrief(false); setTutorialStep(3); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowUpgradeBrief(false); setTutorialStep(3); }}>CONTINUE</button>
                </div>
             </div>
           )}
-
           {tutorialStep === 3 && !showUpgradeBrief && (
             <>
               <div className="tutorial-pointer" style={{ top: tilePos.y-10, left: tilePos.x, width: '150px', pointerEvents: 'none' }}>TAP TO UPGRADE</div>
               <div style={{ position: 'absolute', top: tilePos.y, left: tilePos.x-TILE_SIZE/2, width: TILE_SIZE*2, height: TILE_SIZE*2, pointerEvents: 'auto', cursor: 'pointer' }} onClick={() => { if (game?.towerManager.towers[0]) { AudioManager.getInstance().playUiClick(); setSelectedTower(game.towerManager.towers[0]); setTutorialStep(4); setShowGlitchBrief(true); } }}></div>
             </>
           )}
-
           {showGlitchBrief && (
             <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
                <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
@@ -587,11 +677,10 @@ function App() {
                     <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '10px'}}>&gt; THE SYSTEM MAY EXPERIENCE RANDOM DATA INSTABILITIES.</p>
                     <p style={{margin: '8px 0'}}>GLITCHES LIKE 'LAG SPIKES' SLOW ALL UNITS, WHILE 'SYSTEM DRAINS' TEMPORARILY DISABLE INTEREST ACCRUAL.</p>
                   </div>
-                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowGlitchBrief(false); setTutorialStep(5); setShowCombatIntel(true); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowGlitchBrief(false); setTutorialStep(5); setShowCombatIntel(true); }}>CONTINUE</button>
                </div>
             </div>
           )}
-
           {showCombatIntel && (
             <div className="pause-overlay-locked" style={{zIndex: 17000}}>
               <div className="victory-overlay ui-layer" style={{paddingBottom: '50px'}}>
@@ -624,7 +713,6 @@ function App() {
               </div>
             </div>
           )}
-
           {showEconomyBrief && (
             <div className="pause-overlay-locked" style={{zIndex: 17000}}>
               <div className="victory-overlay ui-layer">
@@ -671,13 +759,12 @@ function App() {
 
       {screen === 'MENU' && (
         <div className="main-menu ui-layer">
-          <div className="menu-content-centered">
+          <div className="menu-content-centered" style={{transform: 'translateX(-20px)'}}>
             {isDistorted ? (
               <h1 className="system-error-msg" style={{fontSize: '3rem', margin: '0 0 20px 0'}}>SYSTEM ERROR</h1>
             ) : (
               <h1 className={`menu-title-static ${isFlickering ? 'flicker-active' : ''}`}>SYNTAX<br/>DEFENSE</h1>
             )}
-            
             <div className="menu-options-grid compact">
               {isDistorted ? (
                 <>
@@ -731,29 +818,23 @@ function App() {
                       <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px'}}>AUDIO CHANNELS</h3>
                       <div style={{display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px'}}>
                         <div className="manual-text" style={{background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
-                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}><span>SFX VOLUME</span><span>{(sfxVol * 100).toFixed(0)}%</span></div>
-                          <input type="range" min="0" max="1" step="0.05" value={sfxVol} onChange={handleSfxVol} style={{width: '100%'}} />
+                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}><span>SFX VOLUME</span><span>{(sfxVolState * 100).toFixed(0)}%</span></div>
+                          <input type="range" min="0" max="1" step="0.05" value={sfxVolState} onChange={handleSfxVol} style={{width: '100%'}} />
                         </div>
                         <div className="manual-text" style={{background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
-                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}><span>MUSIC VOLUME</span><span>{(musicVol * 100).toFixed(0)}%</span></div>
-                          <input type="range" min="0" max="1" step="0.05" value={musicVol} onChange={handleMusicVol} style={{width: '100%'}} />
+                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}><span>MUSIC VOLUME</span><span>{(musicVolState * 100).toFixed(0)}%</span></div>
+                          <input type="range" min="0" max="1" step="0.05" value={musicVolState} onChange={handleMusicVol} style={{width: '100%'}} />
                         </div>
                         <div style={{display: 'flex', gap: '10px'}}>
                           <button className="blue-button" onClick={toggleSfx} style={{flex: 1}}>{sfxMuted ? 'ENABLE SFX' : 'DISABLE SFX'}</button>
                           <button className="blue-button" onClick={toggleAmbient} style={{flex: 1}}>{ambientMuted ? 'ENABLE MUSIC' : 'DISABLE MUSIC'}</button>
                         </div>
-                        
                         <h4 style={{color: 'var(--neon-cyan)', marginTop: '20px', fontSize: '0.75rem'}}>SYSTEM PLAYLIST</h4>
                         <div className="track-list">
                           {['HYPNOTIC', 'INDUSTRIAL', 'DATA STREAM', 'KERNEL', 'GLITCH TECH', 'UPLINK'].map((name, id) => (
                             <div key={id} className="track-item">
                               <span className="track-name">{name}</span>
-                              <button 
-                                className={`blue-button track-toggle ${enabledTracks[id] ? 'enabled' : 'disabled'}`}
-                                onClick={() => toggleTrack(id)}
-                              >
-                                {enabledTracks[id] ? 'ACTIVE' : 'OFF'}
-                              </button>
+                              <button className={`blue-button track-toggle ${enabledTracks[id] ? 'enabled' : 'disabled'}`} onClick={() => toggleTrack(id)}>{enabledTracks[id] ? 'ACTIVE' : 'OFF'}</button>
                             </div>
                           ))}
                         </div>
@@ -858,8 +939,8 @@ function App() {
                 <div className="pause-content small-pause">
                   <h2 className="pause-title">SETTINGS</h2>
                   <div className="manual-text" style={{width: '100%', marginBottom: '10px'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}><span style={{fontSize: '0.7rem'}}>SFX VOLUME</span><input type="range" min="0" max="1" step="0.05" value={sfxVol} onChange={handleSfxVol} style={{width: '100px'}} /></div>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}><span style={{fontSize: '0.7rem'}}>MUSIC VOLUME</span><input type="range" min="0" max="1" step="0.05" value={musicVol} onChange={handleMusicVol} style={{width: '100px'}} /></div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}><span style={{fontSize: '0.7rem'}}>SFX VOLUME</span><input type="range" min="0" max="1" step="0.05" value={sfxVolState} onChange={handleSfxVol} style={{width: '100px'}} /></div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}><span style={{fontSize: '0.7rem'}}>MUSIC VOLUME</span><input type="range" min="0" max="1" step="0.05" value={musicVolState} onChange={handleMusicVol} style={{width: '100px'}} /></div>
                   </div>
                   <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowSettingsInGame(false); }} style={{width: '100%'}}>BACK</button>
                 </div>
