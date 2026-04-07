@@ -89,15 +89,17 @@ function App() {
   const [isTypingComplete, setIsTypingComplete] = useState(false);
 
   // INTERACTIVE TUTORIAL STATE
-  const [tutorialStep, setTutorialStep] = useState(0); 
+  const [tutorialStep, setTutorialStep] = useState(0); // 0: Off, 1: Select MG, 2: Place MG, 3: Upgrade Intro, 4: Combat Intro, 5: Destruction, 6: Economy Brief
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [showTutorialComplete, setShowTutorialComplete] = useState(false);
   const [showRadiusExplanation, setShowRadiusExplanation] = useState(false);
+  const [showUpgradeBrief, setShowUpgradeBrief] = useState(false);
   const [showCombatIntel, setShowCombatIntel] = useState(false);
   const [showEconomyBrief, setShowEconomyBrief] = useState(false);
   
   const [tutorialTargetRect, setTutorialTargetRect] = useState<DOMRect | null>(null);
   const firstTurretRef = useRef<HTMLDivElement>(null);
+  const placedTurretRef = useRef<{x: number, y: number} | null>(null);
   const dashboardCenterRef = useRef<HTMLDivElement>(null);
   const [tilePos, setTilePos] = useState({ x: 0, y: 0 });
 
@@ -120,6 +122,8 @@ function App() {
         const microY = 1 + midMacroY * 2;
         const targetY = microY - 1;
         setTilePos({ x: 5 * currentTileSize, y: targetY * currentTileSize });
+      } else if (tutorialStep === 3 && placedTurretRef.current) {
+        setTilePos(placedTurretRef.current);
       }
     };
 
@@ -146,8 +150,8 @@ function App() {
   // POLLING WAVE STATE TO TRIGGER TUTORIAL END
   useEffect(() => {
     const waveNum = game?.waveManager.waveNumber || 0;
-    if (isTutorialActive && gamePhase === 'PREP' && tutorialStep === 4 && waveNum === 1 && !isWaveActive) {
-       setTutorialStep(5);
+    if (isTutorialActive && gamePhase === 'PREP' && tutorialStep === 5 && waveNum === 1 && !isWaveActive) {
+       setTutorialStep(6);
        setShowEconomyBrief(true);
     }
   }, [isTutorialActive, gamePhase, tutorialStep, isWaveActive, game]);
@@ -196,8 +200,10 @@ function App() {
     if (game && game.towerManager) {
       game.towerManager.onTowerPlaced = () => {
         if (isTutorialActive) {
-          setTutorialStep(3); // Combat Intro
-          setShowCombatIntel(true);
+          const center = game.mapManager.getTileCenter(game.app.renderer.events.pointer.global.x, game.app.renderer.events.pointer.global.y);
+          placedTurretRef.current = { x: center.x, y: center.y };
+          setTutorialStep(3); // To Upgrade Intro
+          setShowUpgradeBrief(true);
         }
       };
     }
@@ -228,7 +234,6 @@ function App() {
           setRank(state.architectRank);
           setWaveSummary(state.lastWaveSummary);
 
-          // WAVE STATS TRIGGER (Signalled by Engine)
           if (g.waveManager.isSummaryActive && !showWaveSummaryPopup) {
              setShowCombatIntel(false);
              setShowEconomyBrief(false);
@@ -323,6 +328,7 @@ function App() {
     setShowCombatIntel(false);
     setShowSettingsInGame(false);
     setShowEconomyBrief(false);
+    setShowUpgradeBrief(false);
   };
 
   const [showSettingsInGame, setShowSettingsInGame] = useState(false);
@@ -390,8 +396,8 @@ function App() {
   }, [screen, isPaused, wave]);
 
   const executeWave = () => {
-    if (isTutorialActive && tutorialStep === 3) {
-       setTutorialStep(4);
+    if (isTutorialActive && tutorialStep === 4) {
+       setTutorialStep(5);
     }
     AudioManager.getInstance().playUiClick();
     game?.waveManager.startWave();
@@ -463,7 +469,7 @@ function App() {
 
       {/* INTERACTIVE TUTORIAL OVERLAYS */}
       {isTutorialActive && (
-        <div className="tutorial-mask" style={{ pointerEvents: (showTutorial || showTutorialComplete || showRadiusExplanation || showCombatIntel || showEconomyBrief || (tutorialStep === 1 && !showRadiusExplanation)) ? 'auto' : 'none' }}>
+        <div className="tutorial-mask" style={{ pointerEvents: (showTutorial || showTutorialComplete || showRadiusExplanation || showCombatIntel || showEconomyBrief || showUpgradeBrief || (tutorialStep === 1 && !showRadiusExplanation) || (tutorialStep === 3 && !showUpgradeBrief)) ? 'auto' : 'none' }}>
           
           {showTutorial && !isVictorious && (
             <div className="victory-overlay ui-layer" style={{paddingBottom: '30px'}}>
@@ -558,6 +564,42 @@ function App() {
             </>
           )}
 
+          {showUpgradeBrief && (
+            <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
+               <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
+                  <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.75rem'}}>OVERCLOCKING</div>
+                  <h2 className="pause-title" style={{fontSize: '1.4rem', margin: '5px 0'}}>UPGRADE NODE</h2>
+                  <div className="manual-text" style={{fontSize: '0.7rem', lineHeight: '1.4'}}>
+                    <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '10px'}}>&gt; TAPPING A PLACED NODE OPENS THE UPGRADE INTERFACE.</p>
+                    <p style={{margin: '8px 0'}}>OVERCLOCKING INCREASES DAMAGE AND ENGAGEMENT RADIUS. EACH NODE HAS 3 PROGRESSION LEVELS.</p>
+                  </div>
+                  <button className="blue-button" onClick={() => {
+                    setShowUpgradeBrief(false);
+                    setTutorialStep(3); 
+                  }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+               </div>
+            </div>
+          )}
+
+          {tutorialStep === 3 && !showUpgradeBrief && (
+            <>
+              <div className="tutorial-pointer" 
+                style={{
+                  top: tilePos.y - 10, 
+                  left: tilePos.x, 
+                  width: '150px', 
+                  pointerEvents: 'none'
+                }}
+              >
+                TAP TO UPGRADE
+              </div>
+              <div 
+                style={{ position: 'absolute', top: tilePos.y, left: tilePos.x - TILE_SIZE/2, width: TILE_SIZE*2, height: TILE_SIZE*2, pointerEvents: 'auto', cursor: 'pointer' }}
+                onClick={() => { setTutorialStep(4); setShowCombatIntel(true); }}
+              ></div>
+            </>
+          )}
+
           {showCombatIntel && (
             <div className="pause-overlay-locked" style={{zIndex: 17000}}>
               <div className="victory-overlay ui-layer" style={{paddingBottom: '50px'}}>
@@ -566,7 +608,7 @@ function App() {
                 <div className="manual-text" style={{margin: '10px 0'}}>
                   &gt; <TerminalText 
                     key="tutorial-intel-text"
-                    text="HOSTILE VIRAL PACKETS ATTEMPT TO BREACH THE MAINFRAME. NEUTRALIZE THEM TO MAINTAIN KERNEL STABILITY." 
+                    text="A SINGLE GLIDER SIGNATURE IS APPROACHING. NEUTRALIZE IT TO MAINTAIN KERNEL STABILITY." 
                     delay={800}
                     onComplete={() => setIsTypingComplete(true)}
                   />
@@ -587,7 +629,7 @@ function App() {
 
                     {showTutorialComplete && (
                       <div style={{paddingBottom: '40px', width: '100%'}}>
-                        <div className="manual-text" style={{fontSize: '0.7rem', color: 'var(--neon-blue)', marginTop: '10px'}}>&gt;&gt; IDENTIFIED THREAT SIGNATURES:</div>
+                        <div className="manual-text" style={{fontSize: '0.7rem', color: 'var(--neon-blue)', marginTop: '10px'}}>&gt;&gt; KNOWN THREAT SIGNATURES:</div>
                         <div className="intel-row-horizontal">
                           {[0, 1, 2, 3].map(type => {
                             const reg = VISUAL_REGISTRY[type as EnemyType];
@@ -688,12 +730,7 @@ function App() {
       {screen === 'MODES' && (
         <div className="encyclopedia ui-layer">
           <div className="enc-header">
-            <TerminalText 
-              key="modes-title"
-              text="SELECT ADVANCED PROTOCOL" 
-              delay={800} 
-              onComplete={() => setIsTypingComplete(true)} 
-            />
+            <TerminalText key="modes-title" text="SELECT ADVANCED PROTOCOL" delay={800} onComplete={() => setIsTypingComplete(true)} />
           </div>
           {isTypingComplete && (
             <>
@@ -790,7 +827,7 @@ function App() {
                     <div style={{display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%'}}>
                       <div className="menu-options-grid" style={{width: '100%', maxWidth: '600px'}}>
                         <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('TACTICAL'); setInfoTab('VIRAL DB'); }}>TACTICAL DATABASE</button>
-                        <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('HANDBOOK'); setInfoTab('SYSTEM MODES'); }}>SYSTEM HANDBOOK</button>
+                        <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('HANDBOOK'); setInfoTab('LOGIC'); }}>SYSTEM HANDBOOK</button>
                         <button className="cyan-menu-btn primary-btn" onClick={() => { setArchiveCategory('MANIFEST'); setInfoTab('LORE'); }}>MAINFRAME MANIFEST</button>
                       </div>
                     </div>
@@ -1056,65 +1093,37 @@ function App() {
         </div>
       )}
 
-          {/* --- REBUILT TACTICAL DASHBOARD --- */}
           <div className="tactical-dashboard">
-            
-            {/* ZONE 1: TACTICAL CONTROLS */}
             <div className="dashboard-left">
               <div className="control-grid">
                 <button className="blue-button compact-btn" onClick={() => setIsPaused(true)}>PAUSE</button>
                 <button className={`blue-button compact-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? 'var(--neon-green)' : ''}}>FWD &gt;&gt;</button>
-                <button 
-                  className={`blue-button compact-btn ${integrity <= 5 && credits >= repairCost ? 'critical-repair' : ''}`} 
-                  onClick={repairKernel} 
-                  disabled={credits < repairCost || integrity >= 20}
-                >
-                  REPAIR: {repairCost}c
-                </button>
-                <button className="blue-button compact-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>
-                  PURGE: 1000c
-                </button>
+                <button className={`blue-button compact-btn ${integrity <= 5 && credits >= repairCost ? 'critical-repair' : ''}`} onClick={repairKernel} disabled={credits < repairCost || integrity >= 20}>REPAIR: {repairCost}c</button>
+                <button className="blue-button compact-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>PURGE: 1000c</button>
               </div>
             </div>
 
-            {/* ZONE 2: DEFENSE PROTOCOLS (SCROLL WHEEL) */}
             <div className="dashboard-center" ref={dashboardCenterRef}>
               <div className="turret-row">
                 {[0, 1, 2, 3, 4].map(type => {
                   const cfg = TOWER_CONFIGS[type as TowerType];
                   const unlocked = type === 0 || isUnlocked(type);
-                  
                   let cost = cfg.cost;
                   if (game?.towerManager) {
                     const count = game.towerManager.getTowerCount(type as TowerType);
-                    const supplyMultiplier = count >= 4 ? 1.15 : 1.0;
-                    cost = Math.floor(cfg.cost * supplyMultiplier);
+                    cost = Math.floor(cfg.cost * (count >= 4 ? 1.15 : 1.0));
                     if (gameMode === 'HARDCORE') cost = Math.floor(cost * 1.5);
                     if (integrity < 10 && gameMode !== 'SUDDEN_DEATH') cost = Math.floor(cost * 0.85);
                   } else {
                     cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
                   }
-
                   return (
-                    <div 
-                      key={type} 
-                      ref={type === 0 ? firstTurretRef : null}
-                      className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`}
-                      onClick={() => unlocked && selectTurret(type)}
-                    >
+                    <div key={type} ref={type === 0 ? firstTurretRef : null} className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} onClick={() => unlocked && selectTurret(type)}>
                       <div className="protocol-header">{cfg.name}</div>
-                      
                       <div className="protocol-visual-container">
-                        <div className="mini-turret" data-type={type}>
-                          <div className="mini-base"></div>
-                          <div className="mini-head">
-                            <div className="mini-weapon"></div>
-                            <div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div>
-                          </div>
-                        </div>
+                        <div className="mini-turret" data-type={type}><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div></div></div>
                         {!unlocked && <div className="protocol-lock-overlay">🔒</div>}
                       </div>
-
                       <div className="protocol-stats">DMG: {cfg.damage}</div>
                       <div className="protocol-footer">{cost}c</div>
                     </div>
@@ -1123,23 +1132,16 @@ function App() {
               </div>
             </div>
 
-            {/* ZONE 3: MISSION STATUS */}
             <div className="dashboard-right">
               <div className="status-stack">
                 <div className="status-mission-line">LVL {isTutorialActive ? 0 : wave} // {isTutorialActive ? 'INIT' : waveName}</div>
-                <div className="status-credit-line">
-                  <span className="val">{credits}</span>
-                  <span className="lbl"> TOKENS</span>
-                </div>
+                <div className="status-credit-line"><span className="val">{credits}</span><span className="lbl"> TOKENS</span></div>
                 <div className="status-integrity-line">
-                  <div className="integrity-bar-clean">
-                    <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div>
-                  </div>
+                  <div className="integrity-bar-clean"><div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div></div>
                   <div className="status-text-line" style={{color: sysStatusColor}}>{systemStatusText}</div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       )}
