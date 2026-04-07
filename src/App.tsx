@@ -688,15 +688,32 @@ function App() {
       {screen === 'MODES' && (
         <div className="encyclopedia ui-layer">
           <div className="enc-header">
-            <TerminalText key="modes-title" text="SELECT ADVANCED PROTOCOL" delay={800} onComplete={() => setIsTypingComplete(true)} />
+            <TerminalText 
+              key="modes-title"
+              text="SELECT ADVANCED PROTOCOL" 
+              delay={800} 
+              onComplete={() => setIsTypingComplete(true)} 
+            />
           </div>
           {isTypingComplete && (
             <>
-              <div className="menu-options-grid" style={{marginTop: '20px'}}>
-                <button className="cyan-menu-btn" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>HARDCORE MODE</button>
-                <button className="cyan-menu-btn" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}>SUDDEN DEATH</button>
-                <button className="cyan-menu-btn" onClick={() => startNewGame('ENDLESS')}>ENDLESS LOOP</button>
-                <button className="cyan-menu-btn" onClick={() => startNewGame('ECO_CHALLENGE')}>ECO CHALLENGE</button>
+              <div className="menu-options-grid" style={{marginTop: '20px', maxWidth: '800px', gridTemplateColumns: 'repeat(2, 1fr)'}}>
+                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('HARDCORE')} style={{borderColor: '#ff3300'}}>
+                  <div className="mode-title">HARDCORE</div>
+                  <div className="mode-desc">NO INTEREST. 50% UNIT COST INCREASE. REDUCED CAPITAL.</div>
+                </button>
+                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('SUDDEN_DEATH')} style={{borderColor: '#ffcc00'}}>
+                  <div className="mode-title">SUDDEN DEATH</div>
+                  <div className="mode-desc">CORE INTEGRITY SET TO 1. A SINGLE BREACH ENDS THE SESSION.</div>
+                </button>
+                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('ENDLESS')}>
+                  <div className="mode-title">ENDLESS LOOP</div>
+                  <div className="mode-desc">NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS.</div>
+                </button>
+                <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('ECO_CHALLENGE')}>
+                  <div className="mode-title">ECO CHALLENGE</div>
+                  <div className="mode-desc">NO DELETION BOUNTIES. ALL INCOME FROM 10% INTEREST SYSTEM.</div>
+                </button>
               </div>
               <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>RETURN TO ROOT</button>
             </>
@@ -789,7 +806,6 @@ function App() {
                         )}
                         {archiveCategory === 'HANDBOOK' && (
                           <>
-                            <button className={infoTab === 'SYSTEM MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM MODES')}>MODES</button>
                             <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
                             <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button>
                           </>
@@ -862,26 +878,6 @@ function App() {
                                 </div>
                               );
                             })}
-                          </div>
-                        )}
-                        {infoTab === 'SYSTEM MODES' && (
-                          <div className="manual-text">
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">HARDCORE:</span>
-                              <span className="entry-content">NO INTEREST REWARDS. UNIT COSTS INCREASED BY 50%. STARTING CAPITAL REDUCED. ONLY FOR ELITE SYSTEM ARCHITECTS.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">ECO CHALLENGE:</span>
-                              <span className="entry-content">VIRUSES PROVIDE ZERO TOKENS UPON DELETION. ALL INCOME IS DERIVED FROM THE 10% INTEREST COMPOUNDING SYSTEM.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">SUDDEN DEATH:</span>
-                              <span className="entry-content">SYSTEM INTEGRITY SET TO 1. A SINGLE VIRAL BREACH WILL TERMINATE THE SESSION IMMEDIATELY.</span>
-                            </div>
-                            <div className="manual-entry">
-                              <span className="entry-label cyan">ENDLESS LOOP:</span>
-                              <span className="entry-content">NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS AS THE LOOP CONTINUES.</span>
-                            </div>
                           </div>
                         )}
                         {infoTab === 'THREATS' && (

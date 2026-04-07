@@ -87,6 +87,20 @@ body::after {
 .primary-btn { grid-column: span 2; border: 2px solid var(--neon-cyan) !important; background: #050505 !important; font-size: 1rem !important; }
 .massive-exec-button { width: 100% !important; padding: 12px !important; font-size: 0.85rem !important; letter-spacing: 2px; margin-top: 5px; cursor: pointer; }
 
+/* MODE CARDS */
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 100px;
+  padding: 15px !important;
+  text-align: center;
+}
+.mode-title { font-size: 1.1rem; font-weight: 900; color: var(--neon-cyan); letter-spacing: 1px; }
+.mode-desc { font-size: 0.65rem; font-weight: 900; color: #888; line-height: 1.4; max-width: 300px; }
+
 /* 2. GLOW TRAILS & GRID */
 .grid-lines { 
   position: absolute; inset: 0; 
