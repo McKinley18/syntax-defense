@@ -43,18 +43,15 @@ export class Enemy {
             this.isGhost = true;
         }
 
-        // EASIER SCALING: 7% HP increase per wave instead of 10%
-        const hpMult = Math.pow(1.07, waveNumber) * (this.isElite ? 3.5 : 1);
+        // REMOVED WAVE-BASED SCALING: Enemies stay consistent strength
+        const hpMult = (this.isElite ? 3.5 : 1);
         this.maxHealth = Math.floor(config.baseHp * hpMult);
         this.health = this.maxHealth;
         this.reward = Math.floor(config.reward * (this.isElite ? 2.5 : 1));
 
         let finalSpeed = config.speed;
         
-        // PROGRESSIVE PRESSURE: +0.5% speed per wave (Cap at 25% extra)
-        const waveSpeedMult = Math.min(1.25, 1 + (waveNumber * 0.005));
-        finalSpeed *= waveSpeedMult;
-
+        // REMOVED PROGRESSIVE SPEED PRESSURE: Consistent speed based on type
         if (GameStateManager.getInstance().activeGlitch === 'LAG_SPIKE') finalSpeed *= 0.7;
         this.speed = finalSpeed;
 
