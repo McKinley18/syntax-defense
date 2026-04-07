@@ -9,7 +9,7 @@ import { TILE_SIZE, MapManager } from './game/systems/MapManager';
 import './App.css';
 
 type ScreenState = 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
-type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'CREDITS';
+type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'RANKS' | 'CREDITS';
 
 const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: string, speed?: number, onComplete?: () => void, delay?: number }) => {
   const [displayedText, setDisplayedText] = useState("");
@@ -773,11 +773,47 @@ function App() {
                     <button className={infoTab === 'SYSTEM MODES' ? 'active' : ''} onClick={() => setInfoTab('SYSTEM MODES')}>MODES</button>
                     <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
                     <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
+                    <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button>
                     <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button>
-                  </div>
-                  <div className="info-body">
-                    {infoTab === 'LORE' && (
+                    </div>
+                    <div className="info-body">
+                    ...
+                    {infoTab === 'RANKS' && (
                       <div className="manual-text">
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">INITIATE:</span>
+                          <span className="entry-content">STARTING RANK. NO BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">SCRIPTER:</span>
+                          <span className="entry-content">1,000 XP REQUIRED. +50 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">SYS_ARCHITECT:</span>
+                          <span className="entry-content">5,000 XP REQUIRED. +100 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">SENIOR_ENGR:</span>
+                          <span className="entry-content">10,000 XP REQUIRED. +150 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">ELITE_ARCHITECT:</span>
+                          <span className="entry-content">25,000 XP REQUIRED. +200 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">CORE_GUARDIAN:</span>
+                          <span className="entry-content">50,000 XP REQUIRED. +300 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">GOD_MOD_ADMIN:</span>
+                          <span className="entry-content">100,000 XP REQUIRED. +500 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div style={{marginTop: '20px', color: '#888', fontSize: '0.7rem'}}>
+                          &gt; XP IS EARNED BY COMPLETING WAVES. HARDCORE MODE GRANTS 2x XP PER WAVE.
+                        </div>
+                      </div>
+                    )}
+                    {infoTab === 'CREDITS' && (
                         <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p>
                         <p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p>
                         <p>&gt; THE KERNEL IS THE LAST REMAINING BASTION OF PURE LOGIC. IF IT FALLS, THE DIGITAL UNIVERSE WILL DESCEND INTO PERMANENT ENTROPY.</p>
