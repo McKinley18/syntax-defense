@@ -973,17 +973,17 @@ function App() {
           <div className="manual-text" style={{fontSize: '0.95rem', color: 'var(--neon-blue)', marginBottom: '15px'}}>
             &gt; INITIATING ANALYTICS FOR MISSION: {waveName}... SCANNING VIRAL SIGNATURES...
           </div>
-          <div className="intel-grid-2x2">
+          <div className="intel-row-horizontal">
             {upcomingEnemies.map((type, idx) => {
               const reg = VISUAL_REGISTRY[type as EnemyType];
               if (!reg) return null;
               return (
-                <div key={idx} className="intel-card-large" data-enemy={type}>
+                <div key={idx} className="intel-card-large" data-enemy={type} style={{width: '95px', flexShrink: 0}}>
                   <div className="card-viz">
                     <div className="mini-enemy"></div>
                   </div>
                   <div className="card-label">
-                    <div className="name">{reg.name}</div>
+                    <div className="name" style={{fontSize: '0.65rem'}}>{reg.name}</div>
                   </div>
                 </div>
               );
