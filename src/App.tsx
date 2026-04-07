@@ -226,6 +226,7 @@ function App() {
           setRank(state.architectRank);
           setWaveSummary(state.lastWaveSummary);
 
+          // WAVE STATS TRIGGER (Signalled by Engine)
           if (g.waveManager.isSummaryActive && !showWaveSummaryPopup) {
              setShowCombatIntel(false);
              setShowEconomyBrief(false);
@@ -462,7 +463,7 @@ function App() {
         <div className="tutorial-mask" style={{ pointerEvents: (showTutorial || showTutorialComplete || showRadiusExplanation || showCombatIntel || showEconomyBrief || (tutorialStep === 1 && !showRadiusExplanation)) ? 'auto' : 'none' }}>
           
           {showTutorial && !isVictorious && (
-            <div className="victory-overlay ui-layer">
+            <div className="victory-overlay ui-layer" style={{paddingBottom: '30px'}}>
               <div className="popup-title">INCOMING THREAT</div>
               <div className="manual-text" style={{fontSize: '0.7rem', color: '#aaa', margin: '10px 0'}}>
                 &gt; <TerminalText 
@@ -509,8 +510,8 @@ function App() {
           {showRadiusExplanation && (
             <div className="pause-overlay-locked" style={{background: 'rgba(0,0,0,0.4)', zIndex: 17000, pointerEvents: 'auto'}}>
                <div className="pause-content" style={{width: '360px', padding: '20px', background: 'rgba(5, 5, 10, 0.95)', border: '2px solid var(--neon-cyan)', pointerEvents: 'auto'}}>
-                  <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.5rem'}}>TACTICAL INTEL</div>
-                  <h2 className="pause-title" style={{fontSize: '1rem', margin: '5px 0'}}>DEFENSE PROTOCOLS</h2>
+                  <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.75rem'}}>TACTICAL INTEL</div>
+                  <h2 className="pause-title" style={{fontSize: '1.4rem', margin: '5px 0'}}>DEFENSE PROTOCOLS</h2>
                   <div className="manual-text" style={{fontSize: '0.7rem', lineHeight: '1.4'}}>
                     <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '10px'}}>&gt; RADIUS: THE CYAN CIRCLE INDICATES ENGAGEMENT RANGE.</p>
                     <p style={{margin: '8px 0'}}>DEPLOY VARIED NODES TO COUNTER DIFFERENT THREATS:</p>
@@ -556,7 +557,6 @@ function App() {
 
           {showCombatIntel && (
             <div className="pause-overlay-locked" style={{zIndex: 17000}}>
-              {/* REVISION: 2026-04-07-01 */}
               <div className="victory-overlay ui-layer" style={{paddingBottom: '50px'}}>
                 <div className="popup-title">SECURITY BRIEFING</div>
                 
@@ -777,27 +777,6 @@ function App() {
                   </div>
                   <div className="info-body">
                     {infoTab === 'LORE' && (
-...
-                    {infoTab === 'CREDITS' && (
-                      <div className="manual-text">
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SYSTEM OWNER:</span>
-                          <span className="entry-content">CHRIS MCKINLEY</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label blue">ARCHITECT:</span>
-                          <span className="entry-content">CHRIS MCKINLEY</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label">BUILD ENGINE:</span>
-                          <span className="entry-content">SYNTAX V2.6.0 [ELITE]</span>
-                        </div>
-                        <div style={{marginTop: '30px', borderTop: '1px solid #222', paddingTop: '20px', color: '#666', fontSize: '0.7rem'}}>
-                          &gt; ALL SYSTEM ASSETS, CORE LOGIC, AND INTELLECTUAL PROPERTY CONTAINED WITHIN THIS MAINFRAME ARE THE SOLE PROPERTY OF THE SYSTEM OWNER. UNAUTHORIZED REPLICATION OR BREACH OF THIS SYNTAX IS STRICTLY PROHIBITED.
-                        </div>
-                      </div>
-                    )}
-                  </div>
                       <div className="manual-text">
                         <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p>
                         <p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p>
@@ -891,6 +870,25 @@ function App() {
                         <div className="manual-entry"><span className="entry-label blue">OVERCLOCKING:</span><span className="entry-content">TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS (3 LEVELS).</span></div>
                         <div className="manual-entry"><span className="entry-label blue">INTEREST:</span><span className="entry-content">MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST PER SWARM.</span></div>
                         <div className="manual-entry"><span className="entry-label blue">KERNEL OVERDRIVE:</span><span className="entry-content">CORE SHOCKWAVE PURGES NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</span></div>
+                      </div>
+                    )}
+                    {infoTab === 'CREDITS' && (
+                      <div className="manual-text">
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">SYSTEM OWNER:</span>
+                          <span className="entry-content">CHRIS MCKINLEY</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label blue">ARCHITECT:</span>
+                          <span className="entry-content">CHRIS MCKINLEY</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label">BUILD ENGINE:</span>
+                          <span className="entry-content">SYNTAX V2.6.0 [ELITE]</span>
+                        </div>
+                        <div style={{marginTop: '30px', borderTop: '1px solid #222', paddingTop: '20px', color: '#666', fontSize: '0.7rem'}}>
+                          &gt; ALL SYSTEM ASSETS, CORE LOGIC, AND INTELLECTUAL PROPERTY CONTAINED WITHIN THIS MAINFRAME ARE THE SOLE PROPERTY OF THE SYSTEM OWNER. UNAUTHORIZED REPLICATION OR BREACH OF THIS SYNTAX IS STRICTLY PROHIBITED.
+                        </div>
                       </div>
                     )}
                   </div>
@@ -991,37 +989,65 @@ function App() {
         </div>
       )}
 
+          {/* --- REBUILT TACTICAL DASHBOARD --- */}
           <div className="tactical-dashboard">
+            
+            {/* ZONE 1: TACTICAL CONTROLS */}
             <div className="dashboard-left">
               <div className="control-grid">
                 <button className="blue-button compact-btn" onClick={() => setIsPaused(true)}>PAUSE</button>
                 <button className={`blue-button compact-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? 'var(--neon-green)' : ''}}>FWD &gt;&gt;</button>
-                <button className={`blue-button compact-btn ${integrity <= 5 && credits >= repairCost ? 'critical-repair' : ''}`} onClick={repairKernel} disabled={credits < repairCost || integrity >= 20}>REPAIR: {repairCost}c</button>
-                <button className="blue-button compact-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>PURGE: 1000c</button>
+                <button 
+                  className={`blue-button compact-btn ${integrity <= 5 && credits >= repairCost ? 'critical-repair' : ''}`} 
+                  onClick={repairKernel} 
+                  disabled={credits < repairCost || integrity >= 20}
+                >
+                  REPAIR: {repairCost}c
+                </button>
+                <button className="blue-button compact-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>
+                  PURGE: 1000c
+                </button>
               </div>
             </div>
 
+            {/* ZONE 2: DEFENSE PROTOCOLS (SCROLL WHEEL) */}
             <div className="dashboard-center" ref={dashboardCenterRef}>
               <div className="turret-row">
                 {[0, 1, 2, 3, 4].map(type => {
                   const cfg = TOWER_CONFIGS[type as TowerType];
                   const unlocked = type === 0 || isUnlocked(type);
+                  
                   let cost = cfg.cost;
                   if (game?.towerManager) {
                     const count = game.towerManager.getTowerCount(type as TowerType);
-                    cost = Math.floor(cfg.cost * (count >= 4 ? 1.15 : 1.0));
+                    const supplyMultiplier = count >= 4 ? 1.15 : 1.0;
+                    cost = Math.floor(cfg.cost * supplyMultiplier);
                     if (gameMode === 'HARDCORE') cost = Math.floor(cost * 1.5);
                     if (integrity < 10 && gameMode !== 'SUDDEN_DEATH') cost = Math.floor(cost * 0.85);
                   } else {
                     cost = gameMode === 'HARDCORE' ? Math.floor(cfg.cost * 1.5) : (integrity < 10 ? Math.floor(cfg.cost * 0.85) : cfg.cost);
                   }
+
                   return (
-                    <div key={type} ref={type === 0 ? firstTurretRef : null} className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`} onClick={() => unlocked && selectTurret(type)}>
+                    <div 
+                      key={type} 
+                      ref={type === 0 ? firstTurretRef : null}
+                      className={`protocol-card ${selectedTurret === type ? 'active' : ''} ${credits < cost ? 'dimmed' : ''} ${!unlocked ? 'locked' : ''}`}
+                      onClick={() => unlocked && selectTurret(type)}
+                    >
                       <div className="protocol-header">{cfg.name}</div>
+                      
                       <div className="protocol-visual-container">
-                        <div className="mini-turret" data-type={type}><div className="mini-base"></div><div className="mini-head"><div className="mini-weapon"></div><div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div></div></div>
+                        <div className="mini-turret" data-type={type}>
+                          <div className="mini-base"></div>
+                          <div className="mini-head">
+                            <div className="mini-weapon"></div>
+                            <div className="mini-core" style={{ backgroundColor: `#${cfg.color.toString(16).padStart(6,'0')}`, boxShadow: `0 0 10px #${cfg.color.toString(16).padStart(6,'0')}` }}></div>
+                          </div>
+                        </div>
                         {!unlocked && <div className="protocol-lock-overlay">🔒</div>}
                       </div>
+
                       <div className="protocol-stats">DMG: {cfg.damage}</div>
                       <div className="protocol-footer">{cost}c</div>
                     </div>
@@ -1030,16 +1056,23 @@ function App() {
               </div>
             </div>
 
+            {/* ZONE 3: MISSION STATUS */}
             <div className="dashboard-right">
               <div className="status-stack">
                 <div className="status-mission-line">LVL {isTutorialActive ? 0 : wave} // {isTutorialActive ? 'INIT' : waveName}</div>
-                <div className="status-credit-line"><span className="val">{credits}</span><span className="lbl"> TOKENS</span></div>
+                <div className="status-credit-line">
+                  <span className="val">{credits}</span>
+                  <span className="lbl"> TOKENS</span>
+                </div>
                 <div className="status-integrity-line">
-                  <div className="integrity-bar-clean"><div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div></div>
+                  <div className="integrity-bar-clean">
+                    <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, background: sysStatusColor }}></div>
+                  </div>
                   <div className="status-text-line" style={{color: sysStatusColor}}>{systemStatusText}</div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       )}
