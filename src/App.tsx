@@ -32,6 +32,12 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0 }: { text: strin
           return;
         }
         setDisplayedText(text.slice(0, i));
+        
+        // PLAY TYPING SOUND
+        if (i > 0 && i <= text.length && text[i-1] !== ' ') {
+          AudioManager.getInstance().playTypeClick();
+        }
+
         i++;
         if (i > text.length) {
           clearInterval(interval);
@@ -86,7 +92,6 @@ function App() {
   const [activeGlitch, setActiveGlitch] = useState<GlitchType>('NONE');
   const [waveSummary, setWaveSummary] = useState<WaveSummary>({ kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 });
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
-  const [rankBadge, setRankBadge] = useState(GameStateManager.getInstance().getRankBadge());
   const [currentXP, setCurrentXP] = useState(GameStateManager.getInstance().totalXP);
   const [nextRankXP, setNextRankXP] = useState(GameStateManager.getInstance().getNextRankXP());
   const [lifetimeKills, setLifetimeKills] = useState(0);
@@ -96,7 +101,7 @@ function App() {
   const [isTypingComplete, setIsTypingComplete] = useState(false);
 
   // INTERACTIVE TUTORIAL STATE
-  const [tutorialStep, setTutorialStep] = useState(0); // 0: Off, 1: MG Select, 2: MG Place, 3: Upgrade, 4: Glitch Intro, 5: Combat Intro, 6: Destruct, 7: Eco
+  const [tutorialStep, setTutorialStep] = useState(0); 
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [showTutorialComplete, setShowTutorialComplete] = useState(false);
   const [showRadiusExplanation, setShowRadiusExplanation] = useState(false);
@@ -212,7 +217,6 @@ function App() {
           setGameMode(state.gameMode);
           setGamePhase(state.phase); 
           setRank(state.architectRank);
-          setRankBadge(state.getRankBadge());
           setCurrentXP(state.totalXP);
           setNextRankXP(state.getNextRankXP());
           setActiveGlitch(state.activeGlitch);
@@ -589,7 +593,6 @@ function App() {
         </div>
       )}
 
-      {/* --- UPGRADE OVERLAY --- */}
       {selectedTower && (
         <div className="pause-overlay-locked" style={{zIndex: 25000}}>
           <div className="pause-content" style={{borderColor: 'var(--neon-cyan)', maxWidth: '320px'}}>
@@ -628,7 +631,7 @@ function App() {
                 <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
               </div>
             )}
-            <div className="rank-tag"><span className="rank-badge">{rankBadge}</span> RANK: {rank} [{currentXP.toLocaleString()} / {nextRankXP.toLocaleString()} XP]</div>
+            <div className="rank-tag">RANK: {rank} [{currentXP.toLocaleString()} / {nextRankXP.toLocaleString()} XP]</div>
           </div>
         </div>
       )}
@@ -722,7 +725,7 @@ function App() {
                           <div className="hof-container">
                             <div className="hof-card"><div className="hof-label">MAX WAVE REACHED</div><div className="hof-value">{highestWave}</div></div>
                             <div className="hof-card"><div className="hof-label">TOTAL VIRUSES PURGED</div><div className="hof-value">{lifetimeKills.toLocaleString()}</div></div>
-                            <div className="hof-card"><div className="hof-label">ARCHITECT STATUS</div><div className="hof-value" style={{color: '#00ff66'}}>{rankBadge} {rank}</div></div>
+                            <div className="hof-card"><div className="hof-label">ARCHITECT STATUS</div><div className="hof-value" style={{color: '#00ff66'}}>{rank}</div></div>
                           </div>
                         )}
                         {infoTab === 'VIRAL DB' && ( <div className="visual-grid">{Object.values(VISUAL_REGISTRY).map(v => ( <div key={v.name} className="visual-card-large"><div className="card-visual-box"><div className={`shape ${v.shape}`} style={v.shape === 'triangle' ? { borderBottomColor: v.colorHex } : { background: v.colorHex }}></div></div><div className="card-detail-box"><div className="label">{v.name}</div><div className="stats">HP: {v.baseHp} // SPD: {v.speed}x // PRIORITY: {v.priority}</div><div className="desc">{ v.name === 'GLIDER' ? 'Rapid packet stream. Low integrity.' : v.name === 'STRIDER' ? 'Staggered burst unit. Medium threat.' : v.name === 'BEHEMOTH' ? 'Heavy bulk data. High defensive priority.' : 'Core-Breaker. High entropy Boss unit.' }</div></div></div> ))}</div> )}

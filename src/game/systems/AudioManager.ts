@@ -56,14 +56,29 @@ export class AudioManager {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'square';
-        osc.frequency.setValueAtTime(1500, time);
-        osc.frequency.exponentialRampToValueAtTime(800, time + 0.05);
-        gain.gain.setValueAtTime(0.15, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+        osc.frequency.setValueAtTime(400, time); // LOWER PITCH
+        osc.frequency.exponentialRampToValueAtTime(200, time + 0.08);
+        gain.gain.setValueAtTime(0.1, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
         osc.connect(gain);
         gain.connect(this.masterGain!);
         osc.start(time);
-        osc.stop(time + 0.05);
+        osc.stop(time + 0.08);
+    }
+
+    public playTypeClick() {
+        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, time);
+        gain.gain.setValueAtTime(0.02, time); // VERY SUBTLE
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        osc.start(time);
+        osc.stop(time + 0.015);
     }
 
     public playBreach() {
