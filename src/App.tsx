@@ -967,29 +967,33 @@ function App() {
         </div>
       )}
 
+      {/* COMBAT INTEL POPUP (Level 1+) */}
       {gamePhase === 'PREP' && !showWaveSummaryPopup && showCombatIntel && !isPaused && integrity > 0 && !isTutorialActive && (
-        <div className="pre-wave-overlay ui-layer" style={{paddingBottom: '15px'}}>
+        <div className="pre-wave-overlay ui-layer" style={{paddingBottom: '10px'}}>
           <div className="popup-title">SWARM DATA DETECTED</div>
-          <div className="manual-text" style={{fontSize: '0.95rem', color: 'var(--neon-blue)', marginBottom: '15px'}}>
-            &gt; INITIATING ANALYTICS FOR MISSION: {waveName}... SCANNING VIRAL SIGNATURES...
+          <div className="manual-text" style={{fontSize: '0.75rem', color: 'var(--neon-blue)', marginBottom: '10px'}}>
+            &gt; ANALYZING MISSION: {waveName}... SCANNING VIRAL SIGNATURES...
           </div>
           <div className="intel-row-horizontal">
             {upcomingEnemies.map((type, idx) => {
               const reg = VISUAL_REGISTRY[type as EnemyType];
               if (!reg) return null;
               return (
-                <div key={idx} className="intel-card-large" data-enemy={type} style={{width: '95px', flexShrink: 0}}>
-                  <div className="card-viz">
-                    <div className="mini-enemy"></div>
+                <div key={idx} className="intel-card-large" style={{width: '90px', padding: '8px 5px'}}>
+                  <div className="card-visual-box" style={{width: '35px', height: '35px', margin: '0 auto'}}>
+                    <div 
+                      className={`shape ${reg.shape}`} 
+                      style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '18px', borderLeftWidth: '9px', borderRightWidth: '9px' } : { background: reg.colorHex, width: '18px', height: '18px' }}
+                    ></div>
                   </div>
-                  <div className="card-label">
-                    <div className="name" style={{fontSize: '0.65rem'}}>{reg.name}</div>
+                  <div className="card-label" style={{marginTop: '5px'}}>
+                    <div className="name" style={{fontSize: '0.6rem', color: 'var(--neon-cyan)', fontWeight: 900}}>{reg.name}</div>
                   </div>
                 </div>
               );
             })}
           </div>
-          <button className="massive-exec-button" style={{marginTop: '15px'}} onClick={() => { setShowCombatIntel(false); executeWave(); }}>EXECUTE DEFENSE PROTOCOL</button>
+          <button className="massive-exec-button" style={{marginTop: '10px'}} onClick={() => { setShowCombatIntel(false); executeWave(); }}>EXECUTE DEFENSE PROTOCOL</button>
         </div>
       )}
 
