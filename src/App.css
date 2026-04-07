@@ -150,8 +150,16 @@ body::after {
 }
 @keyframes error-flash { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
 
-.main-menu { width: 100vw; height: 100dvh; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; padding: 7dvh 0 25dvh 40px; perspective: 1500px; }
-.menu-content-centered { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2.5vh; z-index: 100; position: relative; }
+.main-menu { width: 100vw; height: 100dvh; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 7dvh 0 25dvh 0; perspective: 1500px; }
+.menu-content-centered { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2.5vh; z-index: 100; position: relative; }
+
+/* TRACK TOGGLES */
+.track-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; width: 100%; }
+.track-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0, 255, 255, 0.05); padding: 8px 12px; border: 1px solid #222; }
+.track-name { font-size: 0.65rem; font-weight: 900; color: #aaa; text-transform: uppercase; }
+.track-toggle { width: 80px !important; padding: 4px !important; font-size: 0.55rem !important; }
+.track-toggle.enabled { border-color: var(--neon-cyan) !important; color: var(--neon-cyan) !important; }
+.track-toggle.disabled { border-color: #444 !important; color: #444 !important; opacity: 0.5; }
 
 /* RANGE SLIDER STYLES */
 input[type=range] {

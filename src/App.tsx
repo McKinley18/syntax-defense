@@ -87,6 +87,7 @@ function App() {
   const [ambientMuted, setAmbientMuted] = useState(AudioManager.getInstance().isAmbientMuted);
   const [sfxVol, setSfxVol] = useState(AudioManager.getInstance().sfxVolume);
   const [musicVol, setMusicVol] = useState(AudioManager.getInstance().musicVolume);
+  const [enabledTracks, setEnabledTracks] = useState(MusicManager.getInstance().enabledTracks);
   const [isDistorted, setIsDistorted] = useState(false);
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
@@ -371,6 +372,12 @@ function App() {
     const val = parseFloat(e.target.value);
     setMusicVol(val);
     AudioManager.getInstance().setMusicVolume(val);
+  };
+
+  const toggleTrack = (id: number) => {
+    AudioManager.getInstance().playUiClick();
+    MusicManager.getInstance().toggleTrack(id as any);
+    setEnabledTracks([...MusicManager.getInstance().enabledTracks]);
   };
 
   const selectTurret = (type: number) => {
@@ -699,6 +706,21 @@ function App() {
                         <div style={{display: 'flex', gap: '10px'}}>
                           <button className="blue-button" onClick={toggleSfx} style={{flex: 1}}>{sfxMuted ? 'ENABLE SFX' : 'DISABLE SFX'}</button>
                           <button className="blue-button" onClick={toggleAmbient} style={{flex: 1}}>{ambientMuted ? 'ENABLE MUSIC' : 'DISABLE MUSIC'}</button>
+                        </div>
+                        
+                        <h4 style={{color: 'var(--neon-cyan)', marginTop: '20px', fontSize: '0.75rem'}}>SYSTEM PLAYLIST</h4>
+                        <div className="track-list">
+                          {['HYPNOTIC', 'INDUSTRIAL', 'DATA STREAM', 'KERNEL', 'GLITCH TECH', 'UPLINK'].map((name, id) => (
+                            <div key={id} className="track-item">
+                              <span className="track-name">{name}</span>
+                              <button 
+                                className={`blue-button track-toggle ${enabledTracks[id] ? 'enabled' : 'disabled'}`}
+                                onClick={() => toggleTrack(id)}
+                              >
+                                {enabledTracks[id] ? 'ACTIVE' : 'OFF'}
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                       <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM DIAGNOSTICS</h3>
