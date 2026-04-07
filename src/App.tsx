@@ -585,18 +585,18 @@ function App() {
                     {showTutorialComplete && (
                       <div style={{paddingBottom: '40px', width: '100%'}}>
                         <div className="manual-text" style={{fontSize: '0.7rem', color: 'var(--neon-blue)', marginTop: '10px'}}>&gt;&gt; IDENTIFIED THREAT SIGNATURES:</div>
-                        <div className="intel-grid-2x2">
+                        <div className="intel-row-horizontal">
                           {[0, 1, 2, 3].map(type => {
                             const reg = VISUAL_REGISTRY[type as EnemyType];
                             return (
-                              <div key={type} className="intel-card-large" data-enemy={type}>
-                                <div className="card-viz">
-                                  <div className="mini-enemy"></div>
+                              <div key={type} className="intel-card-minimal">
+                                <div className="symbol-only">
+                                  <div 
+                                    className={`shape ${reg.shape}`} 
+                                    style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '20px', borderLeftWidth: '10px', borderRightWidth: '10px' } : { background: reg.colorHex, width: '20px', height: '20px' }}
+                                  ></div>
                                 </div>
-                                <div className="card-label">
-                                  <div className="name">{reg.name}</div>
-                                  <div className="desc">{reg.name === 'GLIDER' ? 'LOW INTEGRITY' : reg.name === 'STRIDER' ? 'MEDIUM THREAT' : reg.name === 'BEHEMOTH' ? 'HEAVY BULK' : 'CORE BREAKER'}</div>
-                                </div>
+                                <div className="intel-label-small">{reg.name}</div>
                               </div>
                             );
                           })}
@@ -775,45 +775,10 @@ function App() {
                     <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
                     <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button>
                     <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button>
-                    </div>
-                    <div className="info-body">
-                    ...
-                    {infoTab === 'RANKS' && (
+                  </div>
+                  <div className="info-body">
+                    {infoTab === 'LORE' && (
                       <div className="manual-text">
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">INITIATE:</span>
-                          <span className="entry-content">STARTING RANK. NO BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SCRIPTER:</span>
-                          <span className="entry-content">1,000 XP REQUIRED. +50 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SYS_ARCHITECT:</span>
-                          <span className="entry-content">5,000 XP REQUIRED. +100 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">SENIOR_ENGR:</span>
-                          <span className="entry-content">10,000 XP REQUIRED. +150 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">ELITE_ARCHITECT:</span>
-                          <span className="entry-content">25,000 XP REQUIRED. +200 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">CORE_GUARDIAN:</span>
-                          <span className="entry-content">50,000 XP REQUIRED. +300 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div className="manual-entry">
-                          <span className="entry-label cyan">GOD_MOD_ADMIN:</span>
-                          <span className="entry-content">100,000 XP REQUIRED. +500 TOKEN STARTING BONUS.</span>
-                        </div>
-                        <div style={{marginTop: '20px', color: '#888', fontSize: '0.7rem'}}>
-                          &gt; XP IS EARNED BY COMPLETING WAVES. HARDCORE MODE GRANTS 2x XP PER WAVE.
-                        </div>
-                      </div>
-                    )}
-                    {infoTab === 'CREDITS' && (
                         <p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p>
                         <p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p>
                         <p>&gt; THE KERNEL IS THE LAST REMAINING BASTION OF PURE LOGIC. IF IT FALLS, THE DIGITAL UNIVERSE WILL DESCEND INTO PERMANENT ENTROPY.</p>
@@ -906,6 +871,41 @@ function App() {
                         <div className="manual-entry"><span className="entry-label cyan">OVERCLOCKING:</span><span className="entry-content">TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS (3 LEVELS).</span></div>
                         <div className="manual-entry"><span className="entry-label cyan">INTEREST:</span><span className="entry-content">MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST PER SWARM.</span></div>
                         <div className="manual-entry"><span className="entry-label cyan">KERNEL OVERDRIVE:</span><span className="entry-content">CORE SHOCKWAVE PURGES NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</span></div>
+                      </div>
+                    )}
+                    {infoTab === 'RANKS' && (
+                      <div className="manual-text">
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">INITIATE:</span>
+                          <span className="entry-content">STARTING RANK. NO BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">SCRIPTER:</span>
+                          <span className="entry-content">1,000 XP REQUIRED. +50 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">SYS_ARCHITECT:</span>
+                          <span className="entry-content">5,000 XP REQUIRED. +100 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">SENIOR_ENGR:</span>
+                          <span className="entry-content">10,000 XP REQUIRED. +150 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">ELITE_ARCHITECT:</span>
+                          <span className="entry-content">25,000 XP REQUIRED. +200 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">CORE_GUARDIAN:</span>
+                          <span className="entry-content">50,000 XP REQUIRED. +300 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div className="manual-entry">
+                          <span className="entry-label cyan">GOD_MOD_ADMIN:</span>
+                          <span className="entry-content">100,000 XP REQUIRED. +500 TOKEN STARTING BONUS.</span>
+                        </div>
+                        <div style={{marginTop: '20px', color: '#888', fontSize: '0.7rem'}}>
+                          &gt; XP IS EARNED BY COMPLETING WAVES. HARDCORE MODE GRANTS 2x XP PER WAVE.
+                        </div>
                       </div>
                     )}
                     {infoTab === 'CREDITS' && (
@@ -1003,7 +1003,6 @@ function App() {
         </div>
       )}
 
-      {/* COMBAT INTEL POPUP (Level 1+) */}
       {gamePhase === 'PREP' && !showWaveSummaryPopup && showCombatIntel && !isPaused && integrity > 0 && !isTutorialActive && (
         <div className="pre-wave-overlay ui-layer" style={{paddingBottom: '10px'}}>
           <div className="popup-title">SWARM DATA DETECTED</div>
