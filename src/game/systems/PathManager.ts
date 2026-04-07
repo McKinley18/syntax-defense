@@ -113,16 +113,19 @@ export class PathManager {
                 const ny = my + d.dy;
                 
                 if (nx >= 0 && nx < macroCols && ny >= 0 && ny < macroRows) {
-                    if (nx === 0 && mx !== 0) continue; 
+                    // RESTRICTION: Don't touch left edge except at start
+                    if (nx === 0) continue;
+                    // RESTRICTION: Don't touch right edge except to finish (handled by mx === macroCols - 1 above)
+                    if (nx === macroCols - 1 && mx !== macroCols - 2) continue;
+
                     if (!visited.has(`${nx},${ny}`)) {
-                        // STRICT ISOLATION: Check neighbors to prevent "thick" paths
                         let neighborCount = 0;
                         const checkDirs = [{dx:1, dy:0}, {dx:-1, dy:0}, {dx:0, dy:1}, {dx:0, dy:-1}];
                         for (const cd of checkDirs) {
                             if (visited.has(`${nx + cd.dx},${ny + cd.dy}`)) neighborCount++;
                         }
                         
-                        if (neighborCount === 1) { // Only the current node should be a neighbor
+                        if (neighborCount === 1) { 
                             if (dfs(nx, ny)) return true;
                         }
                     }
