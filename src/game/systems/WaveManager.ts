@@ -90,8 +90,8 @@ export class WaveManager {
         } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
-            // EASIER STARTING CURVE: 5 at Wave 1, scaling up more gently
-            this.enemiesToSpawn = 5 + Math.floor(this.waveNumber * 2.5);
+            // MORE INTENSE START: 10 at Wave 1, scaling faster
+            this.enemiesToSpawn = 10 + Math.floor(this.waveNumber * 3.5);
         }
         this.totalEnemiesThisWave = this.enemiesToSpawn;
         this.spawnTimer = 0;
