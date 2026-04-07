@@ -46,9 +46,9 @@ export class MapManager {
 
     private updateDimensions() {
         TILE_SIZE = MapManager.calculateTileSize();
-        // MANDATE: FORCE EVEN COLS FOR 2-TILE PATH ALIGNMENT
-        this.cols = Math.floor(window.innerWidth / TILE_SIZE / 2) * 2;
-        this.rows = Math.floor(window.innerHeight / TILE_SIZE);
+        // Add safety buffer to ensure we reach the right and bottom edges
+        this.cols = Math.ceil(window.innerWidth / TILE_SIZE) + 1;
+        this.rows = Math.ceil(window.innerHeight / TILE_SIZE) + 1;
         
         this.initGrid();
     }
@@ -65,7 +65,6 @@ export class MapManager {
 
     public setPathFromCells(cells: GridCoord[]) {
         this.updateDimensions();
-        // Clear old path
         for (let x = 0; x < this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
                 this.grid[x][y] = TileType.BUILDABLE;
@@ -73,7 +72,6 @@ export class MapManager {
         }
         
         cells.forEach(cell => {
-            // APPLY STRICT 2x2 STAMP - Snapped to Grid
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
                     const gx = cell.x + i;
@@ -92,8 +90,6 @@ export class MapManager {
         this.gridGraphics.clear();
         this.pathMask.clear();
 
-        // 1. DRAW SOLID BACKGROUND & BLACK PATHS
-        // Background
         this.groundGraphics.rect(0, 0, this.cols * TILE_SIZE, this.rows * TILE_SIZE);
         this.groundGraphics.fill(0x020408);
 
@@ -111,15 +107,12 @@ export class MapManager {
             }
         }
 
-        // 2. BOUNDARY-AWARE GRID ARCHITECT
-        // Draw lines only where appropriate
         // VERTICAL LINES
         for (let x = 0; x <= this.cols; x++) {
             for (let y = 0; y < this.rows; y++) {
                 const left = (x > 0) ? this.grid[x-1][y] : null;
                 const right = (x < this.cols) ? this.grid[x][y] : null;
                 
-                // Don't draw line IF both sides are path (inside the corridor)
                 if (left === TileType.PATH && right === TileType.PATH) continue;
                 
                 const isBorder = (left !== right && left !== null && right !== null);
@@ -127,9 +120,9 @@ export class MapManager {
                 this.gridGraphics.moveTo(x * TILE_SIZE, y * TILE_SIZE);
                 this.gridGraphics.lineTo(x * TILE_SIZE, (y + 1) * TILE_SIZE);
                 this.gridGraphics.stroke({
-                    width: 1,
+                    width: 2,
                     color: 0x0066ff,
-                    alpha: isBorder ? 0.6 : 0.15
+                    alpha: isBorder ? 0.8 : 0.5
                 });
             }
         }
@@ -147,9 +140,9 @@ export class MapManager {
                 this.gridGraphics.moveTo(x * TILE_SIZE, y * TILE_SIZE);
                 this.gridGraphics.lineTo((x + 1) * TILE_SIZE, y * TILE_SIZE);
                 this.gridGraphics.stroke({
-                    width: 1,
+                    width: 2,
                     color: 0x0066ff,
-                    alpha: isBorder ? 0.6 : 0.15
+                    alpha: isBorder ? 0.8 : 0.5
                 });
             }
         }
@@ -161,7 +154,6 @@ export class MapManager {
             this.game.groundLayer.addChild(this.gridGraphics);
         }
 
-        // 3. BINARY FLOW (Only inside path)
         if (this.binarySprite) {
             this.game.groundLayer.removeChild(this.binarySprite);
             this.binarySprite.destroy();

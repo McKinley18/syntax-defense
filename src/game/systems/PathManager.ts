@@ -73,7 +73,7 @@ export class PathManager {
         }
 
         // REAL GAME GENERATION
-        const macroCols = Math.floor(visibleCols / 2);
+        const macroCols = Math.ceil(this.microCols / 2);
         const macroRows = Math.floor(playableRows / 2);
 
         if (macroCols < 4 || macroRows < 2) return false;
@@ -84,7 +84,7 @@ export class PathManager {
         
         const state = GameStateManager.getInstance();
         const wealthMult = state.credits > 2500 ? 0.75 : 1.0; 
-        const complexityFactor = 0.3 + (Math.random() * 0.2); 
+        const complexityFactor = 0.4 + (Math.random() * 0.25); 
         const targetLength = Math.floor(macroCols * macroRows * complexityFactor * wealthMult);
 
         const dfs = (mx: number, my: number): boolean => {
@@ -156,7 +156,8 @@ export class PathManager {
                 this.startNodePos = new PIXI.Point(0, (microY + 1) * TILE_SIZE);
             }
             if (i === macroPath.length - 1) {
-                this.endNodePos = new PIXI.Point(this.microCols * TILE_SIZE, (microY + 1) * TILE_SIZE);
+                // Ensure it reaches the absolute right edge
+                this.endNodePos = new PIXI.Point(window.innerWidth, (microY + 1) * TILE_SIZE);
             }
         }
     }
@@ -179,7 +180,7 @@ export class PathManager {
         // True end at edge
         const last = this.macroPath[this.macroPath.length - 1];
         const lastY = this.playableTop + last.y * 2;
-        pts.push(new PIXI.Point(this.microCols * TILE_SIZE, (lastY + 1) * TILE_SIZE));
+        pts.push(new PIXI.Point(window.innerWidth, (lastY + 1) * TILE_SIZE));
 
         return pts;
     }

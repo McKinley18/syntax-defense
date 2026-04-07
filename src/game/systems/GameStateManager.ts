@@ -4,6 +4,7 @@ export type GamePhase = 'PREP' | 'WAVE';
 
 export interface WaveSummary {
     kills: number;
+    totalKills: number; 
     interest: number;
     perfectBonus: number;
     refunds: number;
@@ -15,18 +16,17 @@ export class GameStateManager {
     
     public credits: number = 850; 
     public integrity: number = 20;
-    public currentWave: number = 0; // START AT 0
+    public currentWave: number = 0; 
     public gameMode: GameMode = 'STANDARD';
     public phase: GamePhase = 'PREP'; 
     public activeGlitch: GlitchType = 'NONE';
     public interestRate: number = 0.10; 
     public repairCost: number = 500; 
     
-    // META-PROGRESSION
     public totalXP: number = 0;
     public architectRank: string = "INITIATE";
 
-    public lastWaveSummary: WaveSummary = { kills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
+    public lastWaveSummary: WaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
 
     private integrityLostThisWave: boolean = false;
 
@@ -45,7 +45,10 @@ export class GameStateManager {
         if (this.gameMode === 'ECO_CHALLENGE' && reason === 'kill') return; 
         this.credits += amount;
 
-        if (reason === 'kill') this.lastWaveSummary.kills += amount;
+        if (reason === 'kill') {
+            this.lastWaveSummary.kills += amount;
+            this.lastWaveSummary.totalKills++; 
+        }
         else if (reason === 'interest') this.lastWaveSummary.interest += amount;
         else if (reason === 'perfect') this.lastWaveSummary.perfectBonus += amount;
         else if (reason === 'refund') this.lastWaveSummary.refunds += amount;
@@ -112,14 +115,10 @@ export class GameStateManager {
     public resetForNextWave() {
         if (this.integrity <= 0) return;
 
-        // META XP GRANT
         const waveXP = this.currentWave * 50 * (this.gameMode === 'HARDCORE' ? 2 : 1);
         this.totalXP += waveXP;
         this.saveXP();
         this.architectRank = this.calculateRank();
-
-        // RESET WAVE SUMMARY FOR THE NEW WAVE WE ARE ABOUT TO ENTER
-        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
 
         // PERFECT WAVE BONUS
         if (!this.integrityLostThisWave && this.gameMode !== 'HARDCORE') {
@@ -158,7 +157,7 @@ export class GameStateManager {
         this.currentWave = 1; 
         this.repairCost = 500;
         this.interestRate = mode === 'HARDCORE' ? 0 : 0.10;
-        this.lastWaveSummary = { kills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
+        this.lastWaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
         this.integrityLostThisWave = false;
         this.activeGlitch = 'NONE';
         this.save();

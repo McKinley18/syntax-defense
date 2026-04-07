@@ -43,7 +43,8 @@ export class Enemy {
             this.isGhost = true;
         }
 
-        const hpMult = Math.pow(1.10, waveNumber) * (this.isElite ? 3.5 : 1);
+        // EASIER SCALING: 7% HP increase per wave instead of 10%
+        const hpMult = Math.pow(1.07, waveNumber) * (this.isElite ? 3.5 : 1);
         this.maxHealth = Math.floor(config.baseHp * hpMult);
         this.health = this.maxHealth;
         this.reward = Math.floor(config.reward * (this.isElite ? 2.5 : 1));

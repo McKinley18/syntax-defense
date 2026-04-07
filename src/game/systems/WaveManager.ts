@@ -31,6 +31,9 @@ export class WaveManager {
 
         if (incrementWave) {
             GameStateManager.getInstance().resetForNextWave();
+        } else {
+            // INITIAL RESET
+            GameStateManager.getInstance().lastWaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
         }
         
         this.waveNumber = GameStateManager.getInstance().currentWave;
@@ -87,8 +90,8 @@ export class WaveManager {
         } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
-            // PROGRESSIVE SCALE: From 6-8 at Wave 1 to ~120 at Wave 50
-            this.enemiesToSpawn = 6 + Math.floor(this.waveNumber * 2.3);
+            // EASIER STARTING CURVE: 5 at Wave 1, scaling up more gently
+            this.enemiesToSpawn = 5 + Math.floor(this.waveNumber * 2.5);
         }
         this.totalEnemiesThisWave = this.enemiesToSpawn;
         this.spawnTimer = 0;
@@ -104,18 +107,18 @@ export class WaveManager {
                 this.enemiesToSpawn--;
 
                 const waveProgress = 1 - (this.enemiesToSpawn / this.totalEnemiesThisWave);
-                const intensityBoost = 1 - (waveProgress * 0.25);
+                const intensityBoost = 1 - (waveProgress * 0.35); // FASTER FINISH
 
-                // DYNAMIC BATCH SPAWNING (Wave 15+): Enemies arrive in 2-3 distinct clusters
-                const isClustered = this.waveNumber >= 15 && this.currentPattern !== 'sustained_stream';
-                const clusterGap = isClustered && (Math.random() < 0.1) ? (120 + Math.random() * 200) : 0;
+                // DYNAMIC BATCH SPAWNING (Wave 10+): Enemies arrive in distinct clusters
+                const isClustered = this.waveNumber >= 10 && this.currentPattern !== 'sustained_stream';
+                const clusterGap = isClustered && (Math.random() < 0.15) ? (100 + Math.random() * 150) : 0;
 
                 if (this.currentPattern === 'bulk_breach') {
-                    this.spawnTimer = ((15 + Math.random() * 10) * intensityBoost) + clusterGap; 
+                    this.spawnTimer = ((12 + Math.random() * 8) * intensityBoost) + clusterGap; 
                 } else if (this.currentPattern === 'staggered_burst') {
-                    this.spawnTimer = (((this.enemiesToSpawn % 5 === 0) ? 150 : 25) * intensityBoost) + clusterGap; 
+                    this.spawnTimer = (((this.enemiesToSpawn % 5 === 0) ? 120 : 20) * intensityBoost) + clusterGap; 
                 } else {
-                    this.spawnTimer = (Math.max(25, 60 - (this.waveNumber * 1.5)) * intensityBoost) + clusterGap; 
+                    this.spawnTimer = (Math.max(20, 50 - (this.waveNumber * 1.8)) * intensityBoost) + clusterGap; 
                 }
             }
         }
@@ -123,10 +126,9 @@ export class WaveManager {
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             
-            // ELITE LOGIC: Greed-Reactive Speed (Wave 20+)
             const state = GameStateManager.getInstance();
             if (this.waveNumber >= 20 && state.credits > 3000) {
-                enemy.update(delta * 1.15); // +15% Speed Logic Overload
+                enemy.update(delta * 1.15); 
             } else {
                 enemy.update(delta);
             }
@@ -141,8 +143,8 @@ export class WaveManager {
             }
 
             if (enemy.health <= 0) {
-                const baseReward = enemy.type === EnemyType.BEHEMOTH ? 40 : enemy.type === EnemyType.FRACTAL ? 150 : 15;
-                const scaledReward = Math.floor(baseReward * Math.pow(1.08, this.waveNumber));
+                const baseReward = enemy.type === EnemyType.BEHEMOTH ? 45 : enemy.type === EnemyType.FRACTAL ? 180 : 18;
+                const scaledReward = Math.floor(baseReward * Math.pow(1.09, this.waveNumber));
                 
                 AudioManager.getInstance().playPurge();
                 GameStateManager.getInstance().addCredits(scaledReward);
