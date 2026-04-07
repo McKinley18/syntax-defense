@@ -840,50 +840,50 @@ function App() {
                     {infoTab === 'SYSTEM MODES' && (
                       <div className="manual-text">
                         <div className="manual-entry">
-                          <span className="entry-label green">HARDCORE:</span>
+                          <span className="entry-label cyan">HARDCORE:</span>
                           <span className="entry-content">NO INTEREST REWARDS. UNIT COSTS INCREASED BY 50%. STARTING CAPITAL REDUCED. ONLY FOR ELITE SYSTEM ARCHITECTS.</span>
                         </div>
                         <div className="manual-entry">
-                          <span className="entry-label green">ECO CHALLENGE:</span>
+                          <span className="entry-label cyan">ECO CHALLENGE:</span>
                           <span className="entry-content">VIRUSES PROVIDE ZERO TOKENS UPON DELETION. ALL INCOME IS DERIVED FROM THE 10% INTEREST COMPOUNDING SYSTEM.</span>
                         </div>
                         <div className="manual-entry">
-                          <span className="entry-label green">SUDDEN DEATH:</span>
+                          <span className="entry-label cyan">SUDDEN DEATH:</span>
                           <span className="entry-content">SYSTEM INTEGRITY SET TO 1. A SINGLE VIRAL BREACH WILL TERMINATE THE SESSION IMMEDIATELY.</span>
                         </div>
                         <div className="manual-entry">
-                          <span className="entry-label green">ENDLESS LOOP:</span>
+                          <span className="entry-label cyan">ENDLESS LOOP:</span>
                           <span className="entry-content">NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS AS THE LOOP CONTINUES.</span>
                         </div>
                       </div>
                     )}
                     {infoTab === 'THREATS' && (
                       <div className="manual-text">
-                        <div className="manual-entry"><span className="entry-label green">ELITE SIGNATURES:</span><span className="entry-content">EVERY 5 SWARMS, MINI-BOSSES WITH 3.5x HP MATERIALIZE.</span></div>
-                        <div className="manual-entry"><span className="entry-label green">GHOST PACKETS:</span><span className="entry-content">INVISIBLE ON THE GRID SENSOR. REVEALED BY FROST RAY OR TESLA RADIUS.</span></div>
-                        <div className="manual-entry"><span className="entry-label green">BOSS CORE:</span><span className="entry-content">FRACTAL VIRUSES DEAL 10 UNITS OF DAMAGE TO KERNEL UPON BREACH.</span></div>
+                        <div className="manual-entry"><span className="entry-label cyan">ELITE SIGNATURES:</span><span className="entry-content">EVERY 5 SWARMS, MINI-BOSSES WITH 3.5x HP MATERIALIZE.</span></div>
+                        <div className="manual-entry"><span className="entry-label cyan">GHOST PACKETS:</span><span className="entry-content">INVISIBLE ON THE GRID SENSOR. REVEALED BY FROST RAY OR TESLA RADIUS.</span></div>
+                        <div className="manual-entry"><span className="entry-label cyan">BOSS CORE:</span><span className="entry-content">FRACTAL VIRUSES DEAL 10 UNITS OF DAMAGE TO KERNEL UPON BREACH.</span></div>
                       </div>
                     )}
                     {infoTab === 'LOGIC' && (
                       <div className="manual-text">
-                        <div className="manual-entry"><span className="entry-label green">DATA LINKS:</span><span className="entry-content">PLACING IDENTICAL TURRETS ADJACENT FORMS A SYNERGY LINK (+10% DMG).</span></div>
-                        <div className="manual-entry"><span className="entry-label green">OVERCLOCKING:</span><span className="entry-content">TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS (3 LEVELS).</span></div>
-                        <div className="manual-entry"><span className="entry-label green">INTEREST:</span><span className="entry-content">MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST PER SWARM.</span></div>
-                        <div className="manual-entry"><span className="entry-label green">KERNEL OVERDRIVE:</span><span className="entry-content">CORE SHOCKWAVE PURGES NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</span></div>
+                        <div className="manual-entry"><span className="entry-label cyan">DATA LINKS:</span><span className="entry-content">PLACING IDENTICAL TURRETS ADJACENT FORMS A SYNERGY LINK (+10% DMG).</span></div>
+                        <div className="manual-entry"><span className="entry-label cyan">OVERCLOCKING:</span><span className="entry-content">TAP ANY PLACED TURRET TO UPGRADE ITS CORE SYSTEMS (3 LEVELS).</span></div>
+                        <div className="manual-entry"><span className="entry-label cyan">INTEREST:</span><span className="entry-content">MAINTAIN A HIGH TOKEN BALANCE TO EARN 10% INTEREST PER SWARM.</span></div>
+                        <div className="manual-entry"><span className="entry-label cyan">KERNEL OVERDRIVE:</span><span className="entry-content">CORE SHOCKWAVE PURGES NEARBY VIRUSES WHEN INTEGRITY DROPS BELOW 5.</span></div>
                       </div>
                     )}
                     {infoTab === 'CREDITS' && (
                       <div className="manual-text">
                         <div className="manual-entry">
-                          <span className="entry-label green">SYSTEM OWNER:</span>
+                          <span className="entry-label cyan">SYSTEM OWNER:</span>
                           <span className="entry-content">CHRIS MCKINLEY</span>
                         </div>
                         <div className="manual-entry">
-                          <span className="entry-label green">ARCHITECT:</span>
+                          <span className="entry-label cyan">ARCHITECT:</span>
                           <span className="entry-content">CHRIS MCKINLEY</span>
                         </div>
                         <div className="manual-entry">
-                          <span className="entry-label green">BUILD ENGINE:</span>
+                          <span className="entry-label cyan">BUILD ENGINE:</span>
                           <span className="entry-content">SYNTAX V2.6.0 [ELITE]</span>
                         </div>
                         <div style={{marginTop: '30px', borderTop: '1px solid #222', paddingTop: '20px', color: '#666', fontSize: '0.7rem'}}>
