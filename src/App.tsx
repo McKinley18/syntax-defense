@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { GameContainer } from './game/GameContainer';
 import { GameStateManager, type GameMode, type WaveSummary } from './game/systems/GameStateManager';
-import { TowerType, TOWER_CONFIGS } from './game/entities/Tower';
+import { Tower, TowerType, TOWER_CONFIGS } from './game/entities/Tower';
 import { EnemyType } from './game/entities/Enemy';
 import { VISUAL_REGISTRY } from './game/VisualRegistry';
 import { AudioManager } from './game/systems/AudioManager';
@@ -68,6 +68,7 @@ function App() {
   const [wave, setWave] = useState(1);
   const [waveName, setWaveName] = useState("");
   const [selectedTurret, setSelectedTurret] = useState(0);
+  const [selectedTower, setSelectedTower] = useState<Tower | null>(null);
   const [game, setGame] = useState<GameContainer | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [isFastForward, setIsFastForward] = useState(false);
@@ -89,7 +90,7 @@ function App() {
   const [isTypingComplete, setIsTypingComplete] = useState(false);
 
   // INTERACTIVE TUTORIAL STATE
-  const [tutorialStep, setTutorialStep] = useState(0); // 0: Off, 1: Select MG, 2: Place MG, 3: Upgrade Intro, 4: Combat Intro, 5: Destruction, 6: Economy Brief
+  const [tutorialStep, setTutorialStep] = useState(0); 
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [showTutorialComplete, setShowTutorialComplete] = useState(false);
   const [showRadiusExplanation, setShowRadiusExplanation] = useState(false);
@@ -103,7 +104,7 @@ function App() {
   const dashboardCenterRef = useRef<HTMLDivElement>(null);
   const [tilePos, setTilePos] = useState({ x: 0, y: 0 });
 
-  // DYNAMIC TUTORIAL POSITIONING & CALCULATION
+  // DYNAMIC TUTORIAL POSITIONING
   useEffect(() => {
     if (!isTutorialActive) return;
 
@@ -202,12 +203,20 @@ function App() {
         if (isTutorialActive) {
           const center = game.mapManager.getTileCenter(game.app.renderer.events.pointer.global.x, game.app.renderer.events.pointer.global.y);
           placedTurretRef.current = { x: center.x, y: center.y };
-          setTutorialStep(3); // To Upgrade Intro
+          setTutorialStep(3); 
           setShowUpgradeBrief(true);
         }
       };
+
+      game.towerManager.onTowerSelected = (tower) => {
+        setSelectedTower(tower);
+        if (isTutorialActive && tutorialStep === 3 && tower) {
+          setTutorialStep(4); 
+          setShowCombatIntel(true);
+        }
+      };
     }
-  }, [game, isTutorialActive]);
+  }, [game, isTutorialActive, tutorialStep]);
 
   const [showWaveSummaryPopup, setShowWaveSummaryPopup] = useState(false);
 
@@ -329,6 +338,7 @@ function App() {
     setShowSettingsInGame(false);
     setShowEconomyBrief(false);
     setShowUpgradeBrief(false);
+    setSelectedTower(null);
   };
 
   const [showSettingsInGame, setShowSettingsInGame] = useState(false);
@@ -595,7 +605,13 @@ function App() {
               </div>
               <div 
                 style={{ position: 'absolute', top: tilePos.y, left: tilePos.x - TILE_SIZE/2, width: TILE_SIZE*2, height: TILE_SIZE*2, pointerEvents: 'auto', cursor: 'pointer' }}
-                onClick={() => { setTutorialStep(4); setShowCombatIntel(true); }}
+                onClick={() => { 
+                  if (game?.towerManager.towers[0]) {
+                    setSelectedTower(game.towerManager.towers[0]);
+                    setTutorialStep(4);
+                    setShowCombatIntel(true);
+                  }
+                }}
               ></div>
             </>
           )}
@@ -700,6 +716,62 @@ function App() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* --- UPGRADE OVERLAY --- */}
+      {selectedTower && (
+        <div className="pause-overlay-locked" style={{zIndex: 25000}}>
+          <div className="pause-content" style={{borderColor: 'var(--neon-cyan)', maxWidth: '320px'}}>
+            <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>NODE CONFIGURATION</div>
+            <h2 className="pause-title">{selectedTower.config.name} [LVL {selectedTower.level}]</h2>
+            
+            <div className="manual-text" style={{fontSize: '0.7rem', width: '100%'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '5px'}}>
+                <span>CURRENT DAMAGE:</span>
+                <span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.damage}</span>
+              </div>
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '15px'}}>
+                <span>ENGAGEMENT RANGE:</span>
+                <span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.range}u</span>
+              </div>
+              
+              {selectedTower.level < 3 ? (
+                <div style={{background: 'rgba(0, 255, 255, 0.05)', padding: '10px', border: '1px solid #222', marginBottom: '15px'}}>
+                  <div style={{color: 'var(--neon-green)', fontWeight: 900, marginBottom: '5px'}}>&gt; NEXT LEVEL OVERCLOCK:</div>
+                  <div style={{fontSize: '0.6rem'}}>+50% DMG // +15% RANGE</div>
+                  <div style={{marginTop: '8px', textAlign: 'right', fontWeight: 900}}>COST: {game?.towerManager.getUpgradeCost(selectedTower)}c</div>
+                </div>
+              ) : (
+                <div style={{color: 'var(--neon-blue)', textAlign: 'center', marginBottom: '15px'}}>MAX CORE LEVEL REACHED</div>
+              )}
+            </div>
+
+            <div className="pause-options grid-options">
+              <button 
+                className="blue-button" 
+                onClick={() => {
+                  if (game?.towerManager.tryUpgradeTower(selectedTower)) {
+                    setSelectedTower(null);
+                  }
+                }}
+                disabled={selectedTower.level >= 3 || !!(game && credits < game.towerManager.getUpgradeCost(selectedTower))}
+              >
+                OVERCLOCK
+              </button>
+              <button 
+                className="blue-button" 
+                style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}}
+                onClick={() => {
+                  game?.towerManager.sellTower(selectedTower);
+                  setSelectedTower(null);
+                }}
+              >
+                RECYCLE
+              </button>
+              <button className="blue-button" style={{gridColumn: 'span 2'}} onClick={() => setSelectedTower(null)}>CANCEL</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1090,6 +1162,62 @@ function App() {
             })}
           </div>
           <button className="massive-exec-button" style={{marginTop: '10px', padding: '10px', fontSize: '0.8rem'}} onClick={() => { setShowCombatIntel(false); executeWave(); }}>EXECUTE DEFENSE PROTOCOL</button>
+        </div>
+      )}
+
+      {/* --- UPGRADE OVERLAY --- */}
+      {selectedTower && (
+        <div className="pause-overlay-locked" style={{zIndex: 25000}}>
+          <div className="pause-content" style={{borderColor: 'var(--neon-cyan)', maxWidth: '320px'}}>
+            <div className="rank-tag" style={{color: 'var(--neon-cyan)', fontSize: '0.6rem'}}>NODE CONFIGURATION</div>
+            <h2 className="pause-title">{selectedTower.config.name} [LVL {selectedTower.level}]</h2>
+            
+            <div className="manual-text" style={{fontSize: '0.7rem', width: '100%'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '5px'}}>
+                <span>CURRENT DAMAGE:</span>
+                <span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.damage}</span>
+              </div>
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '15px'}}>
+                <span>ENGAGEMENT RANGE:</span>
+                <span style={{color: 'var(--neon-cyan)'}}>{selectedTower.config.range}u</span>
+              </div>
+              
+              {selectedTower.level < 3 ? (
+                <div style={{background: 'rgba(0, 255, 255, 0.05)', padding: '10px', border: '1px solid #222', marginBottom: '15px'}}>
+                  <div style={{color: 'var(--neon-green)', fontWeight: 900, marginBottom: '5px'}}>&gt; NEXT LEVEL OVERCLOCK:</div>
+                  <div style={{fontSize: '0.6rem'}}>+50% DMG // +15% RANGE</div>
+                  <div style={{marginTop: '8px', textAlign: 'right', fontWeight: 900}}>COST: {game?.towerManager.getUpgradeCost(selectedTower)}c</div>
+                </div>
+              ) : (
+                <div style={{color: 'var(--neon-blue)', textAlign: 'center', marginBottom: '15px'}}>MAX CORE LEVEL REACHED</div>
+              )}
+            </div>
+
+            <div className="pause-options grid-options">
+              <button 
+                className="blue-button" 
+                onClick={() => {
+                  if (game?.towerManager.tryUpgradeTower(selectedTower)) {
+                    setSelectedTower(null);
+                  }
+                }}
+                disabled={selectedTower.level >= 3 || !!(game && credits < game.towerManager.getUpgradeCost(selectedTower))}
+              >
+                OVERCLOCK
+              </button>
+              <button 
+                className="blue-button" 
+                style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}}
+                onClick={() => {
+                  game?.towerManager.sellTower(selectedTower);
+                  setSelectedTower(null);
+                }}
+              >
+                RECYCLE
+              </button>
+              <button className="blue-button" style={{gridColumn: 'span 2'}} onClick={() => setSelectedTower(null)}>CANCEL</button>
+            </div>
+          </div>
         </div>
       )}
 

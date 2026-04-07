@@ -10,6 +10,7 @@ export class TowerManager {
     public isPlacing: boolean = false;
     public selectedTurretType: TowerType = TowerType.PULSE_MG;
     public onTowerPlaced: (() => void) | null = null;
+    public onTowerSelected: ((tower: Tower | null) => void) | null = null; // ADDED THIS
     
     private previewGraphics: PIXI.Graphics;
     private previewTurret: PIXI.Container;
@@ -86,11 +87,54 @@ export class TowerManager {
                 }
             } else {
                 const tower = this.getTowerAt(worldPos.x, worldPos.y);
-                if (tower) {
-                    this.tryUpgradeTower(tower);
+                if (this.onTowerSelected) {
+                    this.onTowerSelected(tower); // SIGNAL UI
                 }
             }
         });
+    }
+
+    public getUpgradeCost(tower: Tower): number {
+        const nextLevel = tower.level + 1;
+        if (nextLevel > 3) return 0;
+        return Math.floor(this.getAdjustedCost(tower.type) * (tower.level === 1 ? 1.5 : 2.0));
+    }
+
+    public tryUpgradeTower(tower: Tower): boolean {
+        if (tower.level >= 3) return false;
+        const upgradeCost = this.getUpgradeCost(tower);
+        
+        if (GameStateManager.getInstance().credits >= upgradeCost) {
+            if (tower.upgrade()) {
+                AudioManager.getInstance().playUiClick();
+                GameStateManager.getInstance().addCredits(-upgradeCost);
+                this.game.particleManager.spawnFloatingText(tower.container.x, tower.container.y - 20, "UPGRADED!");
+                this.recalculateLinks();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public sellTower(tower: Tower) {
+        const baseCost = TOWER_CONFIGS[tower.type].cost;
+        let towerValue = baseCost;
+        if (tower.level >= 2) towerValue += Math.floor(baseCost * 1.5);
+        if (tower.level >= 3) towerValue += Math.floor(baseCost * 2.0);
+        
+        const state = GameStateManager.getInstance();
+        if (state.gameMode === 'HARDCORE') towerValue = Math.floor(towerValue * 1.5);
+        if (state.integrity < 10 && state.gameMode !== 'SUDDEN_DEATH') towerValue = Math.floor(towerValue * 0.85);
+        
+        const refund = Math.floor(towerValue * 0.75);
+        state.addCredits(refund, 'refund');
+        AudioManager.getInstance().playUiClick();
+        
+        this.game.towerLayer.removeChild(tower.container);
+        const idx = this.towers.indexOf(tower);
+        if (idx > -1) this.towers.splice(idx, 1);
+        tower.container.destroy({ children: true });
+        this.recalculateLinks();
     }
 
     private getAdjustedCost(type: TowerType): number {
@@ -102,19 +146,6 @@ export class TowerManager {
         if (state.gameMode === 'HARDCORE') cost = Math.floor(cost * 1.5);
         if (state.integrity < 10 && state.gameMode !== 'SUDDEN_DEATH') cost = Math.floor(cost * 0.85);
         return cost;
-    }
-
-    private tryUpgradeTower(tower: Tower) {
-        if (tower.level >= 3) return;
-        const upgradeCost = Math.floor(this.getAdjustedCost(tower.type) * (tower.level === 1 ? 1.5 : 2.0));
-        if (GameStateManager.getInstance().credits >= upgradeCost) {
-            if (tower.upgrade()) {
-                AudioManager.getInstance().playUiClick();
-                GameStateManager.getInstance().addCredits(-upgradeCost);
-                this.game.particleManager.spawnFloatingText(tower.container.x, tower.container.y - 20, "UPGRADED!");
-                this.recalculateLinks();
-            }
-        }
     }
 
     public placeTower(type: TowerType, x: number, y: number) {
