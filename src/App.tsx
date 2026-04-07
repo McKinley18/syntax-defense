@@ -672,16 +672,31 @@ function App() {
       {screen === 'MENU' && (
         <div className="main-menu ui-layer">
           <div className="menu-content-centered">
-            <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''} ${isFlickering ? 'flicker-active' : ''}`}>SYNTAX<br/>DEFENSE</h1>
-            {isDistorted ? ( <div className="system-error-msg">SYSTEM ERROR</div> ) : (
-              <div className="menu-options-grid compact">
-                <button className="cyan-menu-btn primary-btn" onClick={() => { wakeAudioSystem(); startNewGame('STANDARD'); }}>INITIALIZE STANDARD</button>
-                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); setIsTypingComplete(false); setScreen('MODES'); }}>ADVANCED PROTOCOLS</button>
-                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); loadGame(); }}>RESTORE SESSION</button>
-                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); openArchive('LORE'); }}>SYSTEM INFO</button>
-                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
-              </div>
+            {isDistorted ? (
+              <h1 className="system-error-msg" style={{fontSize: '3rem', margin: '0 0 20px 0'}}>SYSTEM ERROR</h1>
+            ) : (
+              <h1 className={`menu-title-static ${isFlickering ? 'flicker-active' : ''}`}>SYNTAX<br/>DEFENSE</h1>
             )}
+            
+            <div className="menu-options-grid compact">
+              {isDistorted ? (
+                <>
+                  <button className="cyan-menu-btn" style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}} onClick={() => { wakeAudioSystem(); startNewGame('STANDARD'); }}>BREACH KERNEL</button>
+                  <button className="cyan-menu-btn" style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}} onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); setIsTypingComplete(false); setScreen('MODES'); }}>CORRUPT DATA</button>
+                  <button className="cyan-menu-btn" style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}} onClick={() => { wakeAudioSystem(); loadGame(); }}>BYPASS SECURITY</button>
+                  <button className="cyan-menu-btn" style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}} onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); openArchive('LORE'); }}>EXTRACT LOGS</button>
+                  <button className="cyan-menu-btn primary-btn" style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)', gridColumn: 'span 2'}} onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>OVERWRITE MEMORY</button>
+                </>
+              ) : (
+                <>
+                  <button className="cyan-menu-btn primary-btn" onClick={() => { wakeAudioSystem(); startNewGame('STANDARD'); }}>INITIALIZE STANDARD</button>
+                  <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); setIsTypingComplete(false); setScreen('MODES'); }}>ADVANCED PROTOCOLS</button>
+                  <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); loadGame(); }}>RESTORE SESSION</button>
+                  <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); openArchive('LORE'); }}>SYSTEM INFO</button>
+                  <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
+                </>
+              )}
+            </div>
             <div className="rank-tag">RANK: {rank} [{currentXP.toLocaleString()} / {nextRankXP.toLocaleString()} XP]</div>
           </div>
         </div>
