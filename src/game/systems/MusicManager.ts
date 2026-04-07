@@ -143,7 +143,7 @@ export class MusicManager {
     }
 
     private triggerPulse(start: number, end: number, dur: number, type: OscillatorType, vol: number, time: number) {
-        if (!this.ctx) return;
+        if (!this.ctx || this.ctx.state !== 'running') return;
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
         osc.type = type;
@@ -158,7 +158,7 @@ export class MusicManager {
     }
 
     private triggerNoise(vol: number, dur: number, time: number) {
-        if (!this.ctx) return;
+        if (!this.ctx || this.ctx.state !== 'running') return;
         const bufferSize = this.ctx.sampleRate * dur;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);

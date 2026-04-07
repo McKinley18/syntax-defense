@@ -25,6 +25,10 @@ export class AudioManager {
         return AudioManager.instance;
     }
 
+    public isReady(): boolean {
+        return this.ctx !== null && this.ctx.state === 'running';
+    }
+
     public init() {
         if (this.ctx) return;
         try {

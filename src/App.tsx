@@ -103,6 +103,7 @@ function App() {
   const [isVictorious, setIsVictorious] = useState(false);
   const [resetStatus, setResetStatus] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
 
   // INTERACTIVE TUTORIAL STATE
   const [tutorialStep, setTutorialStep] = useState(0); 
@@ -119,6 +120,14 @@ function App() {
   const placedTurretRef = useRef<{x: number, y: number} | null>(null);
   const dashboardCenterRef = useRef<HTMLDivElement>(null);
   const [tilePos, setTilePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    // POLL AUDIO STATUS
+    const itv = setInterval(() => {
+      setAudioReady(AudioManager.getInstance().isReady());
+    }, 100);
+    return () => clearInterval(itv);
+  }, []);
 
   useEffect(() => {
     // AUTO-INIT AUDIO ON MENU
@@ -457,6 +466,16 @@ function App() {
 
   return (
     <div className="game-wrapper">
+      {!audioReady && (
+        <div className="audio-splash ui-layer" onClick={wakeAudioSystem}>
+          <div className="menu-content-centered">
+            <h1 className="menu-title-static" style={{fontSize: '3rem', opacity: 0.8}}>SYSTEM READY</h1>
+            <div className="manual-text" style={{fontSize: '1rem', color: 'var(--neon-blue)', animation: 'error-flash 1s infinite'}}>
+              &gt; CLICK TO INITIALIZE MAINFRAME
+            </div>
+          </div>
+        </div>
+      )}
       <div id="game-container"></div>
 
       <div className="orientation-warning">
