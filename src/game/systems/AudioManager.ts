@@ -88,14 +88,14 @@ export class AudioManager {
     public playFireFrost() { // FROST
         this.playProcedural(800, 1200, 0.2, 'sine', 0.08);
     }
+    public playFireBlast() { // BLAST
+        this.playProcedural(200, 60, 0.25, 'sawtooth', 0.12);
+    }
     public playFireTesla() { // TESLA
         this.playProcedural(1200, 1500, 0.1, 'sawtooth', 0.07);
     }
     public playFireRail() { // RAIL
         this.playProcedural(2500, 100, 0.2, 'square', 0.12);
-    }
-    public playFireBuffer() { // BUFFER (Passive hum)
-        this.playProcedural(200, 210, 0.1, 'triangle', 0.05);
     }
 
     private playProcedural(start: number, end: number, dur: number, type: OscillatorType, vol: number) {

@@ -5,6 +5,7 @@ import { Tower, TowerType, TOWER_CONFIGS } from './game/entities/Tower';
 import { EnemyType } from './game/entities/Enemy';
 import { VISUAL_REGISTRY } from './game/VisualRegistry';
 import { AudioManager } from './game/systems/AudioManager';
+import { MusicManager } from './game/systems/MusicManager';
 import { TILE_SIZE, MapManager } from './game/systems/MapManager';
 import './App.css';
 
@@ -650,9 +651,9 @@ function App() {
       )}
 
       {screen === 'MENU' && (
-        <div className="main-menu ui-layer" style={{paddingLeft: '40px'}}>
-          <div className="menu-content-centered" style={{alignItems: 'flex-start'}}>
-            <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''} ${isFlickering ? 'flicker-active' : ''}`} style={{textAlign: 'left', paddingLeft: '0'}}>SYNTAX<br/>DEFENSE</h1>
+        <div className="main-menu ui-layer">
+          <div className="menu-content-centered">
+            <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''} ${isFlickering ? 'flicker-active' : ''}`}>SYNTAX<br/>DEFENSE</h1>
             {isDistorted ? ( <div className="system-error-msg">SYSTEM ERROR</div> ) : (
               <div className="menu-options-grid compact">
                 <button className="cyan-menu-btn primary-btn" onClick={() => { wakeAudioSystem(); startNewGame('STANDARD'); }}>INITIALIZE STANDARD</button>
