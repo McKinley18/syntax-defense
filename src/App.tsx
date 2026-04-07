@@ -434,6 +434,13 @@ function App() {
   return (
     <div className="game-wrapper">
       <div id="game-container"></div>
+
+      <div className="orientation-warning">
+        <h2>LANDSCAPE MODE REQUIRED</h2>
+        <p>SYSTEM ARCHITECTURE IS OPTIMIZED FOR HORIZONTAL ORIENTATION.</p>
+        <p>PLEASE ROTATE YOUR DEVICE TO COMMENCE DEFENSE.</p>
+        <div className="rotate-icon">📱</div>
+      </div>
       
       {showCssGrid && (
         <div className={`grid-background ${showGridEffects && isDistorted ? 'distorted' : ''} ${showGridEffects && isFlickering ? 'flicker-active' : ''}`}>

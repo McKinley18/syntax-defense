@@ -336,6 +336,34 @@ body::after {
 .stats-label { font-size: 0.6rem; color: #888; font-weight: bold; text-transform: uppercase; }
 .stats-value { font-size: 1.1rem; font-weight: 900; color: var(--neon-cyan); }
 
+/* 8. ORIENTATION WARNING */
+.orientation-warning {
+  display: none;
+  position: fixed; inset: 0;
+  background: var(--bg-deep);
+  z-index: 9999999;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: var(--neon-cyan);
+  text-align: center;
+  padding: 40px;
+}
+
+@media (orientation: portrait) {
+  .orientation-warning { display: flex; }
+}
+
+.orientation-warning h2 { font-size: 1.5rem; margin-bottom: 20px; color: var(--neon-red); }
+.orientation-warning p { font-size: 0.9rem; line-height: 1.5; font-weight: 900; }
+.rotate-icon { font-size: 4rem; margin-top: 30px; animation: rotate-phone 2s infinite ease-in-out; }
+
+@keyframes rotate-phone {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
 /* TUTORIAL POINTER */
 .tutorial-highlight {
   position: absolute;
