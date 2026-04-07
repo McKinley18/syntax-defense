@@ -143,7 +143,30 @@ export class AudioManager {
 
     public playGlitchBuzz() {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
-        this.playProcedural(2000, 100, 0.1, 'square', 0.05);
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(60, time); // LOW ELECTRICAL HUM
+        // Add fast vibrato for "buzz"
+        const mod = this.ctx.createOscillator();
+        const modGain = this.ctx.createGain();
+        mod.frequency.value = 30;
+        modGain.gain.value = 20;
+        mod.connect(modGain);
+        modGain.connect(osc.frequency);
+        
+        gain.gain.setValueAtTime(0.03, time); // FAINT
+        gain.gain.linearRampToValueAtTime(0, time + 0.15);
+        
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        
+        mod.start(time);
+        osc.start(time);
+        mod.stop(time + 0.15);
+        osc.stop(time + 0.15);
     }
 
     public toggleSfx() {

@@ -19,7 +19,7 @@ export class MusicManager {
     public init(ctx: AudioContext, masterGain: GainNode) {
         this.ctx = ctx;
         this.masterGain = ctx.createGain();
-        this.masterGain.gain.value = 0.2; 
+        this.masterGain.gain.value = 0.22; 
         this.masterGain.connect(masterGain);
     }
 
@@ -45,37 +45,40 @@ export class MusicManager {
     }
 
     private advanceNote() {
-        const tempo = 110.0;
-        const secondsPerBeat = 60.0 / tempo / 2; // 8th notes
+        const tempo = 128.0; // TECHNO TEMPO
+        const secondsPerBeat = 60.0 / tempo / 4; // 16th notes for techno drive
         this.nextNoteTime += secondsPerBeat;
-        this.beatIndex = (this.beatIndex + 1) % 16;
+        this.beatIndex = (this.beatIndex + 1) % 32; // Longer loop
     }
 
     private playBeat(index: number, time: number) {
         if (!this.ctx) return;
 
-        // 1. VINTAGE DIGITAL KICK (Steady pulse)
+        // 1. DRIVING TECHNO KICK (On quarters)
         if (index % 4 === 0) {
-            this.triggerPulse(80, 40, 0.1, 'square', 0.15, time);
+            this.triggerPulse(150, 40, 0.12, 'sine', 0.4, time);
         }
 
-        // 2. PC SPEAKER CLICK (On 2 and 4)
-        if (index === 4 || index === 12) {
-            this.triggerPulse(1200, 100, 0.01, 'square', 0.05, time);
+        // 2. TECHNO PERCUSSION (Syncopated noise)
+        if (index % 4 === 2) { // "Clap" on 2 and 4
+            this.triggerNoise(0.08, 0.05, time);
+        }
+        if (index % 2 === 1) { // 16th note hats
+            this.triggerPulse(8000, 4000, 0.02, 'square', 0.02, time);
         }
 
-        // 3. 8-BIT BASS LINE (A minor pattern)
-        const bassNotes = [110, 110, 130, 110, 146, 110, 130, 123]; 
+        // 3. HYPNOTIC BASS (Driving 8ths)
+        const bassNotes = [55, 55, 55, 65, 55, 55, 73, 65]; 
         if (index % 2 === 0) {
             const freq = bassNotes[(index / 2) % bassNotes.length];
-            this.triggerPulse(freq, freq, 0.15, 'square', 0.04, time);
+            this.triggerPulse(freq, freq, 0.1, 'square', 0.06, time);
         }
 
-        // 4. DIGITAL ARPEGGIO (The "Computer" sound)
-        const arp = [440, 523, 659, 783, 880, 783, 659, 523];
-        if (index % 1 === 0) { // 16th notes
-            const freq = arp[index % arp.length];
-            this.triggerPulse(freq, freq, 0.05, 'square', 0.02, time);
+        // 4. TECHNO ARPEGGIO (Fast 16th notes)
+        const arp = [220, 0, 330, 0, 440, 0, 330, 550, 0, 440, 330, 0, 220, 330, 440, 660];
+        const freq = arp[index % arp.length];
+        if (freq > 0) {
+            this.triggerPulse(freq, freq * 1.01, 0.04, 'square', 0.03, time);
         }
     }
 
@@ -83,21 +86,35 @@ export class MusicManager {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
-        
-        // Emulate pulse wave if possible, else square
-        osc.type = type === 'pulse' as any ? 'square' : type;
-        
+        osc.type = type;
         osc.frequency.setValueAtTime(start, time);
         if (start !== end) {
             osc.frequency.exponentialRampToValueAtTime(end, time + dur);
         }
-        
         g.gain.setValueAtTime(vol, time);
         g.gain.exponentialRampToValueAtTime(0.001, time + dur);
-        
         osc.connect(g);
         g.connect(this.masterGain!);
         osc.start(time);
         osc.stop(time + dur);
+    }
+
+    private triggerNoise(vol: number, dur: number, time: number) {
+        if (!this.ctx) return;
+        const bufferSize = this.ctx.sampleRate * dur;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(vol, time);
+        g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        noise.connect(g);
+        g.connect(this.masterGain!);
+        noise.start(time);
+        noise.stop(time + dur);
     }
 }
