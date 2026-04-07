@@ -111,11 +111,14 @@ body::after {
 }
 .grid-glows { position: absolute; inset: 0; overflow: hidden; }
 .grid-lines, .grid-glows {
-  -webkit-mask-image: radial-gradient(circle at 50% 30%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.1) 90%);
-  mask-image: radial-gradient(circle at 50% 30%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.1) 90%);
+  -webkit-mask-image: radial-gradient(circle at 50% 30%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.15) 85%);
+  mask-image: radial-gradient(circle at 50% 30%, rgba(0,0,0,1) 0%, rgba(0,0,0,0.15) 85%);
 }
 
-.glow-bit { position: absolute; width: 4px; height: 4px; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); border-radius: 50%; opacity: 0; }
+.glow-bit { 
+  position: absolute; width: 4px; height: 4px; background: var(--neon-cyan); 
+  box-shadow: 0 0 10px var(--neon-cyan); border-radius: 50%; opacity: 0; 
+}
 .glow-bit::after { content: ''; position: absolute; opacity: 0.8; }
 .comet-right::after { width: 80px; height: 2px; top: 1px; left: -80px; background: linear-gradient(to right, transparent, var(--neon-cyan)); }
 .comet-left::after  { width: 80px; height: 2px; left: 4px;   top: 1px; background: linear-gradient(to left, transparent, var(--neon-cyan)); }
