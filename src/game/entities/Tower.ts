@@ -176,6 +176,7 @@ export class Tower {
         else if (this.type === TowerType.BLAST_NOVA) am.playFireBlast();
         else if (this.type === TowerType.RAILGUN) am.playFireRail();
         else if (this.type === TowerType.TESLA_LINK) am.playFireTesla();
+        else if (this.type === TowerType.ARCHITECT_CORE) am.playFireBuffer();
 
         if (this.type === TowerType.TESLA_LINK) {
             this.chainFire(target, allEnemies, totalDmg);

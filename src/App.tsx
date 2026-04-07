@@ -85,6 +85,8 @@ function App() {
   const [isInitializing, setIsInitializing] = useState(false);
   const [sfxMuted, setSfxMuted] = useState(AudioManager.getInstance().isSfxMuted);
   const [ambientMuted, setAmbientMuted] = useState(AudioManager.getInstance().isAmbientMuted);
+  const [sfxVol, setSfxVol] = useState(AudioManager.getInstance().sfxVolume);
+  const [musicVol, setMusicVol] = useState(AudioManager.getInstance().musicVolume);
   const [isDistorted, setIsDistorted] = useState(false);
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
@@ -115,6 +117,13 @@ function App() {
   const placedTurretRef = useRef<{x: number, y: number} | null>(null);
   const dashboardCenterRef = useRef<HTMLDivElement>(null);
   const [tilePos, setTilePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    // AUTO-INIT AUDIO ON MENU
+    if (screen === 'MENU') {
+      AudioManager.getInstance().init();
+    }
+  }, [screen]);
 
   useEffect(() => {
     if (!isTutorialActive) return;
@@ -352,6 +361,18 @@ function App() {
     AudioManager.getInstance().playUiClick();
   };
 
+  const handleSfxVol = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setSfxVol(val);
+    AudioManager.getInstance().setSfxVolume(val);
+  };
+
+  const handleMusicVol = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setMusicVol(val);
+    AudioManager.getInstance().setMusicVolume(val);
+  };
+
   const selectTurret = (type: number) => {
     if (isTutorialActive && tutorialStep === 1 && type !== 0) return; 
     AudioManager.getInstance().playUiClick();
@@ -380,20 +401,22 @@ function App() {
   }, [screen, isPaused, wave]);
 
   const executeWave = () => {
+    AudioManager.getInstance().playUiClick();
     if (isTutorialActive && tutorialStep === 5) {
        setTutorialStep(6);
     }
-    AudioManager.getInstance().playUiClick();
     game?.waveManager.startWave();
   };
 
   const repairKernel = () => {
+    AudioManager.getInstance().playUiClick();
     if (GameStateManager.getInstance().repairKernel()) {
       AudioManager.getInstance().playPlacement();
     }
   };
 
   const useDataPurge = () => {
+    AudioManager.getInstance().playUiClick();
     if (credits >= 1000 && game?.waveManager) {
       AudioManager.getInstance().playPurge();
       GameStateManager.getInstance().addCredits(-1000, 'spend');
@@ -464,6 +487,7 @@ function App() {
               </div>
               {isTypingComplete && (
                 <button className="massive-exec-button" onClick={() => {
+                  AudioManager.getInstance().playUiClick();
                   setShowTutorial(false);
                   setIsTypingComplete(false);
                   setTutorialStep(1); 
@@ -494,7 +518,7 @@ function App() {
                       <span style={{color: 'var(--neon-red)'}}>RAILGUN:</span> <span>STEALTH REVEAL (LVL 15)</span>
                     </div>
                   </div>
-                  <button className="blue-button" onClick={() => { setShowRadiusExplanation(false); setTutorialStep(2); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowRadiusExplanation(false); setTutorialStep(2); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
                </div>
             </div>
           )}
@@ -515,7 +539,7 @@ function App() {
                     <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '10px'}}>&gt; TAPPING A PLACED NODE OPENS THE UPGRADE INTERFACE.</p>
                     <p style={{margin: '8px 0'}}>OVERCLOCKING INCREASES DAMAGE AND ENGAGEMENT RADIUS. EACH NODE HAS 3 PROGRESSION LEVELS.</p>
                   </div>
-                  <button className="blue-button" onClick={() => { setShowUpgradeBrief(false); setTutorialStep(3); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowUpgradeBrief(false); setTutorialStep(3); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
                </div>
             </div>
           )}
@@ -523,7 +547,7 @@ function App() {
           {tutorialStep === 3 && !showUpgradeBrief && (
             <>
               <div className="tutorial-pointer" style={{ top: tilePos.y-10, left: tilePos.x, width: '150px', pointerEvents: 'none' }}>TAP TO UPGRADE</div>
-              <div style={{ position: 'absolute', top: tilePos.y, left: tilePos.x-TILE_SIZE/2, width: TILE_SIZE*2, height: TILE_SIZE*2, pointerEvents: 'auto', cursor: 'pointer' }} onClick={() => { if (game?.towerManager.towers[0]) { setSelectedTower(game.towerManager.towers[0]); setTutorialStep(4); setShowGlitchBrief(true); } }}></div>
+              <div style={{ position: 'absolute', top: tilePos.y, left: tilePos.x-TILE_SIZE/2, width: TILE_SIZE*2, height: TILE_SIZE*2, pointerEvents: 'auto', cursor: 'pointer' }} onClick={() => { if (game?.towerManager.towers[0]) { AudioManager.getInstance().playUiClick(); setSelectedTower(game.towerManager.towers[0]); setTutorialStep(4); setShowGlitchBrief(true); } }}></div>
             </>
           )}
 
@@ -536,7 +560,7 @@ function App() {
                     <p style={{margin: '4px 0', borderBottom: '1px solid #333', paddingBottom: '10px'}}>&gt; THE SYSTEM MAY EXPERIENCE RANDOM DATA INSTABILITIES.</p>
                     <p style={{margin: '8px 0'}}>GLITCHES LIKE 'LAG SPIKES' SLOW ALL UNITS, WHILE 'SYSTEM DRAINS' TEMPORARILY DISABLE INTEREST ACCRUAL.</p>
                   </div>
-                  <button className="blue-button" onClick={() => { setShowGlitchBrief(false); setTutorialStep(5); setShowCombatIntel(true); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
+                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowGlitchBrief(false); setTutorialStep(5); setShowCombatIntel(true); }} style={{marginTop: '20px', padding: '10px 20px', width: '100%'}}>CONTINUE</button>
                </div>
             </div>
           )}
@@ -565,7 +589,7 @@ function App() {
                             );
                           })}
                         </div>
-                        <button className="massive-exec-button" style={{marginTop: '15px'}} onClick={() => { setShowCombatIntel(false); setIsTypingComplete(false); setShowTutorialComplete(false); executeWave(); }}>COMMENCE DEFENSE</button>
+                        <button className="massive-exec-button" style={{marginTop: '15px'}} onClick={() => { executeWave(); setShowCombatIntel(false); setIsTypingComplete(false); setShowTutorialComplete(false); }}>COMMENCE DEFENSE</button>
                       </div>
                     )}
                   </>
@@ -583,7 +607,7 @@ function App() {
                   <>
                     <div style={{fontSize: '0.75rem', color: '#00ff66', fontWeight: 900, marginBottom: '15px'}}>&gt; <TerminalText key="economy-warning-text" text="USE TOKENS WISELY: VIRAL INTENSITY INCREASES EXPONENTIALLY." delay={200} onComplete={() => setShowTutorialComplete(true)} /></div>
                     {showTutorialComplete && (
-                      <button className="massive-exec-button" onClick={() => { setShowEconomyBrief(false); setIsTutorialActive(false); setShowTutorialComplete(false); localStorage.setItem('syntax_tutorial_done', 'true'); GameStateManager.getInstance().resetGame('STANDARD'); game?.waveManager.prepareWave(false); setShowWaveSummaryPopup(false); setShowCombatIntel(true); }}>CONTINUE</button>
+                      <button className="massive-exec-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowEconomyBrief(false); setIsTutorialActive(false); setShowTutorialComplete(false); localStorage.setItem('syntax_tutorial_done', 'true'); GameStateManager.getInstance().resetGame('STANDARD'); game?.waveManager.prepareWave(false); setShowWaveSummaryPopup(false); setShowCombatIntel(true); }}>CONTINUE</button>
                     )}
                   </>
                 )}
@@ -612,23 +636,23 @@ function App() {
             <div className="pause-options grid-options">
               <button className="blue-button" onClick={() => { if (game?.towerManager.tryUpgradeTower(selectedTower)) setSelectedTower(null); }} disabled={selectedTower.level >= 3 || !!(game && credits < game.towerManager.getUpgradeCost(selectedTower))}>OVERCLOCK</button>
               <button className="blue-button" style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}} onClick={() => { game?.towerManager.sellTower(selectedTower); setSelectedTower(null); }}>RECYCLE</button>
-              <button className="blue-button" style={{gridColumn: 'span 2'}} onClick={() => setSelectedTower(null)}>CANCEL</button>
+              <button className="blue-button" style={{gridColumn: 'span 2'}} onClick={() => { AudioManager.getInstance().playUiClick(); setSelectedTower(null); }}>CANCEL</button>
             </div>
           </div>
         </div>
       )}
 
       {screen === 'MENU' && (
-        <div className="main-menu ui-layer">
-          <div className="menu-content-centered">
-            <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''} ${isFlickering ? 'flicker-active' : ''}`}>SYNTAX<br/>DEFENSE</h1>
+        <div className="main-menu ui-layer" style={{paddingLeft: '40px'}}>
+          <div className="menu-content-centered" style={{alignItems: 'flex-start'}}>
+            <h1 className={`menu-title-static ${isDistorted ? 'glitch-active' : ''} ${isFlickering ? 'flicker-active' : ''}`} style={{textAlign: 'left', paddingLeft: '0'}}>SYNTAX<br/>DEFENSE</h1>
             {isDistorted ? ( <div className="system-error-msg">SYSTEM ERROR</div> ) : (
               <div className="menu-options-grid compact">
                 <button className="cyan-menu-btn primary-btn" onClick={() => { wakeAudioSystem(); startNewGame('STANDARD'); }}>INITIALIZE STANDARD</button>
-                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setIsTypingComplete(false); setScreen('MODES'); }}>ADVANCED PROTOCOLS</button>
+                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); setIsTypingComplete(false); setScreen('MODES'); }}>ADVANCED PROTOCOLS</button>
                 <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); loadGame(); }}>RESTORE SESSION</button>
-                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); openArchive('LORE'); }}>SYSTEM INFO</button>
-                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
+                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); openArchive('LORE'); }}>SYSTEM INFO</button>
+                <button className="cyan-menu-btn" onClick={() => { wakeAudioSystem(); AudioManager.getInstance().playUiClick(); setIsTypingComplete(false); setScreen('SETTINGS'); }}>SYSTEM SETTINGS</button>
               </div>
             )}
             <div className="rank-tag">RANK: {rank} [{currentXP.toLocaleString()} / {nextRankXP.toLocaleString()} XP]</div>
@@ -647,7 +671,7 @@ function App() {
                 <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('ENDLESS')}><div className="mode-title">ENDLESS LOOP</div><div className="mode-desc">NO LEVEL CAP. VIRAL SIGNATURES GAIN EXPONENTIAL HP MULTIPLIERS.</div></button>
                 <button className="cyan-menu-btn mode-card" onClick={() => startNewGame('ECO_CHALLENGE')}><div className="mode-title">ECO CHALLENGE</div><div className="mode-desc">NO DELETION BOUNTIES. ALL INCOME FROM 10% INTEREST SYSTEM.</div></button>
               </div>
-              <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>RETURN TO ROOT</button>
+              <button className="cyan-menu-btn back-btn" onClick={() => { AudioManager.getInstance().playUiClick(); setScreen('MENU'); setIsTypingComplete(false); }}>RETURN TO ROOT</button>
             </>
           )}
         </div>
@@ -664,13 +688,17 @@ function App() {
                     <div className="manual-text">
                       <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px'}}>AUDIO CHANNELS</h3>
                       <div style={{display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px'}}>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
-                          <div><div style={{color: '#fff', fontWeight: 900}}>SFX ENGINE</div><div style={{fontSize: '0.6rem', color: '#888'}}>UI Beeps, Tactical SFX, Breaches</div></div>
-                          <button className="blue-button" onClick={toggleSfx} style={{width: '120px'}}>{sfxMuted ? 'DISABLED' : 'ENABLED'}</button>
+                        <div className="manual-text" style={{background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}><span>SFX VOLUME</span><span>{(sfxVol * 100).toFixed(0)}%</span></div>
+                          <input type="range" min="0" max="1" step="0.05" value={sfxVol} onChange={handleSfxVol} style={{width: '100%'}} />
                         </div>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
-                          <div><div style={{color: '#fff', fontWeight: 900}}>MUSIC ENGINE</div><div style={{fontSize: '0.6rem', color: '#888'}}>Rhythmic Cyber-Soundtrack</div></div>
-                          <button className="blue-button" onClick={toggleAmbient} style={{width: '120px'}}>{ambientMuted ? 'DISABLED' : 'ENABLED'}</button>
+                        <div className="manual-text" style={{background: 'rgba(0,102,255,0.05)', padding: '15px', border: '1px solid #222'}}>
+                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}><span>MUSIC VOLUME</span><span>{(musicVol * 100).toFixed(0)}%</span></div>
+                          <input type="range" min="0" max="1" step="0.05" value={musicVol} onChange={handleMusicVol} style={{width: '100%'}} />
+                        </div>
+                        <div style={{display: 'flex', gap: '10px'}}>
+                          <button className="blue-button" onClick={toggleSfx} style={{flex: 1}}>{sfxMuted ? 'ENABLE SFX' : 'DISABLE SFX'}</button>
+                          <button className="blue-button" onClick={toggleAmbient} style={{flex: 1}}>{ambientMuted ? 'ENABLE MUSIC' : 'DISABLE MUSIC'}</button>
                         </div>
                       </div>
                       <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>SYSTEM DIAGNOSTICS</h3>
@@ -681,16 +709,13 @@ function App() {
                         <div>LIFETIME PURGES: {lifetimeKills}</div>
                         <div>RECORD WAVE: {highestWave}</div>
                       </div>
-                      <h3 style={{color: 'var(--neon-blue)', borderBottom: '1px solid #333', paddingBottom: '10px', marginTop: '40px'}}>DEBUG TOOLS</h3>
-                      <div style={{marginTop: '20px', display: 'flex', alignItems: 'center', gap: '15px'}}>
-                        <button className="blue-button" onClick={() => { localStorage.removeItem('syntax_tutorial_done'); setResetStatus("TUTORIAL DATA PURGED. START NEW GAME TO RE-INITIALIZE."); setTimeout(() => setResetStatus(""), 4000); }} style={{width: '200px', borderColor: 'var(--neon-cyan)'}}>RESET TUTORIAL</button>
-                        {resetStatus && <span style={{color: '#00ff66', fontSize: '0.65rem', fontWeight: 900}}>&gt; {resetStatus}</span>}
-                      </div>
+                      <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); localStorage.removeItem('syntax_tutorial_done'); setResetStatus("TUTORIAL DATA PURGED. START NEW GAME TO RE-INITIALIZE."); setTimeout(() => setResetStatus(""), 4000); }} style={{width: '200px', borderColor: 'var(--neon-cyan)', marginTop: '20px'}}>RESET TUTORIAL</button>
+                      {resetStatus && <div style={{color: '#00ff66', fontSize: '0.65rem', fontWeight: 900, marginTop: '10px'}}>&gt; {resetStatus}</div>}
                     </div>
                   </div>
                 </div>
               </div>
-              <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>RETURN TO ROOT</button>
+              <button className="cyan-menu-btn back-btn" onClick={() => { AudioManager.getInstance().playUiClick(); setScreen('MENU'); setIsTypingComplete(false); }}>RETURN TO ROOT</button>
             </>
           )}
         </div>
@@ -706,18 +731,18 @@ function App() {
                   {archiveCategory === 'NONE' ? (
                     <div style={{display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%'}}>
                       <div className="menu-options-grid" style={{width: '100%', maxWidth: '600px'}}>
-                        <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('TACTICAL'); setInfoTab('VIRAL DB'); }}>TACTICAL DATABASE</button>
-                        <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('HANDBOOK'); setInfoTab('LOGIC'); }}>SYSTEM HANDBOOK</button>
-                        <button className="cyan-menu-btn primary-btn" onClick={() => { setArchiveCategory('MANIFEST'); setInfoTab('LORE'); }}>MAINFRAME MANIFEST</button>
+                        <button className="cyan-menu-btn" onClick={() => { AudioManager.getInstance().playUiClick(); setArchiveCategory('TACTICAL'); setInfoTab('VIRAL DB'); }}>TACTICAL DATABASE</button>
+                        <button className="cyan-menu-btn" onClick={() => { AudioManager.getInstance().playUiClick(); setArchiveCategory('HANDBOOK'); setInfoTab('LOGIC'); }}>SYSTEM HANDBOOK</button>
+                        <button className="cyan-menu-btn primary-btn" onClick={() => { AudioManager.getInstance().playUiClick(); setArchiveCategory('MANIFEST'); setInfoTab('LORE'); }}>MAINFRAME MANIFEST</button>
                       </div>
                     </div>
                   ) : (
                     <>
                       <div className="info-tabs">
-                        {archiveCategory === 'TACTICAL' && ( <><button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL DB')}>VIRUSES</button><button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => setInfoTab('PROTOCOLS')}>TURRETS</button><button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button></> )}
-                        {archiveCategory === 'HANDBOOK' && ( <><button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button><button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button></> )}
-                        {archiveCategory === 'MANIFEST' && ( <><button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button><button className={infoTab === 'HALL_OF_FAME' ? 'active' : ''} onClick={() => setInfoTab('HALL_OF_FAME')}>RECORDS</button><button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button></> )}
-                        <button className="back-tab-btn" onClick={() => { setArchiveCategory('NONE'); setIsTypingComplete(false); }} style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}}>BACK</button>
+                        {archiveCategory === 'TACTICAL' && ( <><button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => { AudioManager.getInstance().playUiClick(); setInfoTab('VIRAL DB'); }}>VIRUSES</button><button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => { AudioManager.getInstance().playUiClick(); setInfoTab('PROTOCOLS'); }}>TURRETS</button><button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => { AudioManager.getInstance().playUiClick(); setInfoTab('THREATS'); }}>THREATS</button></> )}
+                        {archiveCategory === 'HANDBOOK' && ( <><button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => { AudioManager.getInstance().playUiClick(); setInfoTab('LOGIC'); }}>LOGIC</button><button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => { AudioManager.getInstance().playUiClick(); setInfoTab('RANKS'); }}>RANKS</button></> )}
+                        {archiveCategory === 'MANIFEST' && ( <><button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => { AudioManager.getInstance().playUiClick(); setInfoTab('LORE'); }}>LORE</button><button className={infoTab === 'HALL_OF_FAME' ? 'active' : ''} onClick={() => { AudioManager.getInstance().playUiClick(); setInfoTab('HALL_OF_FAME'); }}>RECORDS</button><button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => { AudioManager.getInstance().playUiClick(); setInfoTab('CREDITS'); }}>CREDITS</button></> )}
+                        <button className="back-tab-btn" onClick={() => { AudioManager.getInstance().playUiClick(); setArchiveCategory('NONE'); setIsTypingComplete(false); }} style={{borderColor: 'var(--neon-red)', color: 'var(--neon-red)'}}>BACK</button>
                       </div>
                       <div className="info-body">
                         {infoTab === 'LORE' && ( <div className="manual-text"><p style={{color: 'var(--neon-blue)', fontSize: '1rem'}}>&gt;&gt; LOG ENTRY: THE SYNTAX COLLAPSE</p><p>&gt; IN THE YEAR 2048, THE GLOBAL NETWORK EXPERIENCED A CATASTROPHIC RAW-OVERWRITE. THE WORLD'S DATA WAS FRAGMENTED INTO HOSTILE VIRAL SIGNATURES.</p><p>&gt; THE KERNEL IS THE LAST REMAINING BASTION OF PURE LOGIC. IF IT FALLS, THE DIGITAL UNIVERSE WILL DESCEND INTO PERMANENT ENTROPY.</p><p>&gt; YOU ARE THE SYSTEM ARCHITECT. YOUR MISSION IS TO DEPLOY DEFENSE NODES AND PURGE THE SWARMS BEFORE THEY BREACH THE CORE MEMORY BANKS.</p></div> )}
@@ -739,7 +764,7 @@ function App() {
                   )}
                 </div>
               </div>
-              {archiveCategory === 'NONE' ? ( <button className="cyan-menu-btn back-btn" onClick={() => { setScreen('MENU'); setIsTypingComplete(false); }}>TERMINATE</button> ) : null}
+              {archiveCategory === 'NONE' ? ( <button className="cyan-menu-btn back-btn" onClick={() => { AudioManager.getInstance().playUiClick(); setScreen('MENU'); setIsTypingComplete(false); }}>TERMINATE</button> ) : null}
             </>
           )}
         </div>
@@ -754,32 +779,32 @@ function App() {
               <div className="pause-content" style={{borderColor: '#00ff66'}}>
                 <h2 className="pause-title" style={{color: '#00ff66'}}>SYSTEM SECURED</h2>
                 <div className="game-summary"><p>&gt; ALL HOSTILE DATA PACKETS PURGED.</p><p>&gt; KERNEL INTEGRITY: {integrity}/20</p><p>&gt; FINAL TOKENS: {credits}</p></div>
-                <button className="cyan-menu-btn" onClick={quitToMenu} style={{marginTop: '20px'}}>RETURN TO ROOT</button>
+                <button className="cyan-menu-btn" onClick={() => { AudioManager.getInstance().playUiClick(); quitToMenu(); }} style={{marginTop: '20px'}}>RETURN TO ROOT</button>
               </div>
             </div>
           )}
-          {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={quitToMenu}>RETURN TO ROOT</button></div></div>}
+          {integrity <= 0 && <div className="pause-overlay-locked"><div className="pause-content"><h2 className="pause-title" style={{color: '#ff3300'}}>CRITICAL SYSTEM FAILURE</h2><button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); quitToMenu(); }}>RETURN TO ROOT</button></div></div>}
           {isPaused && integrity > 0 && !isVictorious && (
             <div className="pause-overlay-locked">
               {!showSettingsInGame ? (
                 <div className="pause-content small-pause">
                   <h2 className="pause-title">SYSTEM PAUSED</h2>
                   <div className="pause-options grid-options">
-                    <button className="blue-button" onClick={() => setIsPaused(false)}>RESUME</button>
-                    <button className="blue-button" onClick={() => setShowSettingsInGame(true)}>SETTINGS</button>
-                    <button className="blue-button" onClick={() => { setIsPaused(false); setShowTutorial(true); }}>HOW TO PLAY</button>
-                    <button className="blue-button" onClick={saveAndQuit} disabled={isWaveActive} style={{opacity: isWaveActive ? 0.5 : 1}}>SAVE & EXIT</button>
-                    <button className="blue-button" onClick={quitToMenu} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300', gridColumn: 'span 2'}}>ABANDON</button>
+                    <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setIsPaused(false); }}>RESUME</button>
+                    <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowSettingsInGame(true); }}>SETTINGS</button>
+                    <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setIsPaused(false); setShowTutorial(true); }}>HOW TO PLAY</button>
+                    <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); saveAndQuit(); }} disabled={isWaveActive} style={{opacity: isWaveActive ? 0.5 : 1}}>SAVE & EXIT</button>
+                    <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); quitToMenu(); }} style={{background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300', gridColumn: 'span 2'}}>ABANDON</button>
                   </div>
                 </div>
               ) : (
                 <div className="pause-content small-pause">
                   <h2 className="pause-title">SETTINGS</h2>
                   <div className="manual-text" style={{width: '100%', marginBottom: '10px'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}><span style={{fontSize: '0.7rem'}}>SFX</span><button className="blue-button" onClick={toggleSfx} style={{width: '100px', fontSize: '0.6rem'}}>{sfxMuted ? 'OFF' : 'ON'}</button></div>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}><span style={{fontSize: '0.7rem'}}>MUSIC</span><button className="blue-button" onClick={toggleAmbient} style={{width: '100px', fontSize: '0.6rem'}}>{ambientMuted ? 'OFF' : 'ON'}</button></div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}><span style={{fontSize: '0.7rem'}}>SFX VOLUME</span><input type="range" min="0" max="1" step="0.05" value={sfxVol} onChange={handleSfxVol} style={{width: '100px'}} /></div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}><span style={{fontSize: '0.7rem'}}>MUSIC VOLUME</span><input type="range" min="0" max="1" step="0.05" value={musicVol} onChange={handleMusicVol} style={{width: '100px'}} /></div>
                   </div>
-                  <button className="blue-button" onClick={() => setShowSettingsInGame(false)} style={{width: '100%'}}>BACK</button>
+                  <button className="blue-button" onClick={() => { AudioManager.getInstance().playUiClick(); setShowSettingsInGame(false); }} style={{width: '100%'}}>BACK</button>
                 </div>
               )}
             </div>
@@ -795,7 +820,7 @@ function App() {
             <div className="stats-item"><div className="stats-label">INTEREST CREDIT</div><div className="stats-value">+{waveSummary.interest}c</div></div>
             <div className="stats-item"><div className="stats-label">TOTAL INCOME</div><div className="stats-value">+{waveSummary.total}c</div></div>
           </div>
-          <button className="massive-exec-button" style={{marginTop: '10px'}} onClick={() => { setShowWaveSummaryPopup(false); game?.waveManager.prepareWave(true); setShowCombatIntel(true); }}>VIEW NEXT SWARM INTEL</button>
+          <button className="massive-exec-button" style={{marginTop: '10px'}} onClick={() => { AudioManager.getInstance().playUiClick(); setShowWaveSummaryPopup(false); game?.waveManager.prepareWave(true); setShowCombatIntel(true); }}>VIEW NEXT SWARM INTEL</button>
         </div>
       )}
 
@@ -816,14 +841,14 @@ function App() {
               );
             })}
           </div>
-          <button className="massive-exec-button" style={{marginTop: '10px', padding: '10px', fontSize: '0.8rem'}} onClick={() => { setShowCombatIntel(false); executeWave(); }}>EXECUTE DEFENSE PROTOCOL</button>
+          <button className="massive-exec-button" style={{marginTop: '10px', padding: '10px', fontSize: '0.8rem'}} onClick={() => { executeWave(); setShowCombatIntel(false); }}>EXECUTE DEFENSE PROTOCOL</button>
         </div>
       )}
 
           <div className="tactical-dashboard">
             <div className="dashboard-left">
               <div className="control-grid">
-                <button className="blue-button compact-btn" onClick={() => setIsPaused(true)}>PAUSE</button>
+                <button className="blue-button compact-btn" onClick={() => { AudioManager.getInstance().playUiClick(); setIsPaused(true); }}>PAUSE</button>
                 <button className={`blue-button compact-btn ${isFastForward ? 'active' : ''}`} onClick={toggleFastForward} style={{borderColor: isFastForward ? '#00ff66' : ''}}>FWD &gt;&gt;</button>
                 <button className={`blue-button compact-btn ${integrity <= 5 && credits >= repairCost ? 'critical-repair' : ''}`} onClick={repairKernel} disabled={credits < repairCost || integrity >= 20}>REPAIR: {repairCost}c</button>
                 <button className="blue-button compact-btn" onClick={useDataPurge} disabled={credits < 1000 || !isWaveActive}>PURGE: 1000c</button>
