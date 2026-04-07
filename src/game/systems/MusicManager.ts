@@ -68,7 +68,7 @@ export class MusicManager {
         const bassNotes = [110, 110, 130, 110, 146, 110, 130, 123]; 
         if (index % 2 === 0) {
             const freq = bassNotes[(index / 2) % bassNotes.length];
-            this.triggerPulse(freq, freq, 0.15, 'pulse' as OscillatorType || 'square', 0.04, time);
+            this.triggerPulse(freq, freq, 0.15, 'square', 0.04, time);
         }
 
         // 4. DIGITAL ARPEGGIO (The "Computer" sound)

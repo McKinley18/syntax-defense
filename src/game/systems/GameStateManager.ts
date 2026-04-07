@@ -85,7 +85,7 @@ export class GameStateManager {
         return "INITIATE";
     }
 
-    public getRankBonus(): number {
+    public getNextRankXP(): number {
         const xp = this.totalXP;
         if (xp < 1000) return 1000;
         if (xp < 5000) return 5000;
