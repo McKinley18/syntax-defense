@@ -979,21 +979,19 @@ function App() {
               const reg = VISUAL_REGISTRY[type as EnemyType];
               if (!reg) return null;
               return (
-                <div key={idx} className="intel-card-large" style={{width: '90px', padding: '8px 5px'}}>
-                  <div className="card-visual-box" style={{width: '35px', height: '35px', margin: '0 auto'}}>
+                <div key={idx} className="intel-card-minimal">
+                  <div className="symbol-only">
                     <div 
                       className={`shape ${reg.shape}`} 
-                      style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '18px', borderLeftWidth: '9px', borderRightWidth: '9px' } : { background: reg.colorHex, width: '18px', height: '18px' }}
+                      style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '20px', borderLeftWidth: '10px', borderRightWidth: '10px' } : { background: reg.colorHex, width: '20px', height: '20px' }}
                     ></div>
                   </div>
-                  <div className="card-label" style={{marginTop: '5px'}}>
-                    <div className="name" style={{fontSize: '0.6rem', color: 'var(--neon-cyan)', fontWeight: 900}}>{reg.name}</div>
-                  </div>
+                  <div className="intel-label-small">{reg.name}</div>
                 </div>
               );
             })}
           </div>
-          <button className="massive-exec-button" style={{marginTop: '10px'}} onClick={() => { setShowCombatIntel(false); executeWave(); }}>EXECUTE DEFENSE PROTOCOL</button>
+          <button className="massive-exec-button" style={{marginTop: '10px', padding: '10px', fontSize: '0.8rem'}} onClick={() => { setShowCombatIntel(false); executeWave(); }}>EXECUTE DEFENSE PROTOCOL</button>
         </div>
       )}
 
