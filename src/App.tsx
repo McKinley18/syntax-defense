@@ -4,7 +4,8 @@ import { GameStateManager, type GameMode, type WaveSummary, type GlitchType } fr
 import { Tower, TowerType } from './game/entities/Tower';
 import { AudioManager } from './game/systems/AudioManager';
 import { MusicManager } from './game/systems/MusicManager';
-import { MapManager, TILE_SIZE } from './game/systems/MapManager';
+import { TILE_SIZE } from './game/systems/MapManager';
+import { EnemyType } from './game/VisualRegistry';
 import './App.css';
 
 // Screens
@@ -44,14 +45,12 @@ function App() {
   const [sfxVolState, setSfxVolState] = useState(AudioManager.getInstance().sfxVolume);
   const [musicVolState, setMusicVolState] = useState(AudioManager.getInstance().musicVolume);
   const [isDistorted, setIsDistorted] = useState(false);
-  const [isFlickering, setIsFlickering] = useState(false);
+  const [isFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
   const [upcomingEnemies, setUpcomingEnemies] = useState<{ type: EnemyType, count: number }[]>([]);
   const [activeGlitch, setActiveGlitch] = useState<GlitchType>('NONE');
   const [waveSummary, setWaveSummary] = useState<WaveSummary>({ kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0, points: 0 });
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
-  const [currentXP, setCurrentXP] = useState(GameStateManager.getInstance().totalXP);
-  const [nextRankXP, setNextRankXP] = useState(GameStateManager.getInstance().getNextRankXP());
   const [lifetimeKills, setLifetimeKills] = useState(0);
   const [highestWave, setHighestWave] = useState(0);
   const [isVictorious, setIsVictorious] = useState(false);
