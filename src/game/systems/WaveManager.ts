@@ -81,20 +81,21 @@ export class WaveManager {
         if (this.game.isTutorialActive) {
             this.enemiesToSpawn = 1;
         } else if (this.waveNumber === 1) {
-            // Mandate: 16 GLIDERS IN WAVE 1
-            this.enemiesToSpawn = 16;
+            // Mandate: 10 GLIDERS IN WAVE 1 (Eased further)
+            this.enemiesToSpawn = 10;
         } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
             // INTELLIGENT ENGINE: Level + Hoard + Power
-            const hoardFactor = Math.min(2.0, Math.max(1.0, state.credits / 1500));
+            const engineGrace = this.waveNumber <= 4 ? 0.35 : 1.0;
+            const hoardFactor = Math.min(2.0, Math.max(1.0, (state.credits / 1500) * engineGrace));
             
             // Calculate Total Defensive Power (DPS estimate)
             let totalPower = 0;
             this.game.towerManager.towers.forEach(t => {
                 totalPower += (t.config.damage * (1 + (t.level-1) * 0.25));
             });
-            const powerFactor = Math.min(2.5, Math.max(1.0, totalPower / 100));
+            const powerFactor = Math.min(2.5, Math.max(1.0, (totalPower / 100) * engineGrace));
 
             const baseCount = 15 + Math.floor(this.waveNumber * 5.5);
             const rawCount = Math.floor(baseCount * hoardFactor * powerFactor);
@@ -209,8 +210,8 @@ export class WaveManager {
             total = 1;
             counts.set(EnemyType.GLIDER, 1);
         } else if (this.waveNumber === 1) {
-            total = 16;
-            counts.set(EnemyType.GLIDER, 16);
+            total = 10;
+            counts.set(EnemyType.GLIDER, 10);
         } else if (this.waveNumber % 10 === 0) {
             total = 1;
             counts.set(EnemyType.FRACTAL, 1);

@@ -26,6 +26,7 @@ interface GameScreenProps {
   tutorialStep: number;
   tilePos: { x: number, y: number, ts: number };
   selectedTower: Tower | null;
+  hoveredTower: Tower | null;
   repairCost: number;
   selectedTurret: number;
   gameMode: string;
@@ -56,6 +57,7 @@ interface GameScreenProps {
   getUpgradeCost: (tower: Tower) => number;
   onFinishTutorial: () => void;
   setSelectedTower: (tower: Tower | null) => void;
+  onSetHoveredTower: (tower: Tower | null) => void;
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({
@@ -79,6 +81,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   tutorialStep,
   tilePos,
   selectedTower,
+  hoveredTower,
   repairCost,
   selectedTurret,
   gameMode,
@@ -108,7 +111,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
   getTowerCount,
   getUpgradeCost,
   onFinishTutorial,
-  setSelectedTower
+  setSelectedTower,
+  onSetHoveredTower
 }) => {
   if (!game) return null;
 
@@ -132,6 +136,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
         console.log("Advancing to Step 4 (Upgrade Popup)");
         onSetTutorialStep(4);
       }
+      onSelectTurret(-1); // Clear selection after successful placement
     };
 
     const handleTowerSelected = (t: Tower) => {
@@ -142,12 +147,17 @@ const GameScreen: React.FC<GameScreenProps> = ({
       // No longer needed for tutorial flow
     };
 
+    const handleTowerHover = (t: Tower | null) => {
+      onSetHoveredTower(t);
+    };
+
     game.waveManager.onWaveEnd = handleWaveEnd;
     game.towerManager.onTowerPlaced = handleTowerPlaced;
     game.towerManager.onTowerSelected = handleTowerSelected;
+    game.towerManager.onTowerHover = handleTowerHover;
     game.towerManager.onTowerUpgraded = handleTowerUpgraded;
 
-  }, [game, isTutorialActive, tutorialStep, onSetTutorialStep, setSelectedTower]);
+  }, [game, isTutorialActive, tutorialStep, onSetTutorialStep, setSelectedTower, onSetHoveredTower]);
 
   return (
     <div className="game-overlay-active ui-layer">
@@ -349,6 +359,35 @@ const GameScreen: React.FC<GameScreenProps> = ({
           onSell={onSellTower}
           onClose={onCloseTowerContext}
         />
+      )}
+
+      {hoveredTower && !selectedTower && !isPaused && integrity > 0 && (
+        <div className="hover-stats-box" style={{ 
+          position: 'fixed', 
+          bottom: 'calc(var(--dashboard-height) + 20px)', 
+          right: '20px',
+          background: 'rgba(0, 5, 10, 0.95)',
+          border: '1px solid var(--neon-cyan)',
+          padding: '12px',
+          zIndex: 10000,
+          pointerEvents: 'none',
+          minWidth: '180px',
+          boxShadow: '0 0 15px rgba(0, 255, 255, 0.2)',
+          fontFamily: 'monospace'
+        }}>
+          <div style={{ color: 'var(--neon-cyan)', fontWeight: 900, borderBottom: '1px solid #333', paddingBottom: '5px', marginBottom: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
+            <span>{hoveredTower.config.name.toUpperCase()}</span>
+            <span>v{hoveredTower.level}.0</span>
+          </div>
+          <div style={{ fontSize: '0.7rem', color: '#fff', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>&gt; DMG_OUTPUT</span><span style={{ color: 'var(--neon-cyan)' }}>{hoveredTower.config.damage * (hoveredTower.level === 2 ? 1.25 : hoveredTower.level === 3 ? 1.5 : 1)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>&gt; FIRE_RATE</span><span style={{ color: 'var(--neon-cyan)' }}>{(60 / hoveredTower.config.rate).toFixed(1)}Hz</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', borderTop: '1px dashed #222', paddingTop: '4px' }}>
+              <span>&gt; TOTAL_PURGED</span>
+              <span style={{ color: '#00ff66', fontWeight: 900 }}>{Math.floor(hoveredTower.totalDamageDealt)}</span>
+            </div>
+          </div>
+        </div>
       )}
 
       <TacticalDashboard

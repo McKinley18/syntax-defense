@@ -11,6 +11,7 @@ export class TowerManager {
     public selectedTurretType: TowerType = TowerType.PULSE_MG;
     public onTowerPlaced: (() => void) | null = null;
     public onTowerSelected: ((tower: Tower | null) => void) | null = null;
+    public onTowerHover: ((tower: Tower | null) => void) | null = null;
     public onTowerUpgraded: (() => void) | null = null;
     public onPlacementCancelled: (() => void) | null = null;
     
@@ -53,12 +54,15 @@ export class TowerManager {
         this.game.app.stage.eventMode = 'static';
         
         this.game.app.stage.on('globalpointermove', (e) => {
+            const worldPos = this.game.viewport.toLocal(e.global);
             if (!this.isPlacing) {
                 this.previewGraphics.clear();
                 this.previewTurret.visible = false;
+                
+                const hoverTower = this.getTowerAt(worldPos.x, worldPos.y);
+                if (this.onTowerHover) this.onTowerHover(hoverTower);
                 return;
             }
-            const worldPos = this.game.viewport.toLocal(e.global);
             this.updatePreview(worldPos.x, worldPos.y);
         });
 
@@ -115,6 +119,7 @@ export class TowerManager {
     }
 
     public tryUpgradeTower(tower: Tower): boolean {
+        if (!tower || typeof tower.upgrade !== 'function') return false;
         if (tower.level >= 3) return false;
         const upgradeCost = this.getUpgradeCost(tower);
         
@@ -212,6 +217,7 @@ export class TowerManager {
         const isBoundary = gy <= 0 || gy >= visibleRows - 1;
         const isBuildable = this.game.mapManager.isBuildable(wx, wy) && !this.getTowerAt(wx, wy) && !isBoundary;
         const config = TOWER_CONFIGS[this.selectedTurretType];
+        if (!config) return;
 
         this.previewGraphics.circle(sx + TILE_SIZE/2, sy + TILE_SIZE/2, config.range * TILE_SIZE);
         this.previewGraphics.fill({ color: config.color, alpha: 0.1 });

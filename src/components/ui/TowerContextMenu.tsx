@@ -19,8 +19,8 @@ const TowerContextMenu: React.FC<TowerContextMenuProps> = ({
   onClose
 }) => {
   return (
-    <div className="tower-context-overlay ui-layer">
-      <div className="tower-context-menu">
+    <div className="tower-context-overlay ui-layer" onClick={onClose}>
+      <div className="tower-context-menu" onClick={(e) => e.stopPropagation()}>
         <div className="context-header">
           <div className="context-title">{selectedTower.config.name}</div>
           <div className="context-level">L{selectedTower.level}</div>

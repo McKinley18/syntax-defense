@@ -76,6 +76,19 @@ export class GameStateManager {
         }
     }
 
+    public clearStats() {
+        this.totalXP = 0;
+        this.totalScore = 0;
+        this.architectRank = "INITIATE";
+        this.lifetimeKills = 0;
+        this.highestWave = 0;
+        localStorage.removeItem('syntax_total_xp');
+        localStorage.removeItem('syntax_hall_of_fame');
+        localStorage.removeItem('syntax_defense_save');
+        this.saveXP();
+        this.saveHallOfFame();
+    }
+
     public calculateRank(): string {
         const xp = this.totalXP;
         if (xp >= 100000) return "GOD_MOD_ADMIN";

@@ -16,6 +16,7 @@ interface SettingsScreenProps {
   resetStatus: string;
   toggleSkipIntro: () => void;
   onPurgeTutorial: () => void;
+  onClearStats: () => void;
   handleSfxVol: (e: any) => void;
   handleMusicVol: (e: any) => void;
   toggleSfx: () => void;
@@ -41,6 +42,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   resetStatus,
   toggleSkipIntro,
   onPurgeTutorial,
+  onClearStats,
   handleSfxVol,
   handleMusicVol,
   toggleSfx,
@@ -104,12 +106,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <div className="settings-module">
                 <h3>System Diagnostics</h3>
                 <div className="diagnostics-list">
-                  <div className="diag-item"><span>BUILD_ID</span><span className="diag-val">v2.7.0_ELITE</span></div>
+                  <div className="diag-item"><span>BUILD_ID</span><span className="diag-val">v3.4.0_STABLE</span></div>
                   <div className="diag-item"><span>KERNEL_STABILITY</span><span className="diag-val">{((integrity / 20) * 100).toFixed(0)}%</span></div>
                   <div className="diag-item"><span>LIFETIME_PURGES</span><span className="diag-val">{lifetimeKills.toLocaleString()}</span></div>
                   <div className="diag-item"><span>PEAK_WAVE_INDEX</span><span className="diag-val">{highestWave}</span></div>
                   <div className="diag-item"><span>CLEARANCE_LEVEL</span><span className="diag-val" style={{ color: '#00ff66' }}>{rank}</span></div>
                 </div>
+                <button className="blue-button" onClick={onClearStats} style={{ marginTop: '15px', borderColor: 'var(--neon-red)', color: 'var(--neon-red)' }}>PURGE ALL LIFETIME STATS</button>
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import TerminalText from '../components/TerminalText';
+import { AudioManager } from '../game/systems/AudioManager';
 
 interface ModesScreenProps {
   isTypingComplete: boolean;
@@ -21,6 +22,7 @@ const ModesScreen: React.FC<ModesScreenProps> = ({
   onSetScreen,
   setIsTypingComplete
 }) => {
+  const am = AudioManager.getInstance();
   return (
     <div className="encyclopedia ui-layer">
       <div className="enc-header command-header">
@@ -31,13 +33,13 @@ const ModesScreen: React.FC<ModesScreenProps> = ({
         <div className="enc-content" style={{ pointerEvents: 'auto' }}>
           <div className="mode-grid">
             {gameModes.map(gm => (
-              <button key={gm.mode} className="mode-card" onClick={() => onStartGame(gm.mode as any)} style={{ borderColor: gm.color || 'var(--neon-cyan)' }}>
+              <button key={gm.mode} className="mode-card" onClick={() => { am.playUiClick(); onStartGame(gm.mode as any); }} style={{ borderColor: gm.color || 'var(--neon-cyan)' }}>
                 <div className="mode-title">{gm.title}</div>
                 <div className="mode-desc">{gm.desc}</div>
               </button>
             ))}
           </div>
-          <button className="cyan-menu-btn back-btn" onClick={() => { onSetScreen('MENU'); setIsTypingComplete(false); }} style={{ pointerEvents: 'auto' }}>RETURN TO ROOT</button>
+          <button className="cyan-menu-btn back-btn" onClick={() => { am.playUiClick(); onSetScreen('MENU'); setIsTypingComplete(false); }} style={{ pointerEvents: 'auto' }}>RETURN TO ROOT</button>
         </div>
       )}
     </div>

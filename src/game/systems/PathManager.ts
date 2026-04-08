@@ -159,8 +159,9 @@ export class PathManager {
                 this.startNodePos = new PIXI.Point(0, (microY + 1) * TILE_SIZE);
             }
             if (i === macroPath.length - 1) {
-                // Ensure it reaches the absolute right edge
-                this.endNodePos = new PIXI.Point(window.innerWidth, (microY + 1) * TILE_SIZE);
+                // Ensure it reaches the absolute right edge but move kernel left for visibility
+                // window.innerWidth - (1.5 * TILE_SIZE) ensures the kernel is not cut off
+                this.endNodePos = new PIXI.Point(window.innerWidth - (1.5 * TILE_SIZE), (microY + 1) * TILE_SIZE);
                 
                 // Add padding cells to ensure the black path rects reach the edge
                 let lastX = microX;

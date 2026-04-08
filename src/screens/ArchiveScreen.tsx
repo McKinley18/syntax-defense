@@ -26,6 +26,7 @@ const ArchiveScreen: React.FC<ArchiveScreenProps> = ({
   setIsTypingComplete,
   onSetScreen
 }) => {
+  const am = AudioManager.getInstance();
   const getCommandText = () => {
     if (archiveCategory === 'NONE') {
       return 'ls -R /ARCHIVE/';
@@ -50,9 +51,9 @@ const ArchiveScreen: React.FC<ArchiveScreenProps> = ({
           {archiveCategory === 'NONE' ? (
             <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
               <div className="menu-options-grid" style={{ width: '100%', maxWidth: '600px' }}>
-                <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('TACTICAL'); setInfoTab('VIRAL DB'); }}>TACTICAL DATABASE</button>
-                <button className="cyan-menu-btn" onClick={() => { setArchiveCategory('HANDBOOK'); setInfoTab('LOGIC'); }}>SYSTEM HANDBOOK</button>
-                <button className="cyan-menu-btn primary-btn" onClick={() => { setArchiveCategory('MANIFEST'); setInfoTab('LORE'); }}>MAINFRAME MANIFEST</button>
+                <button className="cyan-menu-btn" onClick={() => { am.playUiClick(); setArchiveCategory('TACTICAL'); setInfoTab('VIRAL DB'); }}>TACTICAL DATABASE</button>
+                <button className="cyan-menu-btn" onClick={() => { am.playUiClick(); setArchiveCategory('HANDBOOK'); setInfoTab('LOGIC'); }}>SYSTEM HANDBOOK</button>
+                <button className="cyan-menu-btn primary-btn" onClick={() => { am.playUiClick(); setArchiveCategory('MANIFEST'); setInfoTab('LORE'); }}>MAINFRAME MANIFEST</button>
               </div>
             </div>
           ) : (
@@ -60,25 +61,25 @@ const ArchiveScreen: React.FC<ArchiveScreenProps> = ({
               <div className="info-tabs">
                 {archiveCategory === 'TACTICAL' && (
                   <>
-                    <button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL DB')}>VIRUSES</button>
-                    <button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => setInfoTab('PROTOCOLS')}>TURRETS</button>
-                    <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
+                    <button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('VIRAL DB'); }}>VIRUSES</button>
+                    <button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('PROTOCOLS'); }}>TURRETS</button>
+                    <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('THREATS'); }}>THREATS</button>
                   </>
                 )}
                 {archiveCategory === 'HANDBOOK' && (
                   <>
-                    <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
-                    <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button>
+                    <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('LOGIC'); }}>LOGIC</button>
+                    <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('RANKS'); }}>RANKS</button>
                   </>
                 )}
                 {archiveCategory === 'MANIFEST' && (
                   <>
-                    <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
-                    <button className={infoTab === 'HALL_OF_FAME' ? 'active' : ''} onClick={() => setInfoTab('HALL_OF_FAME')}>RECORDS</button>
-                    <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button>
+                    <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('LORE'); }}>LORE</button>
+                    <button className={infoTab === 'HALL_OF_FAME' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('HALL_OF_FAME'); }}>RECORDS</button>
+                    <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('CREDITS'); }}>CREDITS</button>
                   </>
                 )}
-                <button className="back-tab-btn" onClick={() => { setArchiveCategory('NONE'); setIsTypingComplete(false); }} style={{ borderColor: 'var(--neon-red)', color: 'var(--neon-red)' }}>BACK</button>
+                <button className="back-tab-btn" onClick={() => { am.playUiClick(); setArchiveCategory('NONE'); setIsTypingComplete(false); }} style={{ borderColor: 'var(--neon-red)', color: 'var(--neon-red)' }}>BACK</button>
               </div>
               <div className="info-body">
                 <>

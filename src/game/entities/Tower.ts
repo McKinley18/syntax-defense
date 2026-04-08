@@ -32,6 +32,7 @@ export class Tower {
     public config: TowerConfig;
     public level: number = 1;
     public linkBonus: number = 0;
+    public totalDamageDealt: number = 0;
     
     private fireTimer: number = 0;
     private turretHead: PIXI.Container;
@@ -42,6 +43,10 @@ export class Tower {
     constructor(type: TowerType, x: number, y: number) {
         this.type = type;
         this.config = TOWER_CONFIGS[type];
+        if (!this.config) {
+            // Fallback to avoid crash
+            this.config = TOWER_CONFIGS[0];
+        }
         this.container = new PIXI.Container();
         this.container.x = x;
         this.container.y = y;
@@ -181,6 +186,7 @@ export class Tower {
             this.chainFire(target, allEnemies, totalDmg);
         } else if (this.type === TowerType.FROST_RAY) {
             target.takeDamage(totalDmg, this.type);
+            this.totalDamageDealt += totalDmg;
             target.freeze(30); // Apply 30 frame freeze
             this.drawEffect(target.container.x, target.container.y, 'line');
         } else if (this.config.damage > 25) { 
@@ -189,10 +195,14 @@ export class Tower {
             allEnemies.forEach(e => {
                 const dx = e.container.x - target.container.x;
                 const dy = e.container.y - target.container.y;
-                if (dx*dx + dy*dy < impactRSq) e.takeDamage(totalDmg, this.type);
+                if (dx*dx + dy*dy < impactRSq) {
+                    e.takeDamage(totalDmg, this.type);
+                    this.totalDamageDealt += totalDmg;
+                }
             });
         } else {
             target.takeDamage(totalDmg, this.type);
+            this.totalDamageDealt += totalDmg;
             this.drawEffect(target.container.x, target.container.y, 'line');
         }
     }
@@ -201,6 +211,7 @@ export class Tower {
         const currentSource = { x: this.container.x, y: this.container.y };
         const hitEnemies = new Set([target]);
         target.takeDamage(dmg, this.type);
+        this.totalDamageDealt += dmg;
         this.drawLightning(currentSource.x, currentSource.y, target.container.x, target.container.y);
 
         for (let i = 0; i < 2; i++) {
@@ -215,6 +226,7 @@ export class Tower {
             });
             if (nextTarget) {
                 (nextTarget as Enemy).takeDamage(dmg * 0.7, this.type);
+                this.totalDamageDealt += (dmg * 0.7);
                 this.drawLightning(target.container.x, target.container.y, (nextTarget as Enemy).container.x, (nextTarget as Enemy).container.y);
                 hitEnemies.add(nextTarget);
             }

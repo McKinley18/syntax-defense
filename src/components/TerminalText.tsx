@@ -26,7 +26,8 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0, stopAtChar }: T
         
         setDisplayedText(text.slice(0, i));
         if (i > 0 && i <= text.length && text[i-1] !== ' ') {
-          AudioManager.getInstance().playTypeClick();
+          const am = AudioManager.getInstance();
+          if (am.isReady()) am.playTypeClick();
         }
         
         if (stopAtChar !== undefined && i === stopAtChar) {
