@@ -2,6 +2,7 @@ import React from 'react';
 import TerminalText from '../components/TerminalText';
 import { VISUAL_REGISTRY } from '../game/VisualRegistry';
 import { TOWER_CONFIGS, TowerType } from '../game/entities/Tower';
+import { AudioManager } from '../game/systems/AudioManager';
 
 interface ArchiveScreenProps {
   archiveCategory: any;
