@@ -33,7 +33,6 @@ interface GameScreenProps {
   isWaveActive: boolean;
   isFastForward: boolean;
   autoPauseEnabled: boolean;
-  showAllRanges: boolean;
   sysStatusColor: string;
   systemStatusText: string;
   firstTurretRef: React.RefObject<HTMLDivElement | null>;
@@ -90,7 +89,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
   isWaveActive,
   isFastForward,
   autoPauseEnabled,
-  showAllRanges,
   sysStatusColor,
   systemStatusText,
   firstTurretRef,
