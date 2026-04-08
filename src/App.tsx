@@ -46,7 +46,7 @@ function App() {
   const [isDistorted, setIsDistorted] = useState(false);
   const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
-  const [upcomingEnemies, setUpcomingEnemies] = useState<{ type: number, count: number }[]>([]);
+  const [upcomingEnemies, setUpcomingEnemies] = useState<{ type: EnemyType, count: number }[]>([]);
   const [activeGlitch, setActiveGlitch] = useState<GlitchType>('NONE');
   const [waveSummary, setWaveSummary] = useState<WaveSummary>({ kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0, points: 0 });
   const [rank, setRank] = useState(GameStateManager.getInstance().architectRank);
@@ -83,13 +83,7 @@ function App() {
   const [bootPhase, setBootPhase] = useState(localStorage.getItem('syntax_skip_intro') === 'true' ? 18 : 0); 
   const [bootProgress, setBootProgress] = useState(localStorage.getItem('syntax_skip_intro') === 'true' ? 100 : 0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
-  const [showAuthorized, setShowAuthorized] = useState(false);
-  const [showPreserve, setShowPreserve] = useState(false);
   const [isReadyGlitched, setIsReadyGlitched] = useState(false);
-  const [secondaryLogs, setSecondaryLogs] = useState<string[]>([]);
-  const [showSuccessful, setShowSuccessful] = useState(false);
-  const [showCaution, setShowCaution] = useState(false);
-  const [showImminent, setShowImminent] = useState(false);
 
   useEffect(() => {
     if (screen !== 'MENU') return;
@@ -197,7 +191,7 @@ function App() {
 
   const saveAndQuit = () => { AudioManager.getInstance().playUiClick(); GameStateManager.getInstance().save(); quitToMenu(); };
   const executeWave = () => { if (game) { game.waveManager.startWave(); setShowCombatIntel(false); } };
-  const toggleFastForward = () => { setIsFastForward(!isFastForward); if (game) game.setFastForward(!isFastForward); };
+  const toggleFastForward = () => { setIsFastForward(!isFastForward); if (game) game.isFastForward = !isFastForward; };
 
   const systemStatusText = integrity > 15 ? "STATUS: STABLE" : integrity > 5 ? "STATUS: DEGRADED" : "STATUS: CRITICAL";
   const sysStatusColor = integrity > 15 ? "#00ffcc" : integrity > 5 ? "#ffcc00" : "#ff3300";
@@ -285,12 +279,6 @@ function App() {
           bootPhase={bootPhase}
           bootProgress={bootProgress}
           bootLogs={bootLogs}
-          secondaryLogs={secondaryLogs}
-          showAuthorized={showAuthorized}
-          showPreserve={showPreserve}
-          showSuccessful={showSuccessful}
-          showCaution={showCaution}
-          showImminent={showImminent}
           isReadyGlitched={isReadyGlitched}
           wakeAudioSystem={wakeAudioSystem}
           setBootPhase={setBootPhase}
@@ -305,9 +293,6 @@ function App() {
         <MainMenu 
           isDistorted={isDistorted}
           hasSave={hasSave}
-          rank={rank}
-          currentXP={currentXP}
-          nextRankXP={nextRankXP}
           onStartGame={startNewGame}
           onSetScreen={setScreen}
           onOpenArchive={openArchive}
@@ -324,7 +309,6 @@ function App() {
         <ArchiveScreen 
           archiveCategory={archiveCategory}
           infoTab={infoTab}
-          isTypingComplete={isTypingComplete}
           highestWave={highestWave}
           lifetimeKills={lifetimeKills}
           rank={rank}
