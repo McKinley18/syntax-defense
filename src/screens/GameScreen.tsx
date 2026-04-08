@@ -32,6 +32,8 @@ interface GameScreenProps {
   gameMode: string;
   isWaveActive: boolean;
   isFastForward: boolean;
+  autoPauseEnabled: boolean;
+  showAllRanges: boolean;
   sysStatusColor: string;
   systemStatusText: string;
   firstTurretRef: React.RefObject<HTMLDivElement | null>;
@@ -87,6 +89,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
   gameMode,
   isWaveActive,
   isFastForward,
+  autoPauseEnabled,
+  showAllRanges,
   sysStatusColor,
   systemStatusText,
   firstTurretRef,
@@ -127,6 +131,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
     const handleWaveEnd = () => {
       if (isTutorialActive && tutorialStepRef.current === 5) {
         onSetTutorialStep(6);
+      }
+      if (autoPauseEnabled && !isTutorialActive) {
+        onTogglePause(true);
       }
     };
 

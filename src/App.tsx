@@ -72,18 +72,42 @@ function App() {
   const firstTurretRef = useRef<HTMLDivElement>(null);
 
   const [tilePos, setTilePos] = useState({ x: 0, y: 0, ts: 40 });
-
-  useEffect(() => {
-    if (game) {
-      game.isTutorialActive = isTutorialActive;
-      game.waveManager.prepareWave(false);
-    }
-  }, [game, isTutorialActive]);
+  const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
 
   const [bootPhase, setBootPhase] = useState(localStorage.getItem('syntax_skip_intro') === 'true' ? 18 : 0); 
   const [bootProgress, setBootProgress] = useState(localStorage.getItem('syntax_skip_intro') === 'true' ? 100 : 0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
   const [isReadyGlitched, setIsReadyGlitched] = useState(false);
+  const [crtEnabled, setCrtEnabled] = useState(localStorage.getItem('syntax_crt_enabled') !== 'false');
+  const [glitchEffectsEnabled, setGlitchEffectsEnabled] = useState(localStorage.getItem('syntax_glitch_enabled') !== 'false');
+  const [autoPauseEnabled, setAutoPauseEnabled] = useState(localStorage.getItem('syntax_auto_pause') === 'true');
+  const [showAllRanges, setShowAllRanges] = useState(localStorage.getItem('syntax_show_ranges') === 'true');
+
+  const toggleCrt = () => { const v = !crtEnabled; setCrtEnabled(v); localStorage.setItem('syntax_crt_enabled', String(v)); };
+  const toggleGlitch = () => { const v = !glitchEffectsEnabled; setGlitchEffectsEnabled(v); localStorage.setItem('syntax_glitch_enabled', String(v)); };
+  const toggleAutoPause = () => { const v = !autoPauseEnabled; setAutoPauseEnabled(v); localStorage.setItem('syntax_auto_pause', String(v)); };
+  const toggleShowRanges = () => { const v = !showAllRanges; setShowAllRanges(v); localStorage.setItem('syntax_show_ranges', String(v)); };
+
+  useEffect(() => {
+    const handleOrientation = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+    window.addEventListener('resize', handleOrientation);
+    return () => window.removeEventListener('resize', handleOrientation);
+  }, []);
+
+  useEffect(() => {
+    if (game) {
+      game.isTutorialActive = isTutorialActive;
+      game.towerManager.showAllRanges = showAllRanges;
+      game.waveManager.prepareWave(false);
+    }
+  }, [game, isTutorialActive, showAllRanges]);
+
+  useEffect(() => {
+    if (crtEnabled) document.body.classList.remove('no-crt');
+    else document.body.classList.add('no-crt');
+  }, [crtEnabled]);
 
   useEffect(() => {
     if (screen !== 'MENU') return;
@@ -93,19 +117,26 @@ function App() {
     }, 1000);
 
     const triggerGlitch = () => {
+      if (!glitchEffectsEnabled) {
+        setMenuGlitchActive(false);
+        return;
+      }
       setMenuGlitchActive(true);
       setTimeout(() => setMenuGlitchActive(false), 100 + Math.random() * 150);
-      const nextDelay = 30000 + Math.random() * 30000; // Random interval 30-60s
+      const nextDelay = 30000 + Math.random() * 30000;
       setTimeout(triggerGlitch, nextDelay);
     };
-    const initialGlitch = setTimeout(triggerGlitch, 20000 + Math.random() * 10000); // Initial delay 20-30s
+    const initialGlitch = setTimeout(triggerGlitch, 20000 + Math.random() * 10000);
 
     return () => { clearInterval(updateDiag); clearTimeout(initialGlitch); };
-  }, [screen]);
+  }, [screen, glitchEffectsEnabled]);
 
   useEffect(() => {
+    if (!isLandscape) return;
     // RUN BOOT LOGIC REGARDLESS OF audioReady state, but sounds only play if ready
-    if (bootPhase === 1) setTimeout(() => setBootPhase(2), 600);
+    if (bootPhase === 1) {
+        setTimeout(() => setBootPhase(2), 200);
+    }
     else if (bootPhase === 3) setTimeout(() => setBootPhase(4), 800);
     else if (bootPhase === 4) setTimeout(() => setBootPhase(5), 600);
     else if (bootPhase === 6) {
@@ -146,7 +177,7 @@ function App() {
             setBootPhase(18); 
         }, 600);
     }
-  }, [bootPhase, audioReady]);
+  }, [bootPhase, audioReady, isLandscape]);
 
   useEffect(() => {
     const itv = setInterval(() => {
@@ -159,6 +190,7 @@ function App() {
 
   const wakeAudioSystem = async () => {
     await AudioManager.getInstance().resume();
+    if (bootPhase === 0) setBootPhase(1);
     if (screen === 'BOOT' && bootPhase >= 18) setScreen('MENU');
   };
 
@@ -377,6 +409,14 @@ function App() {
           onPreviewTrack={previewTrack}
           onSetScreen={setScreen}
           setIsTypingComplete={setIsTypingComplete}
+          crtEnabled={crtEnabled}
+          glitchEffectsEnabled={glitchEffectsEnabled}
+          autoPauseEnabled={autoPauseEnabled}
+          showAllRanges={showAllRanges}
+          toggleCrt={toggleCrt}
+          toggleGlitch={toggleGlitch}
+          toggleAutoPause={toggleAutoPause}
+          toggleShowRanges={toggleShowRanges}
         />
       )}
 
@@ -417,6 +457,8 @@ function App() {
           gameMode={gameMode}
           isWaveActive={isWaveActive}
           isFastForward={isFastForward}
+          autoPauseEnabled={autoPauseEnabled}
+          showAllRanges={showAllRanges}
           sysStatusColor={sysStatusColor}
           systemStatusText={systemStatusText}
           firstTurretRef={firstTurretRef}

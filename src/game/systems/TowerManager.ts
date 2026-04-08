@@ -14,10 +14,12 @@ export class TowerManager {
     public onTowerHover: ((tower: Tower | null) => void) | null = null;
     public onTowerUpgraded: (() => void) | null = null;
     public onPlacementCancelled: (() => void) | null = null;
+    public showAllRanges: boolean = false;
     
     private previewGraphics: PIXI.Graphics;
     private previewTurret: PIXI.Container;
     private linkGraphics: PIXI.Graphics;
+    private rangeGraphics: PIXI.Graphics;
     private game: GameContainer;
 
     constructor(game: GameContainer) {
@@ -25,6 +27,8 @@ export class TowerManager {
         this.previewGraphics = new PIXI.Graphics();
         this.previewTurret = new PIXI.Container();
         this.linkGraphics = new PIXI.Graphics();
+        this.rangeGraphics = new PIXI.Graphics();
+        this.game.uiLayer.addChild(this.rangeGraphics);
         this.game.uiLayer.addChild(this.previewGraphics);
         this.game.uiLayer.addChild(this.previewTurret);
         this.game.effectLayer.addChild(this.linkGraphics);
@@ -237,6 +241,18 @@ export class TowerManager {
     public update(delta: number) {
         const enemies = this.game.waveManager.enemies;
         this.towers.forEach(t => t.update(delta, enemies));
+        this.renderRanges();
+    }
+
+    private renderRanges() {
+        this.rangeGraphics.clear();
+        if (!this.showAllRanges) return;
+
+        this.towers.forEach(t => {
+            const range = (t.config.range + (t.level === 3 ? 1 : 0)) * TILE_SIZE;
+            this.rangeGraphics.circle(t.container.x, t.container.y, range);
+            this.rangeGraphics.stroke({ width: 1, color: t.config.color, alpha: 0.2 });
+        });
     }
 
     public clearTowers() {

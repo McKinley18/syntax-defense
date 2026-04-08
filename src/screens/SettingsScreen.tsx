@@ -25,6 +25,16 @@ interface SettingsScreenProps {
   onPreviewTrack: (id: number) => void;
   onSetScreen: (screen: any) => void;
   setIsTypingComplete: (complete: boolean) => void;
+  
+  // New Calibration Props
+  crtEnabled: boolean;
+  glitchEffectsEnabled: boolean;
+  autoPauseEnabled: boolean;
+  showAllRanges: boolean;
+  toggleCrt: () => void;
+  toggleGlitch: () => void;
+  toggleAutoPause: () => void;
+  toggleShowRanges: () => void;
 }
 
 const SettingsScreen: React.FC<SettingsScreenProps> = ({
@@ -50,7 +60,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   toggleTrack,
   onPreviewTrack,
   onSetScreen,
-  setIsTypingComplete
+  setIsTypingComplete,
+  
+  crtEnabled,
+  glitchEffectsEnabled,
+  autoPauseEnabled,
+  showAllRanges,
+  toggleCrt,
+  toggleGlitch,
+  toggleAutoPause,
+  toggleShowRanges
 }) => {
   return (
     <div className="encyclopedia ui-layer">
@@ -71,12 +90,43 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   </div>
                   <button className={`blue-button track-toggle ${skipIntro ? 'enabled' : 'disabled'}`} onClick={toggleSkipIntro} style={{ width: '100%' }}>{skipIntro ? 'DISABLE' : 'ENABLE'}</button>
                 </div>
-                <div className="setting-row" style={{ marginTop: '10px' }}>
+                <div className="setting-row" style={{ marginTop: '10px', position: 'relative' }}>
                   <div className="setting-label-row"><span>TUTORIAL DATA</span></div>
                   <button className="blue-button" onClick={onPurgeTutorial} style={{ borderColor: 'var(--neon-cyan)', width: '100%' }}>PURGE ONBOARDING CACHE</button>
-                  {resetStatus && <div style={{ color: '#00ff66', fontSize: '0.6rem', textAlign: 'center', marginTop: '5px' }}>&gt; {resetStatus}</div>}
+                  {resetStatus && (
+                    <div style={{ 
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      width: '100%',
+                      background: 'rgba(0,0,0,0.9)',
+                      border: '1px solid #00ff66',
+                      padding: '5px',
+                      color: '#00ff66', 
+                      fontSize: '0.6rem', 
+                      textAlign: 'center', 
+                      marginTop: '5px',
+                      zIndex: 10,
+                      boxShadow: '0 0 10px rgba(0, 255, 102, 0.3)'
+                    }}>
+                      &gt; {resetStatus}
+                    </div>
+                  )}
                 </div>
               </div>
+
+              <div className="settings-module">
+                <h3>Mainframe Calibration</h3>
+                <div className="setting-row">
+                  <div className="setting-label-row"><span>CRT SCANLINES</span><span style={{ color: crtEnabled ? 'var(--neon-cyan)' : '#666' }}>{crtEnabled ? 'ACTIVE' : 'NULL'}</span></div>
+                  <button className={`blue-button track-toggle ${crtEnabled ? 'enabled' : 'disabled'}`} onClick={toggleCrt} style={{ width: '100%' }}>{crtEnabled ? 'DISABLE' : 'ENABLE'}</button>
+                </div>
+                <div className="setting-row" style={{ marginTop: '8px' }}>
+                  <div className="setting-label-row"><span>GLITCH EVENTS</span><span style={{ color: glitchEffectsEnabled ? 'var(--neon-cyan)' : '#666' }}>{glitchEffectsEnabled ? 'ACTIVE' : 'NULL'}</span></div>
+                  <button className={`blue-button track-toggle ${glitchEffectsEnabled ? 'enabled' : 'disabled'}`} onClick={toggleGlitch} style={{ width: '100%' }}>{glitchEffectsEnabled ? 'DISABLE' : 'ENABLE'}</button>
+                </div>
+              </div>
+
               <div className="settings-module" style={{ gridRow: 'span 2' }}>
                 <h3>Audio Engine</h3>
                 <div className="setting-row">
@@ -92,7 +142,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <div className="setting-row">
                   <div className="setting-label-row"><span>ACTIVE PLAYLIST (TAP NAME TO PREVIEW)</span></div>
                   <div className="track-list">
-                    {['HYPNOTIC', 'INDUSTRIAL', 'DATA STREAM', 'KERNEL', 'GLITCH TECH', 'UPLINK'].map((name, id) => (
+                    {[
+                      'AMBIENT TECH', 'INDUSTRIAL DEPTH', 'LIQUID DATA', 'CORE SEQUENCER', 'GHOST VOICES', 'UPLINK SYNC',
+                      'NEON NIGHTS', 'GRID RUNNER', 'SYSTEM ERROR', 'VIRTUAL HORIZON', 'CORE BREACH'
+                    ].map((name, id) => (
                       <div key={id} className="track-item">
                         <span className="track-name" onClick={() => onPreviewTrack(id)} style={{ cursor: 'pointer', color: 'var(--neon-cyan)', textDecoration: 'underline' }}>{name}</span>
                         <button className={`blue-button track-toggle ${enabledTracks[id] ? 'enabled' : 'disabled'}`} onClick={() => toggleTrack(id)}>
@@ -103,6 +156,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   </div>
                 </div>
               </div>
+
+              <div className="settings-module">
+                <h3>Combat Protocols</h3>
+                <div className="setting-row">
+                  <div className="setting-label-row"><span>AUTO-PAUSE (WAVE END)</span><span style={{ color: autoPauseEnabled ? 'var(--neon-cyan)' : '#666' }}>{autoPauseEnabled ? 'ACTIVE' : 'OFF'}</span></div>
+                  <button className={`blue-button track-toggle ${autoPauseEnabled ? 'enabled' : 'disabled'}`} onClick={toggleAutoPause} style={{ width: '100%' }}>{autoPauseEnabled ? 'DISABLE' : 'ENABLE'}</button>
+                </div>
+                <div className="setting-row" style={{ marginTop: '8px' }}>
+                  <div className="setting-label-row"><span>PERMANENT RANGE HUD</span><span style={{ color: showAllRanges ? 'var(--neon-cyan)' : '#666' }}>{showAllRanges ? 'ACTIVE' : 'OFF'}</span></div>
+                  <button className={`blue-button track-toggle ${showAllRanges ? 'enabled' : 'disabled'}`} onClick={toggleShowRanges} style={{ width: '100%' }}>{showAllRanges ? 'DISABLE' : 'ENABLE'}</button>
+                </div>
+              </div>
+
               <div className="settings-module">
                 <h3>System Diagnostics</h3>
                 <div className="diagnostics-list">

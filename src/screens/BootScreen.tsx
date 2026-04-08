@@ -23,13 +23,21 @@ const BootScreen: React.FC<BootScreenProps> = ({
   setBootPhase
 }) => {
   return (
-    <div className="audio-splash ui-layer" onClick={wakeAudioSystem}>
+    <div className="audio-splash ui-layer" onClick={() => {
+      if (bootPhase === 0 || bootPhase >= 18 || skipIntro) {
+        wakeAudioSystem();
+      }
+    }}>
       <div className={`boot-container ${isDistorted ? 'distorted' : ''}`} style={{ position: 'absolute', top: '20px', left: '20px', textAlign: 'left', fontFamily: 'monospace' }}>
-        {!skipIntro ? (
+        {bootPhase === 0 && !skipIntro ? (
+          <div style={{ color: 'var(--neon-cyan)', fontSize: '1rem', cursor: 'pointer', animation: 'pulse 2s infinite' }}>
+            &gt; SYSTEM_READY: [ TOUCH TO INITIALIZE ]
+          </div>
+        ) : !skipIntro ? (
           <>
             <div style={{ color: '#fff', fontSize: '0.85rem', marginBottom: '4px' }}>
-              &gt; <TerminalText text="auth --request-access" speed={35} onComplete={() => setBootPhase(1)} />
-              {bootPhase === 1 && <span className="terminal-cursor"></span>}
+              &gt; <TerminalText text="auth --request-access" speed={35} onComplete={() => setBootPhase(2)} />
+              {bootPhase === 2 && <span className="terminal-cursor"></span>}
             </div>
             {bootPhase >= 2 && (
               <div style={{ color: '#00ff66', fontSize: '0.85rem', marginBottom: '12px' }}>
