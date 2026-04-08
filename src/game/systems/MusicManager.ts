@@ -54,6 +54,13 @@ export class MusicManager {
         localStorage.setItem('syntax_enabled_tracks', JSON.stringify(this.enabledTracks));
     }
 
+    public previewTrack(id: TrackID) {
+        if (!this.ctx || !this.isPlaying) return;
+        this.currentTrack = id;
+        // Immediate jump to new track logic
+        this.beatIndex = (Math.floor(this.beatIndex / 4) * 4); // Align to bar
+    }
+
     private scheduler() {
         if (!this.isPlaying || !this.ctx) return;
         while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
@@ -67,9 +74,9 @@ export class MusicManager {
         const tempo = 128.0;
         const secondsPerBeat = 60.0 / tempo / 4; 
         this.nextNoteTime += secondsPerBeat;
-        this.beatIndex = (this.beatIndex + 1) % 32;
+        this.beatIndex = (this.beatIndex + 1) % 128; // Longer phrases
 
-        // TRACK ROTATION: Pick next enabled track every 32 beats
+        // TRACK ROTATION: Every 128 beats (~1 minute)
         if (this.beatIndex === 0) {
             this.pickNextTrack();
         }
@@ -78,8 +85,6 @@ export class MusicManager {
     private pickNextTrack() {
         const indices = this.enabledTracks.map((e, i) => e ? i : -1).filter(i => i !== -1);
         if (indices.length === 0) return;
-        
-        // Randomly pick from enabled
         this.currentTrack = indices[Math.floor(Math.random() * indices.length)] as TrackID;
     }
 
@@ -89,7 +94,7 @@ export class MusicManager {
         // GLOBAL DRUM LAYER
         if (index % 4 === 0) this.triggerPulse(150, 40, 0.12, 'sine', 0.4, time); // KICK
         if (index % 4 === 2) this.triggerNoise(0.08, 0.05, time); // SNARE
-        if (index % 2 === 1) this.triggerPulse(8000, 4000, 0.02, 'square', 0.02, time); // HAT
+        if (index % 2 === 1) this.triggerPulse(3000, 1500, 0.02, 'sine', 0.015, time); // SOFT HAT (Clean)
 
         // TRACK-SPECIFIC LOGIC
         switch(this.currentTrack) {
@@ -102,43 +107,43 @@ export class MusicManager {
         }
     }
 
-    private playTrack0(i: number, t: number) { // ORIGINAL HYPNOTIC
+    private playTrack0(i: number, t: number) { // HYPNOTIC
         const bass = [55, 55, 55, 65, 55, 55, 73, 65]; 
         if (i % 2 === 0) this.triggerPulse(bass[(i/2)%8], bass[(i/2)%8], 0.1, 'square', 0.06, t);
-        const arp = [220, 0, 330, 0, 440, 0, 330, 550, 0, 440, 330, 0, 220, 330, 440, 660];
+        const arp = [220, 0, 330, 0, 440, 0, 330, 440, 0, 440, 330, 0, 220, 330, 440, 550];
         const freq = arp[i % 16];
-        if (freq > 0) this.triggerPulse(freq, freq * 1.01, 0.04, 'square', 0.03, t);
+        if (freq > 0) this.triggerPulse(freq, freq * 1.01, 0.04, 'triangle', 0.03, t);
     }
 
-    private playTrack1(i: number, t: number) { // INDUSTRIAL PULSE
+    private playTrack1(i: number, t: number) { // INDUSTRIAL
         const bass = [41, 41, 41, 41, 41, 41, 41, 49]; 
         if (i % 2 === 0) this.triggerPulse(bass[(i/2)%8], bass[(i/2)%8], 0.12, 'sawtooth', 0.07, t);
-        if (i % 8 === 0) this.triggerPulse(880, 220, 0.15, 'square', 0.04, t);
+        if (i % 8 === 0) this.triggerPulse(440, 220, 0.15, 'square', 0.04, t);
     }
 
     private playTrack2(i: number, t: number) { // DATA STREAM
         const bass = [65, 65, 82, 65, 98, 65, 82, 73];
         if (i % 2 === 0) this.triggerPulse(bass[(i/2)%8], bass[(i/2)%8], 0.08, 'square', 0.05, t);
-        const arp = [880, 1100, 1320, 1760];
+        const arp = [440, 550, 660, 880];
         if (i % 4 >= 2) this.triggerPulse(arp[i%4], arp[i%4], 0.03, 'sine', 0.02, t);
     }
 
-    private playTrack3(i: number, t: number) { // KERNEL MODE
+    private playTrack3(i: number, t: number) { // KERNEL
         if (i % 4 === 0) this.triggerPulse(110, 110, 0.2, 'sawtooth', 0.08, t);
-        const seq = [440, 440, 440, 440, 660, 660, 550, 550];
-        if (i % 2 === 1) this.triggerPulse(seq[(i-1)/2 % 8], seq[(i-1)/2 % 8], 0.05, 'square', 0.03, t);
+        const seq = [440, 440, 440, 440, 550, 550, 440, 440];
+        if (i % 2 === 1) this.triggerPulse(seq[(i-1)/2 % 8], seq[(i-1)/2 % 8], 0.05, 'triangle', 0.03, t);
     }
 
-    private playTrack4(i: number, t: number) { // GLITCH TECH
+    private playTrack4(i: number, t: number) { // GLITCH
         const bass = [41, 41, 55, 41];
         if (i % 4 === 0) this.triggerPulse(bass[i/4%4], bass[i/4%4], 0.2, 'square', 0.08, t);
-        if (i % 3 === 0) this.triggerPulse(Math.random()*1000 + 500, 100, 0.02, 'square', 0.02, t);
+        if (i % 3 === 0) this.triggerPulse(Math.random()*400 + 200, 100, 0.02, 'sine', 0.02, t);
     }
 
     private playTrack5(i: number, t: number) { // UPLINK
         const bass = [73, 73, 73, 73, 87, 87, 98, 98];
         if (i % 2 === 0) this.triggerPulse(bass[(i/2)%8], bass[(i/2)%8], 0.1, 'square', 0.05, t);
-        const lead = [1100, 0, 1100, 0, 1320, 0, 990, 0];
+        const lead = [550, 0, 550, 0, 660, 0, 440, 0];
         if (i % 2 === 1) this.triggerPulse(lead[(i-1)/2 % 8], lead[(i-1)/2 % 8], 0.06, 'sine', 0.02, t);
     }
 

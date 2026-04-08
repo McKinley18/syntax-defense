@@ -29,6 +29,7 @@ export class ParticleManager {
             g.clear();
             g.alpha = 1;
             g.scale.set(1);
+            g.position.set(0, 0); // RESET POSITION
             return g;
         }
         return new PIXI.Graphics();

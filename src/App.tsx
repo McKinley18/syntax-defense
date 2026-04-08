@@ -257,6 +257,7 @@ function App() {
   const toggleAmbient = () => { AudioManager.getInstance().toggleAmbient(); setAmbientMuted(AudioManager.getInstance().isAmbientMuted); };
   const [enabledTracks, setEnabledTracks] = useState(MusicManager.getInstance().enabledTracks);
   const toggleTrack = (id: number) => { MusicManager.getInstance().toggleTrack(id as any); setEnabledTracks([...MusicManager.getInstance().enabledTracks]); };
+  const previewTrack = (id: number) => { MusicManager.getInstance().previewTrack(id as any); };
   const toggleSkipIntro = () => { const newVal = !skipIntro; setSkipIntro(newVal); localStorage.setItem('syntax_skip_intro', String(newVal)); };
   const isUnlocked = (type: number) => GameStateManager.getInstance().isTowerUnlocked(type);
   const repairKernel = () => { AudioManager.getInstance().playUiClick(); GameStateManager.getInstance().repairKernel(); };
@@ -271,6 +272,11 @@ function App() {
 
   return (
     <div className="game-wrapper">
+      <div className="orientation-warning ui-layer">
+        <div className="rotate-icon">📱</div>
+        <h2>LANDSCAPE MODE REQUIRED</h2>
+        <p>&gt; PLEASE ROTATE YOUR DEVICE TO INITIALIZE SYSTEM.</p>
+      </div>
       {!audioReady && (
         <BootScreen 
           isDistorted={isDistorted}
@@ -339,6 +345,7 @@ function App() {
           toggleSfx={toggleSfx}
           toggleAmbient={toggleAmbient}
           toggleTrack={toggleTrack}
+          onPreviewTrack={previewTrack}
           onSetScreen={setScreen}
           setIsTypingComplete={setIsTypingComplete}
         />

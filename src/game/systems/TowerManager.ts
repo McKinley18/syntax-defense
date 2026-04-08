@@ -62,7 +62,7 @@ export class TowerManager {
             this.updatePreview(worldPos.x, worldPos.y);
         });
 
-        this.game.app.stage.on('pointertap', (e) => {
+        this.game.app.stage.on('pointerdown', (e) => {
             const worldPos = this.game.viewport.toLocal(e.global);
             
             if (this.isPlacing) {

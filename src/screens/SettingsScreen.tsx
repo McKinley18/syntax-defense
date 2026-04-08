@@ -21,6 +21,7 @@ interface SettingsScreenProps {
   toggleSfx: () => void;
   toggleAmbient: () => void;
   toggleTrack: (id: number) => void;
+  onPreviewTrack: (id: number) => void;
   onSetScreen: (screen: any) => void;
   setIsTypingComplete: (complete: boolean) => void;
 }
@@ -45,6 +46,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
   toggleSfx,
   toggleAmbient,
   toggleTrack,
+  onPreviewTrack,
   onSetScreen,
   setIsTypingComplete
 }) => {
@@ -86,11 +88,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <button className="blue-button compact-btn" onClick={toggleAmbient} style={{ marginTop: '5px' }}>{ambientMuted ? 'UNMUTE MUSIC' : 'MUTE MUSIC'}</button>
                 </div>
                 <div className="setting-row">
-                  <div className="setting-label-row"><span>ACTIVE PLAYLIST</span></div>
+                  <div className="setting-label-row"><span>ACTIVE PLAYLIST (TAP NAME TO PREVIEW)</span></div>
                   <div className="track-list">
                     {['HYPNOTIC', 'INDUSTRIAL', 'DATA STREAM', 'KERNEL', 'GLITCH TECH', 'UPLINK'].map((name, id) => (
                       <div key={id} className="track-item">
-                        <span className="track-name">{name}</span>
+                        <span className="track-name" onClick={() => onPreviewTrack(id)} style={{ cursor: 'pointer', color: 'var(--neon-cyan)', textDecoration: 'underline' }}>{name}</span>
                         <button className={`blue-button track-toggle ${enabledTracks[id] ? 'enabled' : 'disabled'}`} onClick={() => toggleTrack(id)}>
                           {enabledTracks[id] ? 'ACTIVE' : 'OFF'}
                         </button>
