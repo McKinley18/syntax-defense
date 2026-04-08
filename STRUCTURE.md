@@ -60,7 +60,24 @@
   0. Intro (Threat Detected) -> 1. Select MG -> 2. Node Intel (Radius) -> 3. Place (10,6) -> 4. Upgrade Intel -> 5. Test Purge (1 Glider) -> 6. Final Descriptive Popup (Kernel/UI/Viruses) -> 7. Reset to Wave 1.
 
 ### 3. PERSISTENCE LAYER
-- `syntax_total_xp`: Total XP.
-- `syntax_hall_of_fame`: `{highestWave, lifetimeKills}`.
-- `syntax_defense_save`: Full session state (Credits, Integrity, Wave, Mode).
-- `syntax_skip_intro`: User boot preference.
+...
+---
+
+## III. SYSTEM INITIALIZATION SCHEMATIC (Boot Sequence)
+
+| Phase | Event | Type | Delay/Speed |
+|-------|-------|------|-------------|
+| 0 | Studio Splash | Studio Logo | 3.5s |
+| 1 | auth --request-access | User Prompt | 35ms/char |
+| 3 | Access Authorized | Sys Response | 20ms/char |
+| 5 | Logging in as ARCHITECT | Status Alert | 20ms/char |
+| 6 | sys --init-protocols | User Prompt | 35ms/char |
+| 6.5 | Protocol Download | Loading Bar | 40ms/2% |
+| 7 | Module Uploads | Technical Logs | 400ms/line |
+| 9 | Status: Successful | Sys Response | 25ms/char |
+| 11 | Access: Granted | Sys Response | 25ms/char |
+| 13 | Caution: Threats Imminent | Alert | 25ms/char |
+| 16 | Virus Leak Stutter | Distortion | 400ms |
+| 18 | Access System Root | Manual Entry | User Click |
+
+---

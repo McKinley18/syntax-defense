@@ -24,6 +24,17 @@ type ArchiveCategory = 'NONE' | 'TACTICAL' | 'HANDBOOK' | 'MANIFEST';
 type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'RANKS' | 'HALL_OF_FAME' | 'CREDITS';
 
 function App() {
+  const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+
+  useEffect(() => {
+    const handleOrientation = () => {
+      setIsLandscape(window.innerWidth > window.innerHeight);
+    };
+    window.addEventListener('resize', handleOrientation);
+    handleOrientation();
+    return () => window.removeEventListener('resize', handleOrientation);
+  }, []);
+
   const [screen, setScreen] = useState<ScreenState>('BOOT');
   const [archiveCategory, setArchiveCategory] = useState<ArchiveCategory>('NONE');
   const [infoTab, setInfoTab] = useState<InfoTab>('LORE');
@@ -66,17 +77,36 @@ function App() {
   const [uptime, setUptime] = useState(0);
   const [entropy, setEntropy] = useState(0.14);
   const [menuGlitchActive, setMenuGlitchActive] = useState(false);
+  const [showStudioSplash, setShowStudioSplash] = useState(false);
+  const [studioComplete, setStudioComplete] = useState(false);
+
+  useEffect(() => {
+    // START STUDIO ONLY ONCE ORIENTATION IS CORRECT AND NOT YET COMPLETED
+    if (isLandscape && !studioComplete && !showStudioSplash) {
+      setShowStudioSplash(true);
+      const timer = setTimeout(() => {
+        setShowStudioSplash(false);
+        setStudioComplete(true);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLandscape, studioComplete, showStudioSplash]);
 
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const firstTurretRef = useRef<HTMLDivElement>(null);
 
   const [tilePos, setTilePos] = useState({ x: 0, y: 0, ts: 40 });
-  const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
 
-  const [bootPhase, setBootPhase] = useState(localStorage.getItem('syntax_skip_intro') === 'true' ? 18 : 0); 
-  const [bootProgress, setBootProgress] = useState(localStorage.getItem('syntax_skip_intro') === 'true' ? 100 : 0);
+  const [bootPhase, setBootPhase] = useState(0); 
+  const [bootProgress, setBootProgress] = useState(0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
+  const [secondaryLogs, setSecondaryLogs] = useState<string[]>([]);
+  const [showAuthorized, setShowAuthorized] = useState(false);
+  const [showPreserve, setShowPreserve] = useState(false);
+  const [showSuccessful, setShowSuccessful] = useState(false);
+  const [showCaution, setShowCaution] = useState(false);
+  const [showImminent, setShowImminent] = useState(false);
   const [isReadyGlitched, setIsReadyGlitched] = useState(false);
   const bootLogIndexRef = useRef(0);
 
@@ -91,12 +121,12 @@ function App() {
   const toggleShowRanges = () => { const v = !showAllRanges; setShowAllRanges(v); localStorage.setItem('syntax_show_ranges', String(v)); };
 
   useEffect(() => {
-    const handleOrientation = () => {
-      setIsLandscape(window.innerWidth > window.innerHeight);
-    };
-    window.addEventListener('resize', handleOrientation);
-    return () => window.removeEventListener('resize', handleOrientation);
-  }, []);
+    // SKIP INTRO LOGIC
+    if (skipIntro && bootPhase === 0) {
+        setBootPhase(18);
+        setBootProgress(100);
+    }
+  }, [skipIntro, bootPhase]);
 
   useEffect(() => {
     if (game) {
@@ -135,48 +165,104 @@ function App() {
 
   useEffect(() => {
     if (!isLandscape) return;
-    // RUN BOOT LOGIC REGARDLESS OF audioReady state, but sounds only play if ready
-    if (bootPhase === 1) {
-        setTimeout(() => setBootPhase(2), 200);
+    
+    // Auto-advance to phase 1 after studio
+    if (studioComplete && bootPhase === 0) {
+        setBootPhase(1);
     }
-    else if (bootPhase === 3) setTimeout(() => setBootPhase(4), 800);
-    else if (bootPhase === 4) setTimeout(() => setBootPhase(5), 600);
+
+    if (bootPhase === 1) {
+        // Handled by user click usually, but if somehow set to 1, start sequence
+        // Text in BootScreen will trigger phase 2 onComplete
+    }
+    else if (bootPhase === 2) {
+        // Auth line complete, wait for processing feel
+        setTimeout(() => setBootPhase(3), 1200);
+    }
+    else if (bootPhase === 4) {
+        // Login line complete, wait for session start feel
+        setTimeout(() => setBootPhase(5), 1000);
+    }
     else if (bootPhase === 6) {
+        // Welcome line complete, wait before user enters next command
+        setTimeout(() => setBootPhase(6.1), 1200);
+    }
+    else if (bootPhase === 6.2) {
+        // sys --init-protocols line complete, deliberate "thinking" pause before response
+        setTimeout(() => setBootPhase(6.5), 1800);
+    }
+    else if (bootPhase === 6.6) {
         const timer = setInterval(() => {
-            setBootProgress(p => { if (p >= 100) { clearInterval(timer); setTimeout(() => setBootPhase(7), 800); return 100; } return p + 2; });
-        }, 30);
+            setBootProgress(p => { 
+                if (p >= 100) { 
+                    clearInterval(timer); 
+                    setTimeout(() => setBootPhase(7), 1200); 
+                    return 100; 
+                } 
+                return p + 1; // Slowed down progress
+            });
+        }, 60); // Slower interval
         return () => clearInterval(timer);
     } else if (bootPhase === 7) {
         const logs = [
             "UPLOADING KERNEL_MODULES... [OK]",
             "MOUNTING TACTICAL_ASSETS... [OK]",
-            "SYNCHRONIZING CORE_LOGIC... [OK]"
+            "SYNCHRONIZING CORE_LOGIC... [OK]",
+            "INITIALIZING TOWER_DEFENSE_PROT... [OK]",
+            "CALIBRATING TARGETING_ARRAYS... [OK]",
+            "ESTABLISHING ENCRYPTED_UPLINK... [OK]"
         ];
+        
         const itv = setInterval(() => {
             if (bootLogIndexRef.current < logs.length) { 
-                setBootLogs(prev => [...prev, logs[bootLogIndexRef.current]]); 
+                const logToAdd = logs[bootLogIndexRef.current];
+                setBootLogs(prev => [...prev, logToAdd]); 
                 if (audioReady) AudioManager.getInstance().playTypeClick(); 
                 bootLogIndexRef.current++; 
             }
-            else { clearInterval(itv); setTimeout(() => setBootPhase(9), 800); }
-        }, 600);
+            else { 
+                clearInterval(itv); 
+                setTimeout(() => setBootPhase(9), 1200); 
+            }
+        }, 600); // Slower log interval
         return () => clearInterval(itv);
-    } else if (bootPhase === 10) setTimeout(() => setBootPhase(11), 800);
-    else if (bootPhase === 12) setTimeout(() => setBootPhase(13), 1000);
-    else if (bootPhase === 14) setTimeout(() => setBootPhase(15), 1500);
-    else if (bootPhase === 16) {
-        // VIRUS LEAK STUTTER: 400ms "WIPE USER SYSTEM" GLITCH
+    } else if (bootPhase === 9) {
+        // Transition to status lines - start first line
+        setTimeout(() => setBootPhase(10), 1500);
+    } else if (bootPhase === 11) {
+        // Status: Successful done, pause then start Access: Granted
+        setTimeout(() => setBootPhase(12), 1200);
+    } else if (bootPhase === 13) {
+        // Access: Granted done, pause then start Caution: Threats
+        setTimeout(() => setBootPhase(14), 1500);
+    } else if (bootPhase === 14.1) {
+        // Critical alert text done, wait before asking for manual containment
+        setTimeout(() => setBootPhase(14.5), 1500);
+    } else if (bootPhase === 14.6) {
+        // Prompt done, 'hesitate' before typing Y
+        setTimeout(() => setBootPhase(14.7), 2000);
+    } else if (bootPhase === 14.8) {
+        // Y typed, pause before entering purge command
+        setTimeout(() => setBootPhase(14.9), 1000);
+    } else if (bootPhase === 15) {
+        // Purge command entered, processing wait...
+        setTimeout(() => setBootPhase(15.2), 2500);
+    } else if (bootPhase === 15.4) {
+        // Error message done, wait before final handoff
+        setTimeout(() => setBootPhase(15.5), 1200);
+    } else if (bootPhase === 16) {
+        // VIRUS LEAK STUTTER: 300ms "WIPE USER SYSTEM" GLITCH
         const am = AudioManager.getInstance();
         setTimeout(() => { 
             setIsReadyGlitched(true); 
             setIsDistorted(true); 
             if (audioReady) am.playGlitchBuzz(); 
-        }, 200);
+        }, 100);
         setTimeout(() => { 
             setIsReadyGlitched(false); 
             setIsDistorted(false); 
             setBootPhase(18); 
-        }, 600);
+        }, 400);
     }
   }, [bootPhase, audioReady, isLandscape]);
 
@@ -184,10 +270,10 @@ function App() {
     const itv = setInterval(() => {
       const ready = AudioManager.getInstance().isReady();
       setAudioReady(ready);
-      if (ready && screen === 'BOOT') setScreen('MENU');
+      // Removed auto-transition to MENU. User must click button at Phase 18.
     }, 100);
     return () => clearInterval(itv);
-  }, [screen]);
+  }, [screen]); // Removed bootPhase dependency as we no longer auto-transition based on it
 
   const wakeAudioSystem = async () => {
     await AudioManager.getInstance().resume();
@@ -333,26 +419,54 @@ function App() {
 
   return (
     <div className="game-wrapper">
-      <div className="orientation-warning ui-layer">
-        <div className="rotate-icon">📱</div>
-        <h2>LANDSCAPE MODE REQUIRED</h2>
-        <p>&gt; PLEASE ROTATE YOUR DEVICE TO INITIALIZE SYSTEM.</p>
-      </div>
-      {!audioReady && (
+      {!isLandscape ? (
+        <div className="orientation-warning ui-layer" style={{ display: 'flex' }}>
+          <div className="rotate-icon">📱</div>
+          <h2>LANDSCAPE MODE REQUIRED</h2>
+          <p>&gt; PLEASE ROTATE YOUR DEVICE TO INITIALIZE SYSTEM.</p>
+        </div>
+      ) : showStudioSplash ? (
+        <div className="studio-splash ui-layer" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#000', opacity: 1, transition: 'opacity 1s' }}>
+          <div className="monolith-monument" style={{ 
+            display: 'flex', 
+            alignItems: 'flex-end', 
+            gap: '6px', 
+            marginBottom: '30px',
+            opacity: 0,
+            animation: 'fade-in-out 3.5s forwards'
+          }}>
+            <div style={{ width: '8px', height: '40px', background: 'var(--neon-cyan)', boxShadow: '0 0 15px var(--neon-cyan)' }}></div>
+            <div style={{ width: '16px', height: '75px', background: 'var(--neon-cyan)', boxShadow: '0 0 25px var(--neon-cyan)' }}></div>
+            <div style={{ width: '8px', height: '40px', background: 'var(--neon-cyan)', boxShadow: '0 0 15px var(--neon-cyan)' }}></div>
+          </div>
+          <div style={{ color: 'var(--neon-cyan)', fontSize: '1.8rem', letterSpacing: '16px', fontWeight: 900, textAlign: 'center', marginLeft: '16px' }}>
+            MONOLITH
+          </div>
+          <div style={{ color: '#111', fontSize: '0.5rem', marginTop: '20px', letterSpacing: '8px', fontWeight: 300 }}>
+            PRESENTS
+          </div>
+        </div>
+      ) : screen === 'BOOT' ? (
         <BootScreen 
           isDistorted={isDistorted}
           skipIntro={skipIntro}
           bootPhase={bootPhase}
           bootProgress={bootProgress}
           bootLogs={bootLogs}
+          secondaryLogs={secondaryLogs}
+          showAuthorized={showAuthorized}
+          showPreserve={showPreserve}
+          showSuccessful={showSuccessful}
+          showCaution={showCaution}
+          showImminent={showImminent}
           isReadyGlitched={isReadyGlitched}
+          audioReady={audioReady}
           wakeAudioSystem={wakeAudioSystem}
           setBootPhase={setBootPhase}
         />
-      )}
-
-      <div id="game-container"></div>
-      
+      ) : (
+        <>
+          <div id="game-container"></div>      
       {screen === 'MENU' && <GridBackground isDistorted={isDistorted} isFlickering={isFlickering} />}
 
       {screen === 'MENU' && (
@@ -494,7 +608,10 @@ function App() {
             setShowCombatIntel(true);
           }}
           setSelectedTower={setSelectedTower}
+          onSetHoveredTower={setHoveredTower}
         />
+      )}
+        </>
       )}
     </div>
   );

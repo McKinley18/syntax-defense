@@ -1,5 +1,6 @@
 import React from 'react';
 import TerminalText from '../components/TerminalText';
+import { AudioManager } from '../game/systems/AudioManager';
 
 interface BootScreenProps {
   isDistorted: boolean;
@@ -7,7 +8,14 @@ interface BootScreenProps {
   bootPhase: number;
   bootProgress: number;
   bootLogs: string[];
+  secondaryLogs: string[];
+  showAuthorized: boolean;
+  showPreserve: boolean;
+  showSuccessful: boolean;
+  showCaution: boolean;
+  showImminent: boolean;
   isReadyGlitched: boolean;
+  audioReady: boolean;
   wakeAudioSystem: () => void;
   setBootPhase: (phase: number) => void;
 }
@@ -18,7 +26,14 @@ const BootScreen: React.FC<BootScreenProps> = ({
   bootPhase,
   bootProgress,
   bootLogs,
+  secondaryLogs,
+  showAuthorized,
+  showPreserve,
+  showSuccessful,
+  showCaution,
+  showImminent,
   isReadyGlitched,
+  audioReady,
   wakeAudioSystem,
   setBootPhase
 }) => {
@@ -28,41 +43,67 @@ const BootScreen: React.FC<BootScreenProps> = ({
         wakeAudioSystem();
       }
     }}>
-      <div className={`boot-container ${isDistorted ? 'distorted' : ''}`} style={{ position: 'absolute', top: '20px', left: '20px', textAlign: 'left', fontFamily: 'monospace' }}>
+      {/* PERSISTENT BOOT HEADER */}
+      {!skipIntro && (bootPhase > 0 || !audioReady) && (
+        <>
+          <div className="menu-breadcrumbs" style={{ color: '#444' }}>GUEST@MAINFRAME:~/UNAUTHORIZED$</div>
+          <div className="menu-diagnostics" style={{ border: '1px solid rgba(255, 51, 0, 0.1)' }}>
+            <div className="diag-line" style={{ color: '#666' }}>SESSION: INSECURE</div>
+            <div className="diag-line" style={{ color: bootPhase >= 14 ? 'var(--neon-red)' : '#666' }}>
+              THREAT_LEVEL: {bootPhase >= 14 ? 'CRITICAL' : 'SCANNING'}
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className={`boot-container ${isDistorted ? 'distorted' : ''}`} style={{ fontFamily: 'monospace' }}>
         {bootPhase === 0 && !skipIntro ? (
           <div 
             onClick={(e) => { e.stopPropagation(); wakeAudioSystem(); }}
-            style={{ color: 'var(--neon-cyan)', fontSize: '1rem', cursor: 'pointer', animation: 'pulse 2s infinite', pointerEvents: 'auto' }}
+            style={{ color: 'var(--neon-cyan)', fontSize: '1rem', cursor: 'pointer', animation: 'pulse 2s infinite', pointerEvents: 'auto', padding: '20px', border: '1px solid var(--neon-cyan)', background: 'rgba(0,0,0,0.9)' }}
           >
-            &gt; SYSTEM_READY: [ TOUCH TO INITIALIZE ]
+            &gt; MAIN_CORE_STABLE<br />
+            &gt; SYSTEM_READY: [ INITIALIZE_MAINFRAME ]
           </div>
         ) : !skipIntro ? (
           <>
-            <div style={{ color: '#fff', fontSize: '0.85rem', marginBottom: '4px' }}>
-              &gt; <TerminalText text="auth --request-access" speed={35} onComplete={() => setBootPhase(2)} />
-              {bootPhase === 2 && <span className="terminal-cursor"></span>}
-            </div>
-            {bootPhase >= 2 && (
-              <div style={{ color: '#00ff66', fontSize: '0.85rem', marginBottom: '12px' }}>
-                <TerminalText text="User access authorized [CLEARANCE_CONFIRMED]" speed={20} onComplete={() => setBootPhase(3)} />
-                {bootPhase === 3 && <span className="terminal-cursor"></span>}
+            {bootPhase >= 1 && (
+              <div style={{ color: '#fff', fontSize: '0.85rem', marginBottom: '8px' }}>
+                &gt; <TerminalText text="auth --request-access --identity=ARCHITECT" speed={35} onComplete={() => setBootPhase(2)} />
+                {bootPhase === 2 && <span className="terminal-cursor"></span>}
+              </div>
+            )}
+            {bootPhase >= 3 && (
+              <div style={{ color: '#00ff66', fontSize: '0.85rem', marginBottom: '16px' }}>
+                <TerminalText text="ACCESS_REQUEST_RECEIVED... SCANNING_BIOMETRICS... AUTHORIZED." speed={20} onComplete={() => setBootPhase(4)} />
+                {bootPhase === 4 && <span className="terminal-cursor"></span>}
+                {bootPhase >= 4 && (
+                  <div style={{ color: 'var(--neon-red)', fontSize: '0.6rem', marginTop: '2px', opacity: 0.6, animation: 'hardware-dim 0.5s infinite' }}>&gt;&gt; CAUTION: UNKNOWN_PACKET_DETECTED</div>
+                )}
               </div>
             )}
             
-            {bootPhase >= 4 && (
-              <div style={{ color: '#fff', fontSize: '0.85rem', marginBottom: '4px' }}>
-                &gt; <TerminalText text="sys --init-protocols" speed={35} onComplete={() => setBootPhase(5)} />
-                {bootPhase === 5 && <span className="terminal-cursor"></span>}
-              </div>
-            )}
             {bootPhase >= 5 && (
-              <div style={{ color: '#00ff66', fontSize: '0.85rem', marginBottom: '12px' }}>
-                <TerminalText text="INITIATING DEFENSE PROTOCOL DOWNLOAD..." speed={20} onComplete={() => setBootPhase(6)} />
+              <div style={{ color: 'var(--neon-cyan)', fontSize: '0.85rem', marginBottom: '16px' }}>
+                <TerminalText text="ESTABLISHING SESSION... WELCOME BACK, ARCHITECT." speed={20} onComplete={() => setBootPhase(6)} />
                 {bootPhase === 6 && <span className="terminal-cursor"></span>}
               </div>
             )}
+            
+            {bootPhase >= 6.1 && (
+              <div style={{ color: '#fff', fontSize: '0.85rem', marginBottom: '8px' }}>
+                &gt; <TerminalText text="sys --mount-tactical-logic --force" speed={35} onComplete={() => setBootPhase(6.2)} />
+                {(bootPhase === 6.2) && <span className="terminal-cursor"></span>}
+              </div>
+            )}
+            {bootPhase >= 6.5 && (
+              <div style={{ color: '#00ff66', fontSize: '0.85rem', marginBottom: '12px' }}>
+                <TerminalText text="MOUNTING_LOGIC_PACKETS... INITIATING_DOWNLOAD." speed={20} onComplete={() => { if (bootPhase === 6.5) setBootPhase(6.6); }} />
+                {bootPhase === 6.5 && <span className="terminal-cursor"></span>}
+              </div>
+            )}
 
-            {bootPhase >= 6 && (
+            {bootPhase >= 6.6 && (
               <div style={{ width: '250px', height: '15px', border: '1px solid #00ff66', position: 'relative', overflow: 'hidden', marginBottom: '15px' }}>
                 <div style={{ height: '100%', background: '#00ff66', width: `${bootProgress}%` }}></div>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: bootProgress > 50 ? '#000' : '#00ff66', fontWeight: 900 }}>
@@ -70,29 +111,76 @@ const BootScreen: React.FC<BootScreenProps> = ({
                 </div>
               </div>
             )}
+            
             {bootPhase >= 7 && bootLogs.map((log, i) => (
               <div key={i} style={{ color: '#00ff66', fontSize: '0.75rem', marginBottom: '4px' }}>&gt; {log}</div>
             ))}
-            {bootPhase >= 9 && (
+
+            {bootPhase >= 10 && (
               <div style={{ color: '#00ff66', fontSize: '0.75rem', marginTop: '10px' }}>
-                <div>&gt; <TerminalText text="Status: Successful." speed={25} onComplete={() => setBootPhase(10)} />{bootPhase === 10 && <span className="terminal-cursor"></span>}</div>
-                {bootPhase >= 11 && (
-                  <div style={{ marginTop: '4px' }}>&gt; <TerminalText text="Access: Granted." speed={25} onComplete={() => setBootPhase(12)} />{bootPhase === 12 && <span className="terminal-cursor"></span>}</div>
+                <div>&gt; <TerminalText text="Status: Successful." speed={25} onComplete={() => setBootPhase(11)} />{bootPhase === 11 && <span className="terminal-cursor"></span>}</div>
+                {bootPhase >= 12 && (
+                  <div style={{ marginTop: '4px' }}>&gt; <TerminalText text="Access: Granted." speed={25} onComplete={() => setBootPhase(13)} />{bootPhase === 13 && <span className="terminal-cursor"></span>}</div>
                 )}
-                {bootPhase >= 13 && (
-                  <div style={{ marginTop: '8px', color: 'var(--neon-red)' }}>
-                    &gt; <TerminalText text="Caution: threats imminent. Take necessary precautions." speed={25} onComplete={() => setBootPhase(14)} />
-                    {bootPhase === 14 && <span className="terminal-cursor"></span>}
+                {bootPhase >= 14 && (
+                  <div style={{ marginTop: '8px', color: 'var(--neon-red)', fontSize: '0.85rem' }}>
+                    <TerminalText text=">> CRITICAL_ALERT: MALICIOUS_DATA_INBOUND [STORM_LEVEL_7]" speed={25} onComplete={() => setBootPhase(14.1)} />
+                    {bootPhase === 14.1 && <span className="terminal-cursor"></span>}
                   </div>
                 )}
               </div>
             )}
-            {bootPhase >= 15 && (
+
+            {bootPhase >= 14.5 && (
+              <div style={{ color: '#fff', fontSize: '0.85rem', marginTop: '12px' }}>
+                <TerminalText text="Proceed with manual containment? (Y/N)" speed={35} onComplete={() => setBootPhase(14.6)} isGlitched={true} glitchProbability={0.08} />
+                {bootPhase === 14.6 && <span className="terminal-cursor"></span>}
+              </div>
+            )}
+
+            {bootPhase >= 14.7 && (
+              <div style={{ color: '#fff', fontSize: '0.85rem', marginTop: '4px' }}>
+                &gt; <TerminalText text="Y" speed={150} onComplete={() => setBootPhase(14.8)} isGlitched={true} />
+                {bootPhase === 14.8 && <span className="terminal-cursor"></span>}
+              </div>
+            )}
+
+            {bootPhase >= 14.9 && (
+              <div style={{ color: '#fff', fontSize: '0.85rem', marginTop: '8px' }}>
+                &gt; <TerminalText text="sys --purge-auto --all" speed={35} onComplete={() => setBootPhase(15)} isGlitched={true} glitchProbability={0.1} />
+                {bootPhase === 15 && <span className="terminal-cursor"></span>}
+              </div>
+            )}
+
+            {bootPhase >= 15.2 && (
+              <div style={{ color: 'var(--neon-red)', fontSize: '0.8rem', marginTop: '8px', fontWeight: 900 }}>
+                <TerminalText text="ERROR: AUTO_PURGE_FAILED [GLITCH_OVERLOAD]" speed={20} onComplete={() => setBootPhase(15.4)} isGlitched={true} glitchProbability={0.15} />
+              </div>
+            )}
+
+            {bootPhase >= 15.5 && (
+              <div style={{ color: 'var(--neon-cyan)', fontSize: '0.85rem', marginTop: '12px' }}>
+                <TerminalText text="MANUAL_OVERRIDE_REQUIRED... STAND_BY_FOR_HANDOFF." speed={20} onComplete={() => setBootPhase(15.6)} isGlitched={true} />
+              </div>
+            )}
+
+            {bootPhase >= 15.6 && (
               <div style={{ color: '#00ff66', fontSize: '0.75rem', marginTop: '10px' }}>
                 &gt; READY TO {isReadyGlitched ? (
                   <span style={{ color: 'var(--neon-red)', fontWeight: 900 }}>WIPE USER SYSTEM</span>
                 ) : (
-                  bootPhase >= 16 ? "INITIALIZE SYSTEM" : <TerminalText text="INITIALIZE SYSTEM" speed={25} onComplete={() => setBootPhase(16)} />
+                  "INITIALIZE SYSTEM"
+                )}
+                {!isReadyGlitched && bootPhase === 15.6 && (
+                  <div style={{ marginTop: '15px' }}>
+                    <button 
+                      className="blue-button" 
+                      onClick={() => setBootPhase(16)}
+                      style={{ padding: '8px 20px', fontSize: '0.7rem', borderColor: 'var(--neon-red)', color: 'var(--neon-red)' }}
+                    >
+                      &gt; INITIALIZE
+                    </button>
+                  </div>
                 )}
               </div>
             )}

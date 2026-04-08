@@ -60,17 +60,11 @@ export class AudioManager {
         if (this.ctx && this.ctx.state === 'suspended') {
             await this.ctx.resume();
         }
-        if (!this.isAmbientMuted) {
-            MusicManager.getInstance().start();
-        }
-    }
-
-    public playUiClick() {
-        this.playProcedural(400, 200, 0.08, 'square', 0.15);
+        // Music start removed from here - managed by App.tsx logic
     }
 
     public playTypeClick() {
-        this.playProcedural(600, 600, 0.015, 'square', 0.05);
+        this.playProcedural(600, 600, 0.015, 'square', 0.03); // Lowered from 0.05
     }
 
     public playBreach() {

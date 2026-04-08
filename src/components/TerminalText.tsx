@@ -7,9 +7,11 @@ interface TerminalTextProps {
   onComplete?: () => void;
   delay?: number;
   stopAtChar?: number;
+  glitchProbability?: number;
+  isGlitched?: boolean;
 }
 
-const TerminalText = ({ text, speed = 15, onComplete, delay = 0, stopAtChar }: TerminalTextProps) => {
+const TerminalText = ({ text, speed = 15, onComplete, delay = 0, stopAtChar, glitchProbability = 0.04, isGlitched = false }: TerminalTextProps) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isFinished, setIsFinished] = useState(false);
   const onCompleteRef = useRef(onComplete);
@@ -24,7 +26,16 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0, stopAtChar }: T
       const interval = setInterval(() => {
         if (isCancelled) { clearInterval(interval); return; }
         
-        setDisplayedText(text.slice(0, i));
+        // CHARACTER MUTATION LOGIC
+        let currentString = text.slice(0, i);
+        if (isGlitched && i > 0 && i < text.length && Math.random() < glitchProbability && text[i-1] !== ' ') {
+            const glitchChars = "!@#$%^&*()_+-=[]{}|;:,.<>/?";
+            const randomChar = glitchChars[Math.floor(Math.random() * glitchChars.length)];
+            currentString = currentString.slice(0, -1) + randomChar;
+        }
+
+        setDisplayedText(currentString);
+        
         if (i > 0 && i <= text.length && text[i-1] !== ' ') {
           const am = AudioManager.getInstance();
           if (am.isReady()) am.playTypeClick();
@@ -32,6 +43,7 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0, stopAtChar }: T
         
         if (stopAtChar !== undefined && i === stopAtChar) {
           clearInterval(interval);
+          setDisplayedText(text.slice(0, i)); 
           if (onCompleteRef.current) onCompleteRef.current();
           return;
         }
@@ -39,6 +51,7 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0, stopAtChar }: T
         i++;
         if (i > text.length) {
           clearInterval(interval);
+          setDisplayedText(text); 
           setIsFinished(true);
           if (onCompleteRef.current) onCompleteRef.current();
         }
@@ -46,7 +59,7 @@ const TerminalText = ({ text, speed = 15, onComplete, delay = 0, stopAtChar }: T
       return () => { isCancelled = true; clearInterval(interval); };
     }, delay);
     return () => { isCancelled = true; clearTimeout(startTimeout); };
-  }, [text, speed, delay, stopAtChar]);
+  }, [text, speed, delay, stopAtChar, glitchProbability, isGlitched]);
 
   return (
     <span>
