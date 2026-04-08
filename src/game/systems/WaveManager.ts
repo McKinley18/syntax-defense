@@ -68,7 +68,6 @@ export class WaveManager {
         GameStateManager.getInstance().save();
     }
 
-    private enemyPool: Enemy[] = [];
     private readonly MAX_CONCURRENT_ENEMIES = 40;
 
     public startWave() {

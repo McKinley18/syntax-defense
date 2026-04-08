@@ -6,7 +6,6 @@ import { TOWER_CONFIGS, TowerType } from '../game/entities/Tower';
 interface ArchiveScreenProps {
   archiveCategory: any;
   infoTab: any;
-  isTypingComplete: boolean;
   highestWave: number;
   lifetimeKills: number;
   rank: string;
@@ -19,7 +18,6 @@ interface ArchiveScreenProps {
 const ArchiveScreen: React.FC<ArchiveScreenProps> = ({
   archiveCategory,
   infoTab,
-  isTypingComplete,
   highestWave,
   lifetimeKills,
   rank,

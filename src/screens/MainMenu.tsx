@@ -3,9 +3,6 @@ import React from 'react';
 interface MainMenuProps {
   isDistorted: boolean;
   hasSave: boolean;
-  rank: string;
-  currentXP: number;
-  nextRankXP: number;
   onStartGame: (mode: any) => void;
   onSetScreen: (screen: any) => void;
   onOpenArchive: (tab?: any) => void;
@@ -20,9 +17,6 @@ interface MainMenuProps {
 const MainMenu: React.FC<MainMenuProps> = ({
   isDistorted,
   hasSave,
-  rank,
-  currentXP,
-  nextRankXP,
   onStartGame,
   onSetScreen,
   onOpenArchive,
