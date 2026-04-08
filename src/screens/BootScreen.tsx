@@ -30,7 +30,10 @@ const BootScreen: React.FC<BootScreenProps> = ({
     }}>
       <div className={`boot-container ${isDistorted ? 'distorted' : ''}`} style={{ position: 'absolute', top: '20px', left: '20px', textAlign: 'left', fontFamily: 'monospace' }}>
         {bootPhase === 0 && !skipIntro ? (
-          <div style={{ color: 'var(--neon-cyan)', fontSize: '1rem', cursor: 'pointer', animation: 'pulse 2s infinite' }}>
+          <div 
+            onClick={(e) => { e.stopPropagation(); wakeAudioSystem(); }}
+            style={{ color: 'var(--neon-cyan)', fontSize: '1rem', cursor: 'pointer', animation: 'pulse 2s infinite', pointerEvents: 'auto' }}
+          >
             &gt; SYSTEM_READY: [ TOUCH TO INITIALIZE ]
           </div>
         ) : !skipIntro ? (

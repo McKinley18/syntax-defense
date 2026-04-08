@@ -191,6 +191,7 @@ body.no-crt::after {
   backdrop-filter: blur(20px);
   display: flex; justify-content: center; align-items: center;
   z-index: 90000; cursor: pointer;
+  pointer-events: auto !important;
 }
 
 .main-menu { 
