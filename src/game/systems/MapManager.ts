@@ -121,7 +121,7 @@ export class MapManager {
                 this.gridGraphics.lineTo(x * TILE_SIZE, (y + 1) * TILE_SIZE);
                 this.gridGraphics.stroke({
                     width: 2,
-                    color: 0x0066ff,
+                    color: 0x00ffff,
                     alpha: isBorder ? 0.6 : 0.15
                 });
             }
@@ -141,7 +141,7 @@ export class MapManager {
                 this.gridGraphics.lineTo((x + 1) * TILE_SIZE, y * TILE_SIZE);
                 this.gridGraphics.stroke({
                     width: 2,
-                    color: 0x0066ff,
+                    color: 0x00ffff,
                     alpha: isBorder ? 0.6 : 0.15
                 });
             }

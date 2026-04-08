@@ -9,6 +9,7 @@ export interface WaveSummary {
     perfectBonus: number;
     refunds: number;
     total: number;
+    points: number;
 }
 
 export class GameStateManager {
@@ -24,11 +25,12 @@ export class GameStateManager {
     public repairCost: number = 500; 
     
     public totalXP: number = 0;
+    public totalScore: number = 0;
     public architectRank: string = "INITIATE";
     public lifetimeKills: number = 0;
     public highestWave: number = 0;
 
-    public lastWaveSummary: WaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
+    public lastWaveSummary: WaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0, points: 0 };
 
     private integrityLostThisWave: boolean = false;
 
@@ -151,6 +153,13 @@ export class GameStateManager {
     public resetForNextWave() {
         if (this.integrity <= 0) return;
 
+        // CALCULATE WAVE POINTS
+        const killPoints = this.lastWaveSummary.totalKills * 100;
+        const econPoints = this.lastWaveSummary.interest * 10;
+        const integrityPoints = this.integrity * 50;
+        this.lastWaveSummary.points = killPoints + econPoints + integrityPoints;
+        this.totalScore += this.lastWaveSummary.points;
+
         const waveXP = this.currentWave * 50 * (this.gameMode === 'HARDCORE' ? 2 : 1);
         this.totalXP += waveXP;
         this.saveXP();
@@ -190,15 +199,46 @@ export class GameStateManager {
         return names[this.currentWave % names.length] + " " + (100 + this.currentWave);
     }
 
-    public resetGame(mode: GameMode) {
+    public isTowerUnlocked(type: number): boolean {
+        const rank = this.architectRank;
+        // 0: PULSE_MG, 1: FROST_RAY, 2: BLAST_NOVA, 3: RAILGUN, 4: TESLA_LINK
+        if (type === 0) return true; // Pulse MG always unlocked
+        
+        if (type === 1) { // Frost Ray: Scripter+
+            return ["SCRIPTER", "SYS_ARCHITECT", "SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
+        }
+        if (type === 2) { // Blast Nova: Sys Architect+
+            return ["SYS_ARCHITECT", "SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
+        }
+        if (type === 3) { // Railgun: Senior Engr+
+            return ["SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
+        }
+        if (type === 4) { // Tesla Link: Elite Architect+
+            return ["ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
+        }
+        return false;
+    }
+
+    public resetGame(mode: GameMode, startingWave: number = 1) {
         this.gameMode = mode;
         const bonus = this.getRankBonus();
-        this.credits = (mode === 'HARDCORE' || mode === 'ECO_CHALLENGE') ? 1000 : (850 + bonus);
+        
+        // Mode-Specific Starting Capital
+        if (mode === 'HARDCORE') this.credits = 1000;
+        else if (mode === 'ECO_CHALLENGE') this.credits = 1200; // Extra start for Eco
+        else this.credits = (startingWave === 1 ? 850 : 850 + bonus);
+
         this.integrity = mode === 'SUDDEN_DEATH' ? 1 : 20;
-        this.currentWave = 1; 
+        this.currentWave = startingWave; 
         this.repairCost = 500;
-        this.interestRate = mode === 'HARDCORE' ? 0 : 0.10;
-        this.lastWaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
+        
+        // Mode-Specific Interest
+        if (mode === 'HARDCORE' || mode === 'SUDDEN_DEATH') this.interestRate = 0;
+        else if (mode === 'ECO_CHALLENGE') this.interestRate = 0.15; // Mastery Interest
+        else this.interestRate = 0.10;
+
+        this.lastWaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0, points: 0 };
+        this.totalScore = 0; // Reset score for new session
         this.integrityLostThisWave = false;
         this.activeGlitch = 'NONE';
         this.save();

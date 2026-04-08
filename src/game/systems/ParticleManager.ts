@@ -23,7 +23,7 @@ export class ParticleManager {
         this.game = game;
     }
 
-    private getGraphics(): PIXI.Graphics {
+    public getGraphics(): PIXI.Graphics {
         const g = ParticleManager.graphicsPool.pop();
         if (g) {
             g.clear();
@@ -34,7 +34,7 @@ export class ParticleManager {
         return new PIXI.Graphics();
     }
 
-    private releaseGraphics(g: PIXI.Graphics) {
+    public releaseGraphics(g: PIXI.Graphics) {
         if (ParticleManager.graphicsPool.length < 200) {
             ParticleManager.graphicsPool.push(g);
         } else {

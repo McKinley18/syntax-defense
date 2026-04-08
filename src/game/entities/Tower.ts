@@ -229,7 +229,8 @@ export class Tower {
     }
 
     private drawEffect(tx: number, ty: number, style: 'line' | 'ring') {
-        const g = new PIXI.Graphics();
+        const pm = GameContainer.instance!.particleManager;
+        const g = pm.getGraphics();
         if (style === 'line') {
             g.moveTo(this.container.x, this.container.y).lineTo(tx, ty);
             g.stroke({ width: 2, color: this.config.color, alpha: 0.8 });
@@ -240,18 +241,19 @@ export class Tower {
         GameContainer.instance!.effectLayer.addChild(g);
         
         // Add to ParticleManager for synced lifecycle
-        GameContainer.instance!.particleManager.addEffect(g, 6); // 6 frames = ~100ms
+        pm.addEffect(g, 6); // 6 frames = ~100ms
     }
 
     private drawLightning(x1: number, y1: number, x2: number, y2: number) {
-        const g = new PIXI.Graphics();
+        const pm = GameContainer.instance!.particleManager;
+        const g = pm.getGraphics();
         g.moveTo(x1, y1).lineTo(x2, y2);
         g.stroke({ width: 3, color: 0xffffff, alpha: 0.8 });
         g.stroke({ width: 6, color: this.config.color, alpha: 0.3 });
         GameContainer.instance!.effectLayer.addChild(g);
         
         // Add to ParticleManager for synced lifecycle
-        GameContainer.instance!.particleManager.addEffect(g, 8); // 8 frames = ~130ms
+        pm.addEffect(g, 8); // 8 frames = ~130ms
     }
 
     public upgrade(): boolean {

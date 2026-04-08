@@ -23,7 +23,7 @@ export class WaveManager {
         this.game = game;
     }
 
-    public upcomingEnemies: EnemyType[] = [];
+    public upcomingEnemies: { type: EnemyType, count: number }[] = [];
 
     public prepareWave(incrementWave: boolean = true) {
         // PREVENT RE-ENTRY IF ALREADY PREPARING
@@ -33,14 +33,14 @@ export class WaveManager {
             GameStateManager.getInstance().resetForNextWave();
         } else {
             // INITIAL RESET
-            GameStateManager.getInstance().lastWaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0 };
+            GameStateManager.getInstance().lastWaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0, points: 0 };
         }
         
         this.waveNumber = GameStateManager.getInstance().currentWave;
         GameStateManager.getInstance().phase = 'PREP'; // LOCK PREP PHASE
         
         // PRE-CALCULATE FOR UI
-        this.upcomingEnemies = this.calculateUpcomingTypes();
+        this.updateUpcomingData();
         
         this.game.towerManager.clearTowers();
         
@@ -68,34 +68,52 @@ export class WaveManager {
         GameStateManager.getInstance().save();
     }
 
+    private enemyPool: Enemy[] = [];
+    private readonly MAX_CONCURRENT_ENEMIES = 40;
+
     public startWave() {
         if (this.isWaveActive) return;
         this.isWaveActive = true;
         this.hasProcessedEnd = false; 
         GameStateManager.getInstance().phase = 'WAVE'; 
 
+        const state = GameStateManager.getInstance();
+
         if (this.game.isTutorialActive) {
             this.enemiesToSpawn = 1;
-            // WE NEED IT TO SURVIVE LONGER FOR DEMO - FORCE GLIDER
-            setTimeout(() => {
-                if (this.enemies.length > 0) {
-                    const e = this.enemies[0];
-                    // Manual override to GLIDER visuals and properties if needed
-                    // For now, spawnEnemy handles the selection, we just tune the stats
-                    e.maxHealth = 140;
-                    e.health = 140;
-                    e.speed = 0.8; 
-                }
-            }, 100);
+        } else if (this.waveNumber === 1) {
+            // Mandate: 16 GLIDERS IN WAVE 1
+            this.enemiesToSpawn = 16;
         } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
-            // POPULATION-BASED DIFFICULTY: Higher starting count and faster growth
-            this.enemiesToSpawn = 15 + Math.floor(this.waveNumber * 5.5);
+            // INTELLIGENT ENGINE: Level + Hoard + Power
+            const hoardFactor = Math.min(2.0, Math.max(1.0, state.credits / 1500));
+            
+            // Calculate Total Defensive Power (DPS estimate)
+            let totalPower = 0;
+            this.game.towerManager.towers.forEach(t => {
+                totalPower += (t.config.damage * (1 + (t.level-1) * 0.25));
+            });
+            const powerFactor = Math.min(2.5, Math.max(1.0, totalPower / 100));
+
+            const baseCount = 15 + Math.floor(this.waveNumber * 5.5);
+            const rawCount = Math.floor(baseCount * hoardFactor * powerFactor);
+            
+            // CONCURRENCY CAP: Max 40 enemies. Excess count converted to HP multiplier
+            if (rawCount > this.MAX_CONCURRENT_ENEMIES) {
+                this.enemiesToSpawn = this.MAX_CONCURRENT_ENEMIES;
+                this.currentWaveHpMult = 1 + ((rawCount - this.MAX_CONCURRENT_ENEMIES) / this.MAX_CONCURRENT_ENEMIES);
+            } else {
+                this.enemiesToSpawn = rawCount;
+                this.currentWaveHpMult = 1;
+            }
         }
         this.totalEnemiesThisWave = this.enemiesToSpawn;
         this.spawnTimer = 0;
     }
+
+    private currentWaveHpMult: number = 1;
 
     public update(delta: number) {
         if (!this.isWaveActive) return;
@@ -158,12 +176,15 @@ export class WaveManager {
         if (this.enemiesToSpawn === 0 && this.enemies.length === 0 && !this.hasProcessedEnd) {
             this.hasProcessedEnd = true; 
             this.isWaveActive = false;
-            GameStateManager.getInstance().phase = 'PREP'; // TRIGGER UI TRANSITION
+            GameStateManager.getInstance().phase = 'PREP';
             
+            console.log("WAVE END DETECTED. Firing onWaveEnd callback.");
+            if (this.onWaveEnd) this.onWaveEnd();
+
             if (this.waveNumber > 0) {
                 this.isSummaryActive = true; 
-                if (this.onWaveEnd) this.onWaveEnd();
-            } else {
+            } else if (!this.game.isTutorialActive) {
+                // Only auto-prep if not in tutorial, to allow tutorial popups to show
                 this.prepareWave(); 
             }
         }
@@ -180,21 +201,53 @@ export class WaveManager {
         }
     }
 
-    public calculateUpcomingTypes(): EnemyType[] {
-        const types: Set<EnemyType> = new Set();
-        if (this.waveNumber % 10 === 0) {
-            types.add(EnemyType.FRACTAL);
+    private updateUpcomingData() {
+        const counts: Map<EnemyType, number> = new Map();
+        const state = GameStateManager.getInstance();
+        let total = 0;
+        
+        if (this.game.isTutorialActive) {
+            total = 1;
+            counts.set(EnemyType.GLIDER, 1);
+        } else if (this.waveNumber === 1) {
+            total = 16;
+            counts.set(EnemyType.GLIDER, 16);
+        } else if (this.waveNumber % 10 === 0) {
+            total = 1;
+            counts.set(EnemyType.FRACTAL, 1);
         } else {
-            types.add(EnemyType.GLIDER);
-            if (this.waveNumber >= 4) types.add(EnemyType.STRIDER);
-            if (this.waveNumber >= 8) types.add(EnemyType.BEHEMOTH);
+            const hoardFactor = Math.min(2.0, Math.max(1.0, state.credits / 1500));
+            let totalPower = 0;
+            this.game.towerManager.towers.forEach(t => { totalPower += (t.config.damage * (1 + (t.level-1) * 0.25)); });
+            const powerFactor = Math.min(2.5, Math.max(1.0, totalPower / 100));
+
+            const baseCount = 15 + Math.floor(this.waveNumber * 5.5);
+            total = Math.floor(baseCount * hoardFactor * powerFactor);
+            
+            // ESTIMATED DISTRIBUTION
+            if (this.waveNumber >= 8) {
+                const behemoths = Math.floor(total * 0.2);
+                const striders = Math.floor(total * 0.4);
+                counts.set(EnemyType.BEHEMOTH, behemoths);
+                counts.set(EnemyType.STRIDER, striders);
+                counts.set(EnemyType.GLIDER, total - (behemoths + striders));
+            } else if (this.waveNumber >= 4) {
+                const striders = Math.floor(total * 0.4);
+                counts.set(EnemyType.STRIDER, striders);
+                counts.set(EnemyType.GLIDER, total - striders);
+            } else {
+                counts.set(EnemyType.GLIDER, total);
+            }
         }
-        return Array.from(types);
+        
+        this.upcomingEnemies = Array.from(counts.entries()).map(([type, count]) => ({ type, count }));
     }
 
     private spawnEnemy() {
         let type: EnemyType = EnemyType.GLIDER;
         if (this.game.isTutorialActive) {
+            type = EnemyType.GLIDER;
+        } else if (this.waveNumber === 1) {
             type = EnemyType.GLIDER;
         } else if (this.waveNumber % 10 === 0) {
             type = EnemyType.FRACTAL;
@@ -208,7 +261,31 @@ export class WaveManager {
             }
         }
         
+        const state = GameStateManager.getInstance();
+        const hoardMult = Math.min(2.0, Math.max(1.0, state.credits / 1500));
+        let totalPower = 0;
+        this.game.towerManager.towers.forEach(t => { totalPower += (t.config.damage * (1 + (t.level-1) * 0.25)); });
+        const powerMult = Math.min(3.0, Math.max(1.0, totalPower / 150));
+
         const enemy = new Enemy(type, this.waveNumber);
+        
+        // INTELLIGENT HP SCALING: Mode + Hoard + Power + Cap
+        let modeMult = 1.0;
+        if (state.gameMode === 'HARDCORE') modeMult = 1.25;
+        if (state.gameMode === 'ENDLESS' && this.waveNumber > 50) {
+            modeMult = Math.pow(1.05, this.waveNumber - 50); // Exponential post-50
+        }
+
+        const finalHpMult = hoardMult * powerMult * this.currentWaveHpMult * modeMult;
+        if (finalHpMult > 1) {
+            enemy.maxHealth *= finalHpMult;
+            enemy.health = enemy.maxHealth;
+        }
+
+        // SUDDEN DEATH FAIRNESS: Slightly slower enemies since 1-hit kills you
+        if (state.gameMode === 'SUDDEN_DEATH') {
+            enemy.speed *= 0.85;
+        }
         
         // VIRAL LEARNING: Strider Thermal Shield
         if (type === EnemyType.STRIDER && this.game.towerManager.getTowerCount(0) >= 5) {

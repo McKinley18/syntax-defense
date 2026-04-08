@@ -26,11 +26,17 @@ export class Enemy {
     private shieldVisual?: PIXI.Graphics;
     private healthBar: PIXI.Graphics;
     private freezeTimer: number = 0;
+    private laneOffset: { dx: number, dy: number } = { dx: 0, dy: 0 };
+    private offsetVal: number = 0;
 
     constructor(type: EnemyType, waveNumber: number) {
         this.type = type;
         this.container = new PIXI.Container();
         this.pathPoints = GameContainer.instance!.pathManager.getPathPoints();
+        
+        // LANE LOGIC: Move side-by-side on the 2-wide path
+        // TILE_SIZE is the unit, path is 2 units wide. Offset by -0.4 to 0.4 TILE_SIZE
+        this.offsetVal = (Math.random() * TILE_SIZE * 0.8) - (TILE_SIZE * 0.4);
         
         const config = VISUAL_REGISTRY[type];
         
@@ -73,8 +79,12 @@ export class Enemy {
         this.container.addChild(this.visual, this.healthBar);
 
         if (this.pathPoints.length > 0) {
-            this.container.x = this.pathPoints[0].x;
-            this.container.y = this.pathPoints[0].y;
+            const startVec = GameContainer.instance!.pathManager.pathVectors[0] || { dx: 1, dy: 0 };
+            // Perpendicular vector for lane offset
+            this.laneOffset = { dx: -startVec.dy * this.offsetVal, dy: startVec.dx * this.offsetVal };
+            
+            this.container.x = this.pathPoints[0].x + this.laneOffset.dx;
+            this.container.y = this.pathPoints[0].y + this.laneOffset.dy;
         }
     }
 
@@ -120,19 +130,34 @@ export class Enemy {
         const vec = GameContainer.instance!.pathManager.pathVectors[this.currentPointIndex];
         const moveStep = this.speed * delta;
         
+        // Update lane offset based on current direction to stay in "lane"
+        const perp = { dx: -vec.dy, dy: vec.dx };
+        this.laneOffset = { dx: perp.dx * this.offsetVal, dy: perp.dy * this.offsetVal };
+        
         let reached = false;
+        // Check progress against target point (ignoring lane offset for logic)
+        const currentPureX = this.container.x - this.laneOffset.dx;
+        const currentPureY = this.container.y - this.laneOffset.dy;
+
         if (vec.dx !== 0) {
-            if (vec.dx > 0 && this.container.x + moveStep >= target.x) reached = true;
-            else if (vec.dx < 0 && this.container.x - moveStep <= target.x) reached = true;
+            if (vec.dx > 0 && currentPureX + moveStep >= target.x) reached = true;
+            else if (vec.dx < 0 && currentPureX - moveStep <= target.x) reached = true;
         } else {
-            if (vec.dy > 0 && this.container.y + moveStep >= target.y) reached = true;
-            else if (vec.dy < 0 && this.container.y - moveStep <= target.y) reached = true;
+            if (vec.dy > 0 && currentPureY + moveStep >= target.y) reached = true;
+            else if (vec.dy < 0 && currentPureY - moveStep <= target.y) reached = true;
         }
 
         if (reached) {
-            this.container.x = target.x;
-            this.container.y = target.y;
             this.currentPointIndex++;
+            if (this.currentPointIndex < this.pathPoints.length - 1) {
+                const nextVec = GameContainer.instance!.pathManager.pathVectors[this.currentPointIndex];
+                const nextPerp = { dx: -nextVec.dy, dy: nextVec.dx };
+                this.container.x = target.x + (nextPerp.dx * this.offsetVal);
+                this.container.y = target.y + (nextPerp.dy * this.offsetVal);
+            } else {
+                this.container.x = target.x + this.laneOffset.dx;
+                this.container.y = target.y + this.laneOffset.dy;
+            }
         } else {
             this.container.x += vec.dx * moveStep;
             this.container.y += vec.dy * moveStep;
