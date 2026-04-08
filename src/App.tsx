@@ -237,7 +237,7 @@ function App() {
       async function init() {
         setIsInitializing(true); const g = await GameContainer.getInstance(); setGame(g); setIsInitializing(false);
         const interval = setInterval(() => {
-          const state = GameStateManager.getInstance(); setCredits(state.credits); setIntegrity(state.integrity); setWaveName(state.getWaveName()); setRepairCost(state.repairCost); setGameMode(state.gameMode); setGamePhase(state.phase); setRank(state.architectRank); setCurrentXP(state.totalXP); setNextRankXP(state.getNextRankXP()); setActiveGlitch(state.activeGlitch); setWaveSummary(state.lastWaveSummary); setLifetimeKills(state.lifetimeKills); setHighestWave(state.highestWave);
+          const state = GameStateManager.getInstance(); setCredits(state.credits); setIntegrity(state.integrity); setWaveName(state.getWaveName()); setRepairCost(state.repairCost); setGameMode(state.gameMode); setGamePhase(state.phase); setRank(state.architectRank); setActiveGlitch(state.activeGlitch); setWaveSummary(state.lastWaveSummary); setLifetimeKills(state.lifetimeKills); setHighestWave(state.highestWave);
           if (g.waveManager.isSummaryActive && !showWaveSummaryPopup) { setShowWaveSummaryPopup(true); g.waveManager.isSummaryActive = false; }
           if (g.waveManager) { setWave(g.waveManager.waveNumber); setIsWaveActive(g.waveManager.isWaveActive); setUpcomingEnemies(g.waveManager.upcomingEnemies); }
         }, 100);
