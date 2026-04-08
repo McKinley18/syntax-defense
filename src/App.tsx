@@ -78,6 +78,8 @@ function App() {
   const [bootProgress, setBootProgress] = useState(localStorage.getItem('syntax_skip_intro') === 'true' ? 100 : 0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
   const [isReadyGlitched, setIsReadyGlitched] = useState(false);
+  const bootLogIndexRef = useRef(0);
+
   const [crtEnabled, setCrtEnabled] = useState(localStorage.getItem('syntax_crt_enabled') !== 'false');
   const [glitchEffectsEnabled, setGlitchEffectsEnabled] = useState(localStorage.getItem('syntax_glitch_enabled') !== 'false');
   const [autoPauseEnabled, setAutoPauseEnabled] = useState(localStorage.getItem('syntax_auto_pause') === 'true');
@@ -150,12 +152,11 @@ function App() {
             "MOUNTING TACTICAL_ASSETS... [OK]",
             "SYNCHRONIZING CORE_LOGIC... [OK]"
         ];
-        let i = 0;
         const itv = setInterval(() => {
-            if (i < logs.length) { 
-                setBootLogs(prev => [...prev, logs[i]]); 
+            if (bootLogIndexRef.current < logs.length) { 
+                setBootLogs(prev => [...prev, logs[bootLogIndexRef.current]]); 
                 if (audioReady) AudioManager.getInstance().playTypeClick(); 
-                i++; 
+                bootLogIndexRef.current++; 
             }
             else { clearInterval(itv); setTimeout(() => setBootPhase(9), 800); }
         }, 600);

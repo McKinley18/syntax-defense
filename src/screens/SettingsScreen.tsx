@@ -144,7 +144,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <div className="track-list">
                     {[
                       'AMBIENT TECH', 'INDUSTRIAL DEPTH', 'LIQUID DATA', 'CORE SEQUENCER', 'GHOST VOICES', 'UPLINK SYNC',
-                      'NEON NIGHTS', 'GRID RUNNER', 'SYSTEM ERROR', 'VIRTUAL HORIZON', 'CORE BREACH'
+                      'NEON NIGHTS', 'GRID RUNNER', 'SYSTEM ERROR', 'VIRTUAL HORIZON', 'CORE BREACH',
+                      'CYBER PUNK', 'DEEP TECH', 'ACID LOGIC', 'NEURAL NET'
                     ].map((name, id) => (
                       <div key={id} className="track-item">
                         <span className="track-name" onClick={() => onPreviewTrack(id)} style={{ cursor: 'pointer', color: 'var(--neon-cyan)', textDecoration: 'underline' }}>{name}</span>

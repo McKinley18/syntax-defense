@@ -1,4 +1,4 @@
-export type TrackID = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export type TrackID = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
 
 export class MusicManager {
     private static instance: MusicManager;
@@ -14,12 +14,17 @@ export class MusicManager {
     private timerID: number | null = null;
     
     public currentTrack: TrackID = 0;
-    public enabledTracks: boolean[] = new Array(11).fill(true);
+    public enabledTracks: boolean[] = new Array(15).fill(true);
 
     private constructor() {
         const saved = localStorage.getItem('syntax_enabled_tracks');
         if (saved) {
             this.enabledTracks = JSON.parse(saved);
+            // Ensure array is sized correctly if loading from older save
+            if (this.enabledTracks.length < 15) {
+                const extra = new Array(15 - this.enabledTracks.length).fill(true);
+                this.enabledTracks = [...this.enabledTracks, ...extra];
+            }
         }
     }
 
@@ -89,9 +94,6 @@ export class MusicManager {
         const tempo = 126.0;
         const secondsPerBeat = 60.0 / tempo / 4; 
         this.nextNoteTime += secondsPerBeat;
-        
-        // 126 BPM = 2.1 Beats/sec. 180 seconds (~3 mins) = ~378 beats.
-        // We use 384 beats (96 bars of 4/4) for perfect musical phrasing.
         this.beatIndex = (this.beatIndex + 1) % 384; 
 
         if (this.mainFilter) {
@@ -129,6 +131,10 @@ export class MusicManager {
             case 8: this.playTrack8(index, time); break;
             case 9: this.playTrack9(index, time); break;
             case 10: this.playTrack10(index, time); break;
+            case 11: this.playTrack11(index, time); break;
+            case 12: this.playTrack12(index, time); break;
+            case 13: this.playTrack13(index, time); break;
+            case 14: this.playTrack14(index, time); break;
         }
     }
 
@@ -179,40 +185,69 @@ export class MusicManager {
         }
     }
 
-    // --- NEW TRACKS (6-10) ---
-
-    private playTrack6(i: number, t: number) { // NEON NIGHTS (Fast, Pulse)
+    private playTrack6(i: number, t: number) { 
         if (i % 4 === 0) this.triggerKick(t, 1.3);
         if (i % 4 === 2) this.triggerHat(t, 0.05);
         const seq = [440, 440, 523, 440, 587, 440, 523, 659];
         if (i % 2 === 0) this.triggerSynth(seq[i % 8], 0.08, 'square', 0.04, t, true);
     }
 
-    private playTrack7(i: number, t: number) { // GRID RUNNER (Steady, Bass)
+    private playTrack7(i: number, t: number) { 
         if (i % 4 === 0) this.triggerKick(t, 0.9);
         if (i % 16 === 8) this.triggerSnare(t, 0.12, 1000);
         const bass = [55, 55, 65, 55, 73, 55, 65, 82];
         this.triggerSynth(bass[Math.floor(i/2) % 8], 0.1, 'sawtooth', 0.07, t);
     }
 
-    private playTrack8(i: number, t: number) { // SYSTEM ERROR (Irregular, Tech)
+    private playTrack8(i: number, t: number) { 
         if (i % 3 === 0) this.triggerKick(t, 1.1);
         if (i % 16 === 10) this.triggerSnare(t, 0.15, 300);
         if (i % 4 === 1) this.triggerSynth(Math.random() * 100 + 100, 0.05, 'square', 0.03, t, true);
     }
 
-    private playTrack9(i: number, t: number) { // VIRTUAL HORIZON (Melodic, Wide)
+    private playTrack9(i: number, t: number) { 
         if (i % 8 === 0) this.triggerKick(t);
         if (i % 8 === 4) this.triggerSnare(t, 0.05, 2000);
         const mel = [293, 329, 349, 392, 440, 392, 349, 329];
         if (i % 4 === 0) this.triggerSynth(mel[Math.floor(i/8) % 8], 1.2, 'sine', 0.06, t, true);
     }
 
-    private playTrack10(i: number, t: number) { // CORE BREACH (Aggressive, Heavy)
+    private playTrack10(i: number, t: number) { 
         if (i % 2 === 0) this.triggerKick(t, 1.5);
         if (i % 4 === 1) this.triggerHat(t, 0.06);
         const lead = [110, 110, 110, 146, 110, 110, 164, 110];
         if (i % 2 === 1) this.triggerSynth(lead[i % 8], 0.15, 'sawtooth', 0.1, t);
+    }
+
+    // --- NEW MODENRN TECHNO TRACKS (11-14) ---
+
+    private playTrack11(i: number, t: number) { // CYBER PUNK (Syncopated Saw)
+        if (i % 4 === 0) this.triggerKick(t, 1.2);
+        if (i % 16 === 4 || i % 16 === 12) this.triggerSnare(t, 0.1, 1000);
+        if (i % 2 === 1) this.triggerHat(t, 0.03);
+        const bass = [41, 41, 41, 49, 41, 41, 55, 41];
+        if (i % 4 === 2) this.triggerSynth(bass[Math.floor(i/4)%8], 0.1, 'sawtooth', 0.08, t);
+    }
+
+    private playTrack12(i: number, t: number) { // DEEP TECH (Percussive Sine)
+        if (i % 4 === 0) this.triggerKick(t, 1.0);
+        if (i % 8 === 4) this.triggerSnare(t, 0.05, 1500);
+        const perc = [220, 220, 330, 220, 440, 220, 330, 550];
+        if (i % 2 === 0) this.triggerSynth(perc[i%8], 0.02, 'sine', 0.04, t, true);
+    }
+
+    private playTrack13(i: number, t: number) { // ACID LOGIC (Square Slide)
+        if (i % 4 === 0) this.triggerKick(t, 1.4);
+        if (i % 16 === 8) this.triggerSnare(t, 0.12, 800);
+        const seq = [110, 123, 146, 164, 110, 123, 146, 196];
+        this.triggerSynth(seq[i%8], 0.15, 'square', 0.03, t, true);
+    }
+
+    private playTrack14(i: number, t: number) { // NEURAL NET (Minimal Triangle)
+        if (i % 8 === 0) this.triggerKick(t, 0.9);
+        if (i % 16 === 12) this.triggerSnare(t, 0.04, 2000);
+        const mel = [440, 0, 523, 0, 659, 0, 587, 0];
+        if (mel[i%8] > 0) this.triggerSynth(mel[i%8], 0.05, 'triangle', 0.02, t, true);
     }
 
     private triggerKick(t: number, punch: number = 1.0) {
