@@ -130,7 +130,7 @@ export class GameContainer {
         if (this.breachTimer > 0) {
             this.breachTimer -= ticker.deltaTime;
             this.colorFilter.reset();
-            this.colorFilter.colorTone(0xff0000, 0.6, 0xffffff, 0); 
+            this.colorFilter.colorTone(0xff0000, 0.6, 0xffffff, 0, false); 
             this.viewport.x = this.baseShake.x + (Math.random() * 10 - 5);
             this.viewport.y = this.baseShake.y + (Math.random() * 10 - 5);
         } else if (this.purgeTimer > 0) {

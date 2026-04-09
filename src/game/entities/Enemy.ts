@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameContainer } from '../GameContainer';
 import { GameStateManager } from '../systems/GameStateManager';
 import { TILE_SIZE } from '../systems/MapManager';
-import { EnemyType, VISUAL_REGISTRY, type VisualConfig } from '../VisualRegistry';
+import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
 import { TextureGenerator } from '../utils/TextureGenerator';
 
 export { EnemyType };

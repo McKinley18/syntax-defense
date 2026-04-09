@@ -9,7 +9,6 @@ interface TacticalDashboardProps {
   repairCost: number;
   selectedTurret: number;
   gameMode: string;
-  isWaveActive: boolean;
   isFastForward: boolean;
   sysStatusColor: string;
   systemStatusText: string;
@@ -30,7 +29,6 @@ const TacticalDashboard: React.FC<TacticalDashboardProps> = ({
   repairCost,
   selectedTurret,
   gameMode,
-  isWaveActive,
   isFastForward,
   sysStatusColor,
   systemStatusText,

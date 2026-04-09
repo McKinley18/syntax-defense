@@ -8,7 +8,6 @@ interface BootScreenProps {
   bootProgress: number;
   bootLogs: string[];
   isReadyGlitched: boolean;
-  audioReady: boolean;
   wakeAudioSystem: () => void;
   setBootPhase: (phase: number) => void;
 }
@@ -19,7 +18,6 @@ const BootScreen: React.FC<BootScreenProps> = ({
   bootPhase,
   bootProgress,
   bootLogs,
-  audioReady,
   wakeAudioSystem,
   setBootPhase
 }) => {

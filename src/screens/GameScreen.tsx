@@ -461,7 +461,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
         repairCost={repairCost}
         selectedTurret={selectedTurret}
         gameMode={gameMode}
-        isWaveActive={isWaveActive}
         isFastForward={isFastForward}
         sysStatusColor={sysStatusColor}
         systemStatusText={systemStatusText}

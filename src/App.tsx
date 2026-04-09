@@ -57,7 +57,6 @@ function App() {
   const [sfxVolState, setSfxVolState] = useState(AudioManager.getInstance().sfxVolume);
   const [musicVolState, setMusicVolState] = useState(AudioManager.getInstance().musicVolume);
   const [isDistorted, setIsDistorted] = useState(false);
-  const [isFlickering, setIsFlickering] = useState(false);
   const [gamePhase, setGamePhase] = useState<string>("PREP");
   const [upcomingEnemies, setUpcomingEnemies] = useState<{ type: EnemyType, count: number }[]>([]);
   const [activeGlitch, setActiveGlitch] = useState<GlitchType>('NONE');
@@ -402,7 +401,7 @@ function App() {
     if (isTutorialActive && tutorialStep === 1) setTutorialStep(2);
   };
 
-  const isUnlocked = (type: TowerType) => {
+  const isUnlocked = (type: number) => {
     // ENFORCE TUTORIAL RESTRICTION
     if (isTutorialActive && tutorialStep <= 1) return type === 0;
     return GameStateManager.getInstance().isTowerUnlocked(type);
@@ -484,14 +483,14 @@ function App() {
         <BootScreen 
           isDistorted={isDistorted} skipIntro={skipIntro} bootPhase={bootPhase} 
           bootProgress={bootProgress} bootLogs={bootLogs} 
-          isReadyGlitched={isReadyGlitched} audioReady={audioReady} 
+          isReadyGlitched={isReadyGlitched} 
           wakeAudioSystem={wakeAudioSystem} setBootPhase={setBootPhase}
         />
       ) : (
         <>
           <div id="game-container"></div>      
           {['MENU', 'ARCHIVE', 'MODES', 'SETTINGS', 'GAME'].includes(screen) && (
-            <GridBackground isDistorted={isDistorted} mousePos={mousePos} isFlickering={isFlickering} />
+            <GridBackground isDistorted={isDistorted} mousePos={mousePos} />
           )}
           {screen === 'MENU' && (
             <MainMenu 

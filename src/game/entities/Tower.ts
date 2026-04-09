@@ -3,6 +3,7 @@ import { GameContainer } from '../GameContainer';
 import { Enemy } from './Enemy';
 import { TILE_SIZE } from '../systems/MapManager';
 import { AudioManager } from '../systems/AudioManager';
+import { GameStateManager } from '../systems/GameStateManager';
 
 export const TowerType = {
     PULSE_MG: 0,

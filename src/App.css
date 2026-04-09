@@ -254,6 +254,41 @@ body.no-crt::after { display: none; }
   100% { opacity: 0; transform: scale(1.1) skewX(-20deg); filter: blur(10px); }
 }
 
+/* MINI VIRUS PROCEDURAL VISUALS */
+.mini-enemy {
+  width: 30px;
+  height: 30px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shape { 
+  width: 24px; 
+  height: 24px; 
+  display: block;
+}
+
+.shape.circle { border-radius: 50%; }
+
+.shape.triangle { 
+  width: 0; 
+  height: 0; 
+  background: transparent !important;
+  border-left: 12px solid transparent; 
+  border-right: 12px solid transparent; 
+  border-bottom: 24px solid currentColor;
+}
+
+.shape.square { border: 2px solid currentColor; }
+
+.shape.hexagon {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: currentColor;
+}
+
 /* TERMINAL CURSOR */
 .terminal-cursor { display: inline-block; width: 8px; height: 1.2em; background: var(--neon-cyan); animation: blink 1s infinite; vertical-align: middle; margin-left: 4px; }
 .terminal-cursor.fast-blink { animation: blink 0.3s infinite; }
