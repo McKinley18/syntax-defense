@@ -7,7 +7,7 @@ type SwarmPattern = 'sustained_stream' | 'bulk_breach' | 'staggered_burst';
 
 export class WaveManager {
     public enemies: Enemy[] = [];
-    public waveNumber: number = 0; // START AT 0 FOR TUTORIAL
+    public waveNumber: number = 0; 
     public isWaveActive: boolean = false;
     public isSummaryActive: boolean = false;
     public onWaveEnd: (() => void) | null = null;
@@ -17,7 +17,7 @@ export class WaveManager {
     private totalEnemiesThisWave: number = 0;
     private currentPattern: SwarmPattern = 'sustained_stream';
     private game: GameContainer;
-    private hasProcessedEnd: boolean = true; // START IN PROCESSED STATE
+    private hasProcessedEnd: boolean = true;
 
     constructor(game: GameContainer) {
         this.game = game;
@@ -26,23 +26,17 @@ export class WaveManager {
     public upcomingEnemies: { type: EnemyType, count: number }[] = [];
 
     public prepareWave(incrementWave: boolean = true) {
-        // PREVENT RE-ENTRY IF ALREADY PREPARING
         if (this.enemies.length > 0 || this.enemiesToSpawn > 0 || this.isWaveActive) return;
 
         if (incrementWave) {
             GameStateManager.getInstance().resetForNextWave();
         } else {
-            // INITIAL RESET
             GameStateManager.getInstance().lastWaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0, points: 0 };
         }
         
         this.waveNumber = GameStateManager.getInstance().currentWave;
-        GameStateManager.getInstance().phase = 'PREP'; // LOCK PREP PHASE
-        
-        // PRE-CALCULATE FOR UI
+        GameStateManager.getInstance().phase = 'PREP';
         this.updateUpcomingData();
-        
-        this.game.towerManager.clearTowers();
         
         let success = false;
         let attempts = 0;
@@ -69,6 +63,7 @@ export class WaveManager {
     }
 
     private readonly MAX_CONCURRENT_ENEMIES = 40;
+    private currentWaveHpMult: number = 1;
 
     public startWave() {
         if (this.isWaveActive) return;
@@ -81,26 +76,22 @@ export class WaveManager {
         if (this.game.isTutorialActive) {
             this.enemiesToSpawn = 1;
         } else if (this.waveNumber === 1) {
-            // Mandate: 10 GLIDERS IN WAVE 1 (Eased further)
             this.enemiesToSpawn = 10;
         } else if (this.waveNumber % 10 === 0) {
             this.enemiesToSpawn = 1; 
         } else {
-            // INTELLIGENT ENGINE: Level + Hoard + Power
-            const engineGrace = this.waveNumber <= 4 ? 0.35 : 1.0;
-            const hoardFactor = Math.min(2.0, Math.max(1.0, (state.credits / 1500) * engineGrace));
+            const engineGrace = this.waveNumber <= 5 ? 0.3 : 1.0;
+            const hoardFactor = Math.min(1.8, Math.max(1.0, (state.credits / 2000) * engineGrace));
             
-            // Calculate Total Defensive Power (DPS estimate)
             let totalPower = 0;
             this.game.towerManager.towers.forEach(t => {
                 totalPower += (t.config.damage * (1 + (t.level-1) * 0.25));
             });
-            const powerFactor = Math.min(2.5, Math.max(1.0, (totalPower / 100) * engineGrace));
+            const powerFactor = Math.min(2.0, Math.max(1.0, (totalPower / 150) * engineGrace));
 
-            const baseCount = 15 + Math.floor(this.waveNumber * 5.5);
+            const baseCount = 10 + Math.floor(this.waveNumber * 3.5);
             const rawCount = Math.floor(baseCount * hoardFactor * powerFactor);
             
-            // CONCURRENCY CAP: Max 40 enemies. Excess count converted to HP multiplier
             if (rawCount > this.MAX_CONCURRENT_ENEMIES) {
                 this.enemiesToSpawn = this.MAX_CONCURRENT_ENEMIES;
                 this.currentWaveHpMult = 1 + ((rawCount - this.MAX_CONCURRENT_ENEMIES) / this.MAX_CONCURRENT_ENEMIES);
@@ -113,8 +104,6 @@ export class WaveManager {
         this.spawnTimer = 0;
     }
 
-    private currentWaveHpMult: number = 1;
-
     public update(delta: number) {
         if (!this.isWaveActive) return;
 
@@ -125,9 +114,8 @@ export class WaveManager {
                 this.enemiesToSpawn--;
 
                 const waveProgress = 1 - (this.enemiesToSpawn / this.totalEnemiesThisWave);
-                const intensityBoost = 1 - (waveProgress * 0.35); // FASTER FINISH
+                const intensityBoost = 1 - (waveProgress * 0.35); 
 
-                // DYNAMIC BATCH SPAWNING (Wave 10+): Enemies arrive in distinct clusters
                 const isClustered = this.waveNumber >= 10 && this.currentPattern !== 'sustained_stream';
                 const clusterGap = isClustered && (Math.random() < 0.15) ? (100 + Math.random() * 150) : 0;
 
@@ -143,18 +131,14 @@ export class WaveManager {
 
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
-            
             const state = GameStateManager.getInstance();
-            if (this.waveNumber >= 20 && state.credits > 3000) {
-                enemy.update(delta * 1.15); 
-            } else {
-                enemy.update(delta);
-            }
+            enemy.update(delta);
 
             if (enemy.reachedGoal) {
                 const damage = enemy.type === EnemyType.FRACTAL ? 10 : 1;
-                GameStateManager.getInstance().takeDamage(damage);
+                state.takeDamage(damage);
                 AudioManager.getInstance().playBreach();
+                this.game.triggerBreachEffect();
                 if (this.game.kernel) this.game.kernel.triggerFlash();
                 this.removeEnemy(i);
                 continue;
@@ -165,38 +149,29 @@ export class WaveManager {
                 const scaledReward = Math.floor(baseReward * Math.pow(1.09, this.waveNumber));
                 
                 AudioManager.getInstance().playPurge();
-                GameStateManager.getInstance().addCredits(scaledReward);
+                state.addCredits(scaledReward);
                 this.game.particleManager.spawnExplosion(enemy.container.x, enemy.container.y, 0.8);
                 this.game.particleManager.spawnFloatingText(enemy.container.x, enemy.container.y, `+${scaledReward}c`);
+                
+                if (enemy.type === EnemyType.BEHEMOTH || enemy.type === EnemyType.FRACTAL) {
+                    this.game.triggerPurgeEffect();
+                }
+                
                 this.removeEnemy(i);
             }
         }
 
-        // ONE-TIME LATCH TRIGGER
         if (this.enemiesToSpawn === 0 && this.enemies.length === 0 && !this.hasProcessedEnd) {
             this.hasProcessedEnd = true; 
             this.isWaveActive = false;
             GameStateManager.getInstance().phase = 'PREP';
             
-            console.log("WAVE END DETECTED. Firing onWaveEnd callback.");
             if (this.onWaveEnd) this.onWaveEnd();
 
             if (this.waveNumber > 0) {
                 this.isSummaryActive = true; 
             } else if (!this.game.isTutorialActive) {
-                // Only auto-prep if not in tutorial, to allow tutorial popups to show
                 this.prepareWave(); 
-            }
-        }
-    }
-
-    public dataPurge() {
-        for (let i = this.enemies.length - 1; i >= 0; i--) {
-            const e = this.enemies[i];
-            if (!e.isElite && e.type !== EnemyType.FRACTAL) {
-                GameStateManager.getInstance().addCredits(Math.floor(e.reward * 0.5));
-                this.game.particleManager.spawnExplosion(e.container.x, e.container.y, 0.5);
-                this.removeEnemy(i);
             }
         }
     }
@@ -224,7 +199,6 @@ export class WaveManager {
             const baseCount = 15 + Math.floor(this.waveNumber * 5.5);
             total = Math.floor(baseCount * hoardFactor * powerFactor);
             
-            // ESTIMATED DISTRIBUTION
             if (this.waveNumber >= 8) {
                 const behemoths = Math.floor(total * 0.2);
                 const striders = Math.floor(total * 0.4);
@@ -245,6 +219,8 @@ export class WaveManager {
 
     private spawnEnemy() {
         let type: EnemyType = EnemyType.GLIDER;
+        const state = GameStateManager.getInstance();
+
         if (this.game.isTutorialActive) {
             type = EnemyType.GLIDER;
         } else if (this.waveNumber === 1) {
@@ -261,36 +237,36 @@ export class WaveManager {
             }
         }
         
-        const state = GameStateManager.getInstance();
-        const hoardMult = Math.min(2.0, Math.max(1.0, state.credits / 1500));
-        let totalPower = 0;
-        this.game.towerManager.towers.forEach(t => { totalPower += (t.config.damage * (1 + (t.level-1) * 0.25)); });
-        const powerMult = Math.min(3.0, Math.max(1.0, totalPower / 150));
-
         const enemy = new Enemy(type, this.waveNumber);
         
-        // INTELLIGENT HP SCALING: Mode + Hoard + Power + Cap
         let modeMult = 1.0;
-        if (state.gameMode === 'HARDCORE') modeMult = 1.25;
-        if (state.gameMode === 'ENDLESS' && this.waveNumber > 50) {
-            modeMult = Math.pow(1.05, this.waveNumber - 50); // Exponential post-50
+        if (this.game.isTutorialActive) {
+            modeMult = 1.0;
+        } else {
+            if (state.gameMode === 'HARDCORE') modeMult = 1.25;
+            if (state.gameMode === 'ENDLESS' && this.waveNumber > 50) {
+                modeMult = Math.pow(1.05, this.waveNumber - 50); 
+            }
         }
 
-        const finalHpMult = hoardMult * powerMult * this.currentWaveHpMult * modeMult;
+        const hoardMult = this.game.isTutorialActive ? 1.0 : Math.min(2.0, Math.max(1.0, state.credits / 1500));
+        let totalPower = 0;
+        this.game.towerManager.towers.forEach(t => { totalPower += (t.config.damage * (1 + (t.level-1) * 0.25)); });
+        const powerMult = this.game.isTutorialActive ? 1.0 : Math.min(3.0, Math.max(1.0, totalPower / 150));
+
+        const finalHpMult = hoardMult * powerMult * (this.game.isTutorialActive ? 1.0 : this.currentWaveHpMult) * modeMult;
         if (finalHpMult > 1) {
             enemy.maxHealth *= finalHpMult;
             enemy.health = enemy.maxHealth;
         }
 
-        // SUDDEN DEATH FAIRNESS: Slightly slower enemies since 1-hit kills you
         if (state.gameMode === 'SUDDEN_DEATH') {
             enemy.speed *= 0.85;
         }
         
-        // VIRAL LEARNING: Strider Thermal Shield
-        if (type === EnemyType.STRIDER && this.game.towerManager.getTowerCount(0) >= 5) {
+        if (type === EnemyType.STRIDER) {
             enemy.hasThermalShield = true;
-            enemy.renderShield(); // Visually attach the shield
+            enemy.renderShield(); 
         }
 
         this.enemies.push(enemy);

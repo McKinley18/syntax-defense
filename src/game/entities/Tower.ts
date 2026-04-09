@@ -172,7 +172,11 @@ export class Tower {
     private fire(target: Enemy, allEnemies: Enemy[]) {
         this.showMuzzleFlash();
         const levelMult = this.level === 2 ? 1.25 : this.level === 3 ? 1.5 : 1;
-        const totalDmg = this.config.damage * levelMult * (1 + this.linkBonus);
+        let upgradeMult = 1;
+        if (this.type === TowerType.PULSE_MG) {
+            upgradeMult = 1 + (GameStateManager.getInstance().upgrades.pulseMgOpt * 0.1);
+        }
+        const totalDmg = this.config.damage * levelMult * upgradeMult * (1 + this.linkBonus);
 
         // TRIGGER UNIQUE SFX
         const am = AudioManager.getInstance();
@@ -187,7 +191,8 @@ export class Tower {
         } else if (this.type === TowerType.FROST_RAY) {
             target.takeDamage(totalDmg, this.type);
             this.totalDamageDealt += totalDmg;
-            target.freeze(30); // Apply 30 frame freeze
+            const freezeDuration = 30 + (GameStateManager.getInstance().upgrades.frostOverclock * 10);
+            target.freeze(freezeDuration); 
             this.drawEffect(target.container.x, target.container.y, 'line');
         } else if (this.config.damage > 25) { 
             this.drawEffect(target.container.x, target.container.y, 'ring');

@@ -12,6 +12,7 @@ interface MainMenuProps {
   uptime: number;
   entropy: number;
   menuGlitchActive: boolean;
+  mousePos: { x: number, y: number };
 }
 
 const MainMenu: React.FC<MainMenuProps> = ({
@@ -27,6 +28,16 @@ const MainMenu: React.FC<MainMenuProps> = ({
   entropy,
   menuGlitchActive
 }) => {
+  const [vitals, setVitals] = React.useState<string[]>(["KERNEL_STABLE", "AUTH_ACTIVE", "LINK_SECURE"]);
+
+  React.useEffect(() => {
+    const lines = ["MEM_PTR: 0x8F2", "SYSCALL_OK", "DATA_SYNC: 100%", "PACKET_FLUX: 0.02", "GUEST_LINK: EST"];
+    const itv = setInterval(() => {
+      setVitals(prev => [lines[Math.floor(Math.random()*lines.length)], ...prev].slice(0, 3));
+    }, 3000);
+    return () => clearInterval(itv);
+  }, []);
+
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -45,6 +56,8 @@ const MainMenu: React.FC<MainMenuProps> = ({
   return (
     <div className="main-menu ui-layer">
       <div className="full-screen-scan"></div>
+      <div className="full-page-scanline"></div>
+      
       {/* 1. BREADCRUMBS */}
       <div className="menu-breadcrumbs">ARCHITECT@SYNTAX_CORE:~/ROOT$</div>
 
@@ -68,6 +81,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
         )}
 
         <div className={`terminal-menu-window ${menuGlitchActive ? 'glitch-active' : ''}`}>
+          <div className="terminal-window-scanline"></div>
           <div className="terminal-window-header">
             <span className="window-title">SYSTEM_EXECUTABLES_V2.7</span>
             <div className="window-dots">
@@ -77,10 +91,10 @@ const MainMenu: React.FC<MainMenuProps> = ({
             </div>
           </div>
           <div className="terminal-window-content">
-            {menuItems.map((item) => (
+            {menuItems.map((item, idx) => (
               <button
                 key={item.id}
-                className={`terminal-list-item ${item.primary ? 'primary-item' : ''} ${menuGlitchActive && Math.random() > 0.7 ? 'glitch-active' : ''}`}
+                className={`terminal-list-item item-reveal-${idx} ${item.primary ? 'primary-item' : ''}`}
                 disabled={item.disabled}
                 onClick={item.action}
                 onMouseEnter={() => setHoveredNode(item.log)}
@@ -91,7 +105,7 @@ const MainMenu: React.FC<MainMenuProps> = ({
                 <span className="item-meta">{item.size}</span>
                 <div className="item-label-group">
                   <span className="item-label">
-                    {menuGlitchActive && Math.random() > 0.8 ? item.label.replace(/[AEIOU]/g, '$') : item.label}
+                    {item.label}
                     <span style={{ color: '#444', marginLeft: '5px', fontSize: '0.65rem' }}>.{item.ext}</span>
                   </span>
                   <span className="item-dots"></span>
@@ -106,6 +120,11 @@ const MainMenu: React.FC<MainMenuProps> = ({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 3. SYSTEM VITALS TICKER */}
+      <div className="menu-vitals-ticker">
+        {vitals.map((v, i) => <div key={i} className="vital-line">&gt; {v}</div>)}
       </div>
     </div>
   );

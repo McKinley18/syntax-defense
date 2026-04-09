@@ -63,6 +63,10 @@ export class AudioManager {
         // Music start removed from here - managed by App.tsx logic
     }
 
+    public playUiClick() {
+        this.playProcedural(800, 1200, 0.08, 'sine', 0.15);
+    }
+
     public playTypeClick() {
         this.playProcedural(600, 600, 0.015, 'square', 0.03); // Lowered from 0.05
     }
@@ -94,6 +98,36 @@ export class AudioManager {
     }
     public playFireRail() { // RAIL
         this.playProcedural(2500, 100, 0.2, 'square', 0.12);
+    }
+
+    public playDramaticGlitch() {
+        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const time = this.ctx.currentTime;
+        
+        // Layer 1: Downward Sawtooth Sweep
+        const osc1 = this.ctx.createOscillator();
+        const g1 = this.ctx.createGain();
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(800, time);
+        osc1.frequency.exponentialRampToValueAtTime(40, time + 0.4);
+        g1.gain.setValueAtTime(0.15, time);
+        g1.gain.linearRampToValueAtTime(0, time + 0.4);
+        osc1.connect(g1); g1.connect(this.sfxGain!);
+        
+        // Layer 2: White Noise Burst
+        const bufferSize = this.ctx.sampleRate * 0.2;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const g2 = this.ctx.createGain();
+        g2.gain.setValueAtTime(0.1, time);
+        g2.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+        noise.connect(g2); g2.connect(this.sfxGain!);
+        
+        osc1.start(time); noise.start(time);
+        osc1.stop(time + 0.4); noise.stop(time + 0.2);
     }
 
     private playProcedural(start: number, end: number, dur: number, type: OscillatorType, vol: number) {

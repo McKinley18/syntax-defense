@@ -125,6 +125,37 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
   useEffect(() => {
     if (!game) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger hotkeys if typing in an input (though we have none here)
+      if (e.target instanceof HTMLInputElement) return;
+
+      if (e.key === '1' && isTowerUnlocked(0)) onSelectTurret(0);
+      else if (e.key === '2' && isTowerUnlocked(1)) onSelectTurret(1);
+      else if (e.key === '3' && isTowerUnlocked(2)) onSelectTurret(2);
+      else if (e.key === '4' && isTowerUnlocked(3)) onSelectTurret(3);
+      else if (e.key === '5' && isTowerUnlocked(4)) onSelectTurret(4);
+      else if (e.code === 'Space') {
+        e.preventDefault();
+        if (showCombatIntel) {
+          onExecuteWave();
+          onSetShowCombatIntel(false);
+        } else if (showWaveSummaryPopup) {
+          onSetShowWaveSummary(false); 
+          onPrepareWave(true); 
+          onSetShowCombatIntel(true);
+        } else {
+          onTogglePause(!isPaused);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [game, isTowerUnlocked, onSelectTurret, showCombatIntel, showWaveSummaryPopup, isPaused, onExecuteWave, onSetShowCombatIntel, onSetShowWaveSummary, onPrepareWave, onTogglePause]);
+
+  useEffect(() => {
+    if (!game) return;
     
     const handleWaveEnd = () => {
       if (isTutorialActive && tutorialStepRef.current === 5) {
@@ -222,6 +253,30 @@ const GameScreen: React.FC<GameScreenProps> = ({
         <div className="victory-overlay ui-layer">
           <div className="popup-title">WAVE {wave} COMPLETE</div>
           <div className="manual-text" style={{ textAlign: 'center', marginBottom: '8px', fontSize: '0.9rem', color: '#00ff66' }}>&gt; SWARM PURGE SUCCESSFUL. ANALYSIS COMPLETE.</div>
+          
+          <div style={{ width: '100%', marginBottom: '15px' }}>
+            <span style={{ color: 'var(--neon-cyan)', fontSize: '0.6rem', fontWeight: 900, display: 'block', marginBottom: '8px', textAlign: 'center', letterSpacing: '2px' }}>DELETED_SIGNATURES</span>
+            <div className="intel-row-horizontal" style={{ marginTop: 0 }}>
+              {[EnemyType.GLIDER, EnemyType.STRIDER, EnemyType.BEHEMOTH, EnemyType.FRACTAL].filter(type => {
+                // Show Glider always, Strider from wave 4, Behemoth from wave 8, Fractal from wave 10
+                if (type === EnemyType.STRIDER) return wave >= 4;
+                if (type === EnemyType.BEHEMOTH) return wave >= 8;
+                if (type === EnemyType.FRACTAL) return wave >= 10;
+                return true;
+              }).map(type => {
+                const reg = VISUAL_REGISTRY[type];
+                return (
+                  <div key={type} className="intel-card-minimal" data-enemy={type} style={{ minWidth: '80px' }}>
+                    <div className="mini-enemy">
+                      <div className={`shape ${reg.shape}`} style={reg.shape !== 'triangle' ? { background: reg.colorHex } : { borderBottomColor: reg.colorHex }}></div>
+                    </div>
+                    <div className="intel-label-small" style={{ fontSize: '0.5rem' }}>{reg.name}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="stats-grid">
             <div className="stats-item"><div className="stats-label">ENEMIES DELETED</div><div className="stats-value">+{waveSummary.totalKills}</div></div>
             <div className="stats-item"><div className="stats-label">TOKENS EARNED</div><div className="stats-value">+{Math.abs(waveSummary.kills)}c</div></div>
@@ -259,9 +314,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
       {isTutorialActive && !isPaused && (
         <div className="tutorial-ui ui-layer">
           {tutorialStep === 0 && (
-            <div className="pre-wave-overlay">
+            <div className="tutorial-window">
               <div className="popup-title" style={{ color: 'var(--neon-red)' }}>THREAT DETECTED</div>
-              <div className="manual-text" style={{ fontSize: '0.85rem', color: '#fff', textAlign: 'center', margin: '15px 0' }}>
+              <div className="manual-text" style={{ fontSize: '0.8rem', color: '#fff', textAlign: 'center', margin: '10px 0' }}>
                 &gt; WARNING: VIRAL DATA INTRUSION DETECTED.<br /><br />
                 SYSTEM ARCHITECT: INITIALIZE DEFENSE PROTOCOLS IMMEDIATELY.
               </div>
@@ -270,14 +325,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
           )}
           {tutorialStep === 1 && (
             <>
-              <div className="tutorial-pointer" style={{ left: tilePos.x, top: tilePos.y - 10 }}>SELECT PULSE MG PROTOCOL</div>
-              <div className="tutorial-highlight" style={{ left: tilePos.x - 50, top: tilePos.y, width: 100, height: 115 }}></div>
+              <div className="tutorial-pointer" style={{ left: tilePos.x, top: tilePos.y - 65 }}>SELECT PULSE MG PROTOCOL</div>
+              <div className="tutorial-highlight" style={{ left: tilePos.x - 45, top: tilePos.y - 55, width: 90, height: 110 }}></div>
             </>
           )}
           {tutorialStep === 2 && (
-            <div className="pre-wave-overlay">
+            <div className="tutorial-window">
               <div className="popup-title">DEFENSE NODES</div>
-              <div className="manual-text" style={{ fontSize: '0.8rem', color: '#fff', textAlign: 'center', margin: '15px 0' }}>
+              <div className="manual-text" style={{ fontSize: '0.75rem', color: '#fff', textAlign: 'center', margin: '10px 0' }}>
                 &gt; NODES PURGE THREATS WITHIN THEIR LOGIC RADIUS (CYAN CIRCLE).<br /><br />
                 STRATEGIC OVERLAP AND THROUGHPUT ARE KEY TO CORE SURVIVAL.
               </div>
@@ -291,9 +346,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
             </>
           )}
           {tutorialStep === 4 && (
-            <div className="pre-wave-overlay">
+            <div className="tutorial-window">
               <div className="popup-title">SYSTEM UPGRADES</div>
-              <div className="manual-text" style={{ fontSize: '0.8rem', color: '#fff', textAlign: 'center', margin: '15px 0' }}>
+              <div className="manual-text" style={{ fontSize: '0.75rem', color: '#fff', textAlign: 'center', margin: '10px 0' }}>
                 &gt; NODES CAN BE OVERCLOCKED FOR INCREASED THROUGHPUT.<br /><br />
                 CLICK 'CONTINUE' TO START THE TEST PURGE.
               </div>
@@ -305,49 +360,44 @@ const GameScreen: React.FC<GameScreenProps> = ({
           )}
           {tutorialStep === 5 && <div className="tutorial-ui-empty"></div>}
           {tutorialStep === 6 && (
-            <div className="pre-wave-overlay" style={{ maxHeight: '80vh', overflowY: 'auto', padding: '20px' }}>
+            <div className="tutorial-window scrollable">
               <div className="popup-title" style={{ color: '#00ff66' }}>PURGE SUCCESSFUL</div>
               
-              <div className="manual-text" style={{ fontSize: '0.8rem', color: '#fff', textAlign: 'left', margin: '15px 0', lineHeight: '1.5' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '15px', borderBottom: '1px solid #333', paddingBottom: '15px' }}>
-                  <div className="mini-kernel-container" style={{ position: 'relative', width: '60px', height: '60px', flexShrink: 0 }}>
-                    <div style={{ position: 'absolute', inset: '0', border: '1px solid #0066ff', borderRadius: '50%', opacity: 0.3 }}></div>
-                    <div style={{ position: 'absolute', inset: '10px', border: '2px solid #00ffff', borderRadius: '50%', opacity: 0.5, animation: 'rotate-phone 4s infinite linear' }}></div>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '24px', height: '20px', background: '#00ffcc', clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)', border: '2px solid #fff' }}></div>
+              <div className="manual-text" style={{ fontSize: '0.75rem', color: '#fff', textAlign: 'left', margin: '10px 0', lineHeight: '1.4' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
+                  <div className="mini-kernel-container" style={{ position: 'relative', width: '40px', height: '40px', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '18px', height: '16px', background: '#00ffcc', clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)', border: '1px solid #fff' }}></div>
                   </div>
-                  <div>
-                    <span style={{ color: 'var(--neon-cyan)', fontWeight: 900, fontSize: '1rem' }}>THE SYNTAX KERNEL</span><br />
-                    This core is your system's lifeblood. Protect it from viral breaches to maintain operational continuity.
+                  <div style={{ fontSize: '0.8rem' }}>
+                    <span style={{ color: 'var(--neon-cyan)', fontWeight: 900 }}>SYNTAX KERNEL</span><br />
+                    Protect this core to maintain continuity.
                   </div>
                 </div>
 
-                <p>&gt; <span style={{ color: 'var(--neon-red)' }}>HEALTH & VITALS:</span> Monitor the <b>Kernel Integrity</b> bar (red/cyan) at the <b>Bottom Right</b>. Use "REPAIR KERNEL" (Bottom Left) to fix breaches using tokens.</p>
-                
-                <p>&gt; <span style={{ color: 'var(--neon-cyan)' }}>ECONOMY ENGINE:</span> <b>Tokens</b> (currency) are shown at the <b>Bottom Right</b>. Purging viruses grants bounties. Holding tokens earns <b>10% Interest</b> at wave completion.</p>
+                <p>&gt; <span style={{ color: 'var(--neon-red)' }}>VITALS:</span> Monitor <b>Integrity</b> (Bottom Right). Use <b>Repair</b> (Bottom Left) if breached.</p>
+                <p>&gt; <span style={{ color: 'var(--neon-cyan)' }}>ECONOMY:</span> Hold tokens to earn <b>10% Interest</b> at wave end.</p>
 
-                <div style={{ marginTop: '20px' }}>
-                  <span style={{ color: 'var(--neon-cyan)', fontWeight: 900, display: 'block', marginBottom: '8px' }}>VIRAL DATABASE (THREAT SIGNATURES)</span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ marginTop: '15px' }}>
+                  <span style={{ color: 'var(--neon-cyan)', fontWeight: 900, display: 'block', marginBottom: '5px' }}>THREAT SIGNATURES</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     {[
-                      { type: EnemyType.GLIDER, desc: "Standard packet stream. High speed, low bulk." },
-                      { type: EnemyType.STRIDER, desc: "Resistant to Pulse MG (50% DMG reduction)." },
-                      { type: EnemyType.BEHEMOTH, desc: "Heavy bulk data. High priority, slow movement." },
-                      { type: EnemyType.FRACTAL, desc: "Boss Unit. Deals 10 Kernel Damage on breach." }
+                      { type: EnemyType.GLIDER, desc: "Standard packet stream." },
+                      { type: EnemyType.STRIDER, desc: "50% Pulse MG resistance." },
+                      { type: EnemyType.BEHEMOTH, desc: "Heavy bulk tank unit." },
+                      { type: EnemyType.FRACTAL, desc: "Boss Core. 10 Kernel Dmg." }
                     ].map(v => {
                       const reg = VISUAL_REGISTRY[v.type];
                       return (
-                        <div key={reg.name} style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', border: '1px solid #333', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '16px', borderLeftWidth: '8px', borderRightWidth: '8px', flexShrink: 0 } : { background: reg.colorHex, width: '16px', height: '16px', flexShrink: 0 }}></div>
-                          <div style={{ fontSize: '0.7rem' }}>
-                            <span style={{ color: reg.colorHex, fontWeight: 900 }}>{reg.name}:</span> {v.desc}
+                        <div key={reg.name} style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', border: '1px solid #222', display: 'flex', alignItems: 'center', gap: '10px' }} data-enemy={v.type}>
+                          <div className="mini-enemy">
+                            <div className={`shape ${reg.shape}`} style={reg.shape !== 'triangle' ? { background: reg.colorHex } : { borderBottomColor: reg.colorHex }}></div>
                           </div>
+                          <div style={{ fontSize: '0.6rem' }}><b style={{ color: reg.colorHex }}>{reg.name}:</b> {v.desc}</div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-
-                <p style={{ marginTop: '20px', color: '#888', fontStyle: 'italic', fontSize: '0.75rem', borderTop: '1px solid #222', paddingTop: '10px' }}>&gt; ARCHITECT: ONBOARDING COMPLETE. ALL DEFENSE PROTOCOLS AUTHORIZED.</p>
               </div>
               <button className="massive-exec-button" onClick={onFinishTutorial}>FINISH ONBOARDING</button>
             </div>
@@ -366,31 +416,39 @@ const GameScreen: React.FC<GameScreenProps> = ({
         />
       )}
 
+      {integrity <= 0 && (
+        <div className="victory-overlay" style={{ borderColor: 'var(--neon-red)' }}>
+          <div className="popup-title" style={{ color: 'var(--neon-red)' }}>SYSTEM_OFFLINE</div>
+          <div className="manual-text" style={{ textAlign: 'center' }}>
+            <p style={{ color: 'var(--neon-red)', fontWeight: 900 }}>&gt; CRITICAL BREACH: CORE_INTEGRITY_TERMINATED</p>
+            <p>&gt; THE MAINFRAME HAS DESCENDED INTO PERMANENT ENTROPY.</p>
+            
+            <div className="stats-grid" style={{ marginTop: '20px' }}>
+              <div className="stats-item">
+                <div className="stats-label">FINAL_SWARM</div>
+                <div className="stats-value">{wave}</div>
+              </div>
+              <div className="stats-item">
+                <div className="stats-label">TOTAL_SCORE</div>
+                <div className="stats-value" style={{ color: 'var(--neon-red)' }}>{credits.toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+          <button className="massive-exec-button" style={{ background: 'var(--neon-red)' }} onClick={onQuitToMenu}>RETURN TO ROOT</button>
+        </div>
+      )}
+
       {hoveredTower && !selectedTower && !isPaused && integrity > 0 && (
-        <div className="hover-stats-box" style={{ 
-          position: 'fixed', 
-          bottom: 'calc(var(--dashboard-height) + 20px)', 
-          right: '20px',
-          background: 'rgba(0, 5, 10, 0.95)',
-          border: '1px solid var(--neon-cyan)',
-          padding: '12px',
-          zIndex: 10000,
-          pointerEvents: 'none',
-          minWidth: '180px',
-          boxShadow: '0 0 15px rgba(0, 255, 255, 0.2)',
-          fontFamily: 'monospace'
-        }}>
-          <div style={{ color: 'var(--neon-cyan)', fontWeight: 900, borderBottom: '1px solid #333', paddingBottom: '5px', marginBottom: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
+        <div className="hover-stats-box">
+          <div className="hover-header">
             <span>{hoveredTower.config.name.toUpperCase()}</span>
             <span>v{hoveredTower.level}.0</span>
           </div>
-          <div style={{ fontSize: '0.7rem', color: '#fff', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>&gt; DMG_OUTPUT</span><span style={{ color: 'var(--neon-cyan)' }}>{hoveredTower.config.damage * (hoveredTower.level === 2 ? 1.25 : hoveredTower.level === 3 ? 1.5 : 1)}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>&gt; FIRE_RATE</span><span style={{ color: 'var(--neon-cyan)' }}>{(60 / hoveredTower.config.rate).toFixed(1)}Hz</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', borderTop: '1px dashed #222', paddingTop: '4px' }}>
-              <span>&gt; TOTAL_PURGED</span>
-              <span style={{ color: '#00ff66', fontWeight: 900 }}>{Math.floor(hoveredTower.totalDamageDealt)}</span>
-            </div>
+          <div className="hover-row"><span>&gt; DMG_OUTPUT</span><span className="val">{hoveredTower.config.damage * (hoveredTower.level === 2 ? 1.25 : hoveredTower.level === 3 ? 1.5 : 1)}</span></div>
+          <div className="hover-row"><span>&gt; FIRE_RATE</span><span className="val">{(60 / hoveredTower.config.rate).toFixed(1)}Hz</span></div>
+          <div className="hover-row" style={{ marginTop: '4px', borderTop: '1px dashed #222', paddingTop: '4px' }}>
+            <span>&gt; TOTAL_PURGED</span>
+            <span className="val green">{Math.floor(hoveredTower.totalDamageDealt)}</span>
           </div>
         </div>
       )}

@@ -20,8 +20,8 @@ import GameScreen from './screens/GameScreen';
 import GridBackground from './components/ui/GridBackground';
 
 type ScreenState = 'BOOT' | 'MENU' | 'GAME' | 'ARCHIVE' | 'MODES' | 'SETTINGS';
-type ArchiveCategory = 'NONE' | 'TACTICAL' | 'HANDBOOK' | 'MANIFEST' | 'FIRMWARE';
-type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'RANKS' | 'HALL_OF_FAME' | 'CREDITS' | 'UPGRADES';
+type ArchiveCategory = 'NONE' | 'TACTICAL' | 'HANDBOOK' | 'MANIFEST';
+type InfoTab = 'LORE' | 'VIRAL DB' | 'PROTOCOLS' | 'SYSTEM MODES' | 'THREATS' | 'LOGIC' | 'RANKS' | 'HALL_OF_FAME' | 'CREDITS';
 
 function App() {
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
@@ -72,23 +72,13 @@ function App() {
   const [showWaveSummaryPopup, setShowWaveSummaryPopup] = useState(false);
   const [showCombatIntel, setShowCombatIntel] = useState(false);
   const [showSettingsInGame, setShowSettingsInGame] = useState(false);
-  const [skipIntro, setSkipIntro] = useState(localStorage.getItem('syntax_skip_intro') === 'true');
+  const [skipIntro, setSkipIntro] = useState(false); // FORCED FALSE FOR REBUILD
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [uptime, setUptime] = useState(0);
   const [entropy, setEntropy] = useState(0.14);
   const [menuGlitchActive, setMenuGlitchActive] = useState(false);
   const [showStudioSplash, setShowStudioSplash] = useState(true);
   const [studioComplete, setStudioComplete] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
-
-  useEffect(() => {
-    if (screen !== 'MENU') return;
-    const handleMouse = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
-    };
-    window.addEventListener('mousemove', handleMouse);
-    return () => window.removeEventListener('mousemove', handleMouse);
-  }, [screen]);
 
   const [bootPhase, setBootPhase] = useState(0); 
   const [bootProgress, setBootProgress] = useState(0);
@@ -129,13 +119,19 @@ function App() {
   const [tilePos, setTilePos] = useState({ x: 0, y: 0, ts: 40 });
 
   useEffect(() => {
+    if (skipIntro && bootPhase === 0) {
+        setBootPhase(18);
+        setBootProgress(100);
+    }
+  }, [skipIntro, bootPhase]);
+
+  useEffect(() => {
     if (game) {
       game.isTutorialActive = isTutorialActive;
       game.towerManager.showAllRanges = showAllRanges;
-      game.isPaused = isPaused; 
       game.waveManager.prepareWave(false);
     }
-  }, [game, isTutorialActive, showAllRanges, isPaused]);
+  }, [game, isTutorialActive, showAllRanges]);
 
   useEffect(() => {
     if (screen !== 'MENU') return;
@@ -153,18 +149,15 @@ function App() {
     return () => { clearInterval(updateDiag); clearTimeout(initialGlitch); };
   }, [screen, glitchEffectsEnabled]);
 
-  // BOOT LOGIC EFFECT
+  // BOOT LOGIC EFFECT (Rebuilding Act by Act)
   useEffect(() => {
     if (!isLandscape || !studioComplete) return;
     
+    // Console log to trace the sequence in the browser
+    console.log(`[BOOT] Phase: ${bootPhase}, Ref: ${lastTriggeredPhaseRef.current}`);
+
     if (bootPhase === 0 && lastTriggeredPhaseRef.current < 0) {
         lastTriggeredPhaseRef.current = 0;
-        if (skipIntro) {
-            setBootPhase(18);
-            setBootProgress(100);
-        } else {
-            setBootPhase(1);
-        }
     }
     else if (bootPhase === 1 && lastTriggeredPhaseRef.current < 1) {
         lastTriggeredPhaseRef.current = 1;
@@ -179,6 +172,7 @@ function App() {
     }
     else if (bootPhase === 4.2 && lastTriggeredPhaseRef.current < 4.2) {
         lastTriggeredPhaseRef.current = 4.2;
+        // WELCOME FINISHED. WAIT 2 SECONDS THEN WIPE ACT 1
         setTimeout(() => setBootPhase(4.5), 2000);
     }
     else if (bootPhase === 4.5 && lastTriggeredPhaseRef.current < 4.5) {
@@ -188,6 +182,7 @@ function App() {
     }
     else if (bootPhase === 5 && lastTriggeredPhaseRef.current < 5) {
         lastTriggeredPhaseRef.current = 5;
+        // Pause before Act 2 starts typing
         setTimeout(() => setBootPhase(6.1), 1200);
     }
     else if (bootPhase === 6.1 && lastTriggeredPhaseRef.current < 6.1) {
@@ -242,6 +237,7 @@ function App() {
     }
     else if (bootPhase === 12 && lastTriggeredPhaseRef.current < 12) {
         lastTriggeredPhaseRef.current = 12;
+        // OnComplete -> setBootPhase(13) Handled in BootScreen
     }
     else if (bootPhase === 13 && lastTriggeredPhaseRef.current < 13) {
         lastTriggeredPhaseRef.current = 13;
@@ -290,12 +286,7 @@ function App() {
         lastTriggeredPhaseRef.current = 16;
         const am = AudioManager.getInstance();
         setTimeout(() => { setIsReadyGlitched(true); setIsDistorted(true); if (audioReady) am.playGlitchBuzz(); }, 100);
-        setTimeout(() => { 
-            setIsReadyGlitched(false); 
-            setIsDistorted(false); 
-            setBootPhase(18); 
-            if (!skipIntro) setScreen('MENU'); 
-        }, 400);
+        setTimeout(() => { setIsReadyGlitched(false); setIsDistorted(false); setBootPhase(18); }, 400);
     }
   }, [bootPhase, audioReady, isLandscape, studioComplete, skipIntro]);
 
@@ -321,7 +312,7 @@ function App() {
     AudioManager.getInstance().resume();
     let cat: ArchiveCategory = 'NONE';
     if (['VIRAL DB', 'PROTOCOLS', 'THREATS'].includes(t)) cat = 'TACTICAL';
-    else if (['LOGIC', 'RANKS', 'UPGRADES'].includes(t)) cat = 'HANDBOOK';
+    else if (['LOGIC', 'RANKS'].includes(t)) cat = 'HANDBOOK';
     else if (['LORE', 'HALL_OF_FAME', 'CREDITS'].includes(t)) cat = 'MANIFEST';
     setArchiveCategory(cat); setInfoTab(t); setScreen('ARCHIVE');
   };
@@ -333,9 +324,6 @@ function App() {
 
   const startNewGame = (mode: GameMode) => {
     AudioManager.getInstance().playUiClick(); cleanupGame();
-    // PURGE OLD SESSION DATA FOR FRESH START
-    localStorage.removeItem('syntax_defense_save');
-    
     if (localStorage.getItem('syntax_tutorial_done') !== 'true') {
       GameStateManager.getInstance().resetGame(mode, 0); setIsTutorialActive(true); setTutorialStep(0);
     } else { GameStateManager.getInstance().resetGame(mode); setShowCombatIntel(true); }
@@ -349,27 +337,13 @@ function App() {
   }, []);
 
   const quitToMenu = () => { AudioManager.getInstance().playUiClick(); cleanupGame(); setIsPaused(false); setScreen('MENU'); };
-  
   const loadGameSession = () => { 
     wakeAudioSystem(); AudioManager.getInstance().playUiClick(); cleanupGame(); 
-    const saveData = GameStateManager.getInstance().load();
-    if (saveData) { setIsVictorious(false); setScreen('GAME'); } 
+    if (GameStateManager.getInstance().load()) { setIsVictorious(false); setScreen('GAME'); } 
     else { setResetStatus("CRITICAL ERROR: NO SAVED DATA."); setTimeout(() => setResetStatus(""), 4000); setScreen('SETTINGS'); } 
   };
 
-  const saveAndQuit = () => { 
-    if (!game) return;
-    AudioManager.getInstance().playUiClick(); 
-    const towerData = game.towerManager.towers.map(t => ({
-      type: t.type,
-      x: t.container.x,
-      y: t.container.y,
-      level: t.level
-    }));
-    GameStateManager.getInstance().save(towerData); 
-    quitToMenu(); 
-  };
-
+  const saveAndQuit = () => { AudioManager.getInstance().playUiClick(); GameStateManager.getInstance().save(); quitToMenu(); };
   const executeWave = () => { if (game) { game.waveManager.startWave(); setShowCombatIntel(false); } };
   const toggleFastForward = () => { setIsFastForward(!isFastForward); if (game) game.isFastForward = !isFastForward; };
 
@@ -381,8 +355,7 @@ function App() {
     const update = () => {
       if (tutorialStep === 1 && firstTurretRef.current) {
         const rect = firstTurretRef.current.getBoundingClientRect();
-        // POINT TO CENTER OF TURRET BOX
-        if (rect.width > 0) setTilePos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, ts: 0 });
+        if (rect.width > 0) setTilePos({ x: rect.left + rect.width / 2, y: rect.top, ts: 0 });
       } else if ((tutorialStep === 2 || tutorialStep === 3) && game) {
         const wp = { x: 10 * TILE_SIZE + TILE_SIZE/2, y: 6 * TILE_SIZE + TILE_SIZE/2 };
         const globalPos = game.viewport.toGlobal(wp);
@@ -402,32 +375,10 @@ function App() {
     if (isTutorialActive && tutorialStep === 1) setTutorialStep(2);
   };
 
-  const isUnlocked = (type: TowerType) => {
-    // ENFORCE TUTORIAL RESTRICTION
-    if (isTutorialActive && tutorialStep <= 1) return type === 0;
-    return GameStateManager.getInstance().isTowerUnlocked(type);
-  };
-
   useEffect(() => {
     if (screen === 'GAME' && !game && !isInitializing) {
       async function init() {
-        setIsInitializing(true); 
-        const g = await GameContainer.getInstance(); 
-        const saveData = localStorage.getItem('syntax_defense_save');
-        if (saveData) {
-          const parsed = JSON.parse(saveData);
-          if (parsed.towers && Array.isArray(parsed.towers)) {
-            parsed.towers.forEach((td: any) => {
-              const tower = new Tower(td.type, td.x, td.y);
-              for(let i=1; i < td.level; i++) tower.upgrade(); 
-              g.towerManager.towers.push(tower);
-              g.towerLayer.addChild(tower.container);
-            });
-            (g.towerManager as any).recalculateLinks();
-          }
-        }
-        setGame(g); 
-        setIsInitializing(false);
+        setIsInitializing(true); const g = await GameContainer.getInstance(); setGame(g); setIsInitializing(false);
         const interval = setInterval(() => {
           const state = GameStateManager.getInstance(); setCredits(state.credits); setIntegrity(state.integrity); setWaveName(state.getWaveName()); setRepairCost(state.repairCost); setGameMode(state.gameMode); setGamePhase(state.phase); setRank(state.architectRank); setActiveGlitch(state.activeGlitch); setWaveSummary(state.lastWaveSummary); setLifetimeKills(state.lifetimeKills); setHighestWave(state.highestWave);
           if (g.waveManager.isSummaryActive && !showWaveSummaryPopup) { setShowWaveSummaryPopup(true); g.waveManager.isSummaryActive = false; }
@@ -447,20 +398,6 @@ function App() {
   const repairKernel = () => { AudioManager.getInstance().playUiClick(); GameStateManager.getInstance().repairKernel(); };
   const handleUpgrade = () => { if (!selectedTower || !game) return; if (game.towerManager.tryUpgradeTower(selectedTower)) { if (isTutorialActive) setSelectedTower(null); else { const updated = Object.assign(Object.create(Object.getPrototypeOf(selectedTower)), selectedTower); setSelectedTower(updated); } } };
   const handleSell = () => { if (!selectedTower || !game) return; game.towerManager.sellTower(selectedTower); setSelectedTower(null); };
-
-  const toggleSkipIntro = () => { const v = !skipIntro; setSkipIntro(v); localStorage.setItem('syntax_skip_intro', String(v)); };
-
-  const clearStats = () => {
-    AudioManager.getInstance().playUiClick();
-    localStorage.removeItem('syntax_defense_save');
-    window.location.reload();
-  };
-
-  const toggleTrack = (id: number) => {
-    const updated = [...enabledTracks];
-    updated[id] = !updated[id];
-    setEnabledTracks(updated);
-  };
 
   return (
     <div className="game-wrapper">
@@ -486,31 +423,30 @@ function App() {
           bootProgress={bootProgress} bootLogs={bootLogs} 
           isReadyGlitched={isReadyGlitched} audioReady={audioReady} 
           wakeAudioSystem={wakeAudioSystem} setBootPhase={setBootPhase}
+          secondaryLogs={[]} showAuthorized={false} showPreserve={false} 
+          showSuccessful={false} showCaution={false} showImminent={false}
         />
       ) : (
         <>
           <div id="game-container"></div>      
-          {['MENU', 'ARCHIVE', 'MODES', 'SETTINGS', 'GAME'].includes(screen) && (
-            <GridBackground isDistorted={isDistorted} mousePos={mousePos} isFlickering={isFlickering} />
-          )}
+          {screen === 'MENU' && <GridBackground isDistorted={isDistorted} isFlickering={isFlickering} />}
           {screen === 'MENU' && (
             <MainMenu 
               isDistorted={isDistorted} hasSave={hasSave} onStartGame={startNewGame} onSetScreen={setScreen} onOpenArchive={openArchive} onLoadGame={loadGameSession}
               hoveredNode={hoveredNode} setHoveredNode={setHoveredNode} uptime={uptime} entropy={entropy} menuGlitchActive={menuGlitchActive}
-              mousePos={mousePos}
             />
           )}
           {screen === 'ARCHIVE' && (
             <ArchiveScreen archiveCategory={archiveCategory} infoTab={infoTab} highestWave={highestWave} lifetimeKills={lifetimeKills} rank={rank} setArchiveCategory={setArchiveCategory} setInfoTab={setInfoTab} setIsTypingComplete={setIsTypingComplete} onSetScreen={setScreen} />
           )}
           {screen === 'SETTINGS' && (
-            <SettingsScreen isTypingComplete={isTypingComplete} skipIntro={skipIntro} sfxVolState={sfxVolState} musicVolState={musicVolState} sfxMuted={sfxMuted} ambientMuted={ambientMuted} enabledTracks={enabledTracks} integrity={integrity} lifetimeKills={lifetimeKills} highestWave={highestWave} rank={rank} resetStatus={resetStatus} toggleSkipIntro={toggleSkipIntro} onPurgeTutorial={() => { AudioManager.getInstance().playUiClick(); localStorage.removeItem('syntax_tutorial_done'); setResetStatus("TUTORIAL DATA PURGED."); setTimeout(() => setResetStatus(""), 4000); }} onClearStats={clearStats} handleSfxVol={handleSfxVol} handleMusicVol={handleMusicVol} toggleSfx={toggleSfx} toggleAmbient={toggleAmbient} toggleTrack={toggleTrack} onPreviewTrack={previewTrack} onSetScreen={setScreen} setIsTypingComplete={setIsTypingComplete} crtEnabled={crtEnabled} glitchEffectsEnabled={glitchEffectsEnabled} autoPauseEnabled={autoPauseEnabled} showAllRanges={showAllRanges} toggleCrt={toggleCrt} toggleGlitch={toggleGlitch} toggleAutoPause={toggleAutoPause} toggleShowRanges={toggleShowRanges} />
+            <SettingsScreen isTypingComplete={isTypingComplete} skipIntro={skipIntro} sfxVolState={sfxVolState} musicVolState={musicVolState} sfxMuted={sfxMuted} ambientMuted={ambientMuted} enabledTracks={enabledTracks} integrity={integrity} lifetimeKills={lifetimeKills} highestWave={highestWave} rank={rank} resetStatus={resetStatus} toggleSkipIntro={toggleSkipIntro} onPurgeTutorial={() => { AudioManager.getInstance().playUiClick(); localStorage.removeItem('syntax_tutorial_done'); setResetStatus("TUTORIAL DATA PURGED."); setTimeout(() => setResetStatus(""), 4000); }} onClearStats={() => {}} handleSfxVol={handleSfxVol} handleMusicVol={handleMusicVol} toggleSfx={toggleSfx} toggleAmbient={toggleAmbient} toggleTrack={() => {}} onPreviewTrack={previewTrack} onSetScreen={setScreen} setIsTypingComplete={setIsTypingComplete} crtEnabled={crtEnabled} glitchEffectsEnabled={glitchEffectsEnabled} autoPauseEnabled={autoPauseEnabled} showAllRanges={showAllRanges} toggleCrt={toggleCrt} toggleGlitch={toggleGlitch} toggleAutoPause={toggleAutoPause} toggleShowRanges={toggleShowRanges} />
           )}
           {screen === 'MODES' && (
             <ModesScreen isTypingComplete={isTypingComplete} onStartGame={startNewGame} onSetScreen={setScreen} setIsTypingComplete={setIsTypingComplete} />
           )}
           {screen === 'GAME' && game && (
-            <GameScreen game={game} isVictorious={isVictorious} integrity={integrity} credits={credits} isPaused={isPaused} showSettingsInGame={showSettingsInGame} sfxVolState={sfxVolState} musicVolState={musicVolState} gamePhase={gamePhase} waveSummary={waveSummary} wave={wave} showWaveSummaryPopup={showWaveSummaryPopup} isTutorialActive={isTutorialActive} showCombatIntel={showCombatIntel} activeGlitch={activeGlitch} upcomingEnemies={upcomingEnemies} waveName={waveName} tutorialStep={tutorialStep} tilePos={tilePos} selectedTower={selectedTower} hoveredTower={hoveredTower} repairCost={repairCost} selectedTurret={selectedTurret} gameMode={gameMode} isWaveActive={isWaveActive} isFastForward={isFastForward} autoPauseEnabled={autoPauseEnabled} sysStatusColor={sysStatusColor} systemStatusText={systemStatusText} firstTurretRef={firstTurretRef} onQuitToMenu={quitToMenu} onTogglePause={setIsPaused} onShowSettings={setShowSettingsInGame} onSetSfxVol={handleSfxVol} onSetMusicVol={handleMusicVol} onSaveAndQuit={saveAndQuit} onExecuteWave={executeWave} onPrepareWave={(start) => game?.waveManager.prepareWave(start)} onSetShowWaveSummary={setShowWaveSummaryPopup} onSetShowCombatIntel={setShowCombatIntel} onSetTutorialStep={setTutorialStep} onSetHoveredTower={setHoveredTower} onToggleFastForward={toggleFastForward} onRepair={repairKernel} onSelectTurret={selectTurret} onUpgradeTower={handleUpgrade} onSellTower={handleSell} onCloseTowerContext={() => setSelectedTower(null)} isTowerUnlocked={isUnlocked} getTowerCount={(type) => game?.towerManager.getTowerCount(type) || 0} getUpgradeCost={(tower) => game?.towerManager.getUpgradeCost(tower) || 0} onFinishTutorial={() => { localStorage.setItem('syntax_tutorial_done', 'true'); setIsTutorialActive(false); const state = GameStateManager.getInstance(); state.resetGame('STANDARD', 1); state.credits = 850; if (game) game.waveManager.prepareWave(false); setShowCombatIntel(true); }} setSelectedTower={setSelectedTower} />
+            <GameScreen game={game} isVictorious={isVictorious} integrity={integrity} credits={credits} isPaused={isPaused} showSettingsInGame={showSettingsInGame} sfxVolState={sfxVolState} musicVolState={musicVolState} gamePhase={gamePhase} waveSummary={waveSummary} wave={wave} showWaveSummaryPopup={showWaveSummaryPopup} isTutorialActive={isTutorialActive} showCombatIntel={showCombatIntel} activeGlitch={activeGlitch} upcomingEnemies={upcomingEnemies} waveName={waveName} tutorialStep={tutorialStep} tilePos={tilePos} selectedTower={selectedTower} hoveredTower={hoveredTower} repairCost={repairCost} selectedTurret={selectedTurret} gameMode={gameMode} isWaveActive={isWaveActive} isFastForward={isFastForward} autoPauseEnabled={autoPauseEnabled} sysStatusColor={sysStatusColor} systemStatusText={systemStatusText} firstTurretRef={firstTurretRef} onQuitToMenu={quitToMenu} onTogglePause={setIsPaused} onShowSettings={setShowSettingsInGame} onSetSfxVol={handleSfxVol} onSetMusicVol={handleMusicVol} onSaveAndQuit={saveAndQuit} onExecuteWave={executeWave} onPrepareWave={(start) => game?.waveManager.prepareWave(start)} onSetShowWaveSummary={setShowWaveSummaryPopup} onSetShowCombatIntel={setShowCombatIntel} onSetTutorialStep={setTutorialStep} onSetHoveredTower={setHoveredTower} onToggleFastForward={toggleFastForward} onRepair={repairKernel} onSelectTurret={selectTurret} onUpgradeTower={handleUpgrade} onSellTower={handleSell} onCloseTowerContext={() => setSelectedTower(null)} isTowerUnlocked={() => true} getTowerCount={(type) => game?.towerManager.getTowerCount(type) || 0} getUpgradeCost={(tower) => game?.towerManager.getUpgradeCost(tower) || 0} onFinishTutorial={() => { localStorage.setItem('syntax_tutorial_done', 'true'); setIsTutorialActive(false); const state = GameStateManager.getInstance(); state.resetGame('STANDARD', 1); state.credits = 850; if (game) game.waveManager.prepareWave(false); setShowCombatIntel(true); }} setSelectedTower={setSelectedTower} onSetHoveredTower={setHoveredTower} />
           )}
         </>
       )}

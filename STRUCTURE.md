@@ -1,83 +1,104 @@
-# SYNTAX DEFENSE: MAINFRAME ARCHIVE STRUCTURE
+# SYNTAX DEFENSE: MAINFRAME BLUEPRINT (v3.5)
 
-## I. TACTICAL DATABASE (Combat Specs)
+## I. PRODUCTION & INITIALIZATION (Onboarding Flow)
 
-### 1. VIRAL DB (Enemy Signatures)
-| Signature | HP (Base) | Speed | Reward | Special Protocol |
-|-----------|-----------|-------|--------|------------------|
-| **GLIDER** | 40 | 1.2x | 18c | Standard packet stream. |
-| **STRIDER**| 120 | 1.0x | 35c | **Thermal Shield**: 50% resistance to Pulse MG. |
-| **BEHEMOTH**| 450 | 0.6x | 45c | Heavy bulk data. High priority target. |
-| **FRACTAL** | 2500 | 0.4x | 180c | **Boss Unit**: Deals 10 Kernel Damage on breach. |
+### 1. MASTER INITIALIZATION HIERARCHY [LOCKED]
+The system enforces a strict sequential gate to ensure production value and technical stability. The sequence MUST proceed in this exact order:
 
-### 2. PROTOCOLS (Defensive Nodes)
-| Node Type | Cost | DMG | Range | Rate | Unlock Rank | Special Ability |
-|-----------|------|-----|-------|------|-------------|-----------------|
-| **PULSE MG** | 150c | 10 | 4 tiles | Fast | INITIATE | Rapid-fire logic pulses. |
-| **FROST RAY**| 250c | 2 | 5 tiles | Med | SCRIPTER | **Freeze (30f)** + Reveals Ghost Packets. |
-| **BLAST NOVA**| 350c | 30 | 3 tiles | Slow | SYS_ARCH | **AOE Burst**: 60px impact radius. |
-| **RAILGUN** | 500c | 250 | 10 tiles| Slow | SR_ENGR | **Piercing**: High DMG + Reveals Ghosts. |
-| **TESLA LINK**| 750c | 45 | 5 tiles | Med | ELITE_ARCH | **Chain**: Arcs to 3 adjacent targets. |
+1. **ORIENTATION GATE**: 
+   - **Condition**: `!isLandscape`
+   - **Visual**: "LANDSCAPE MODE REQUIRED" full-screen warning.
+   - **Logic**: Entire app is hidden until correct physical orientation is achieved.
 
-### 3. THREAT VECTORS
-- **ELITE SIGNATURES**: 15% spawn chance every 5 swarms. 3.5x HP, 2.5x Bounty. Visualized by white outer glow.
-- **GHOST PACKETS**: Spawn after Wave 10. 15% chance. Nearly invisible (0.15 alpha). Must be revealed by Frost/Tesla/Railgun.
-- **SYSTEM GLITCHES**: 25% chance per wave start.
-  - `OVERCLOCK`: +25% Tower Fire Rate / +25% Enemy Speed.
-  - `LAG_SPIKE`: Enemies slowed by 30%.
-  - `SYSTEM_DRAIN`: Interest rate locked to 0% for one swarm.
+2. **STUDIO SPLASH (MONOLITH_STUDIOS)**:
+   - **Condition**: `isLandscape && !studioComplete`
+   - **Duration**: 3.5s (Managed via `showStudioSplash` timer).
+   - **Visual**: Minimalist three-bar monument logo + "MONOLITH PRESENTS".
+   - **Transition**: Fades out via CSS `studio-fade-out`.
 
-## II. SYSTEM HANDBOOK (Logic & Progression)
+3. **CINEMATIC BOOT (Terminal Sequence)**:
+   - **Condition**: `studioComplete && screen === 'BOOT'`
+   - **Visual**: One-by-one terminal commands and responses (auth, sys, login).
+   - **Final Trigger**: Manual [ ACCESS SYSTEM ROOT ] button appearing after sequence completion (Phase 18).
 
-### 1. CORE LOGIC
-- **SYNERGY LINKS**: Adjacent identical turrets grant cumulative **+10% DMG**. Visualized by connecting neon lines.
-- **OVERCLOCKING**: Turrets can be upgraded to **Level 3**. L2: +25% DMG, L3: +50% DMG + Bonus (e.g., Frost Ray +1 Range).
-- **INTEREST**: 10% base rate on current balance (capped at 1000c). Perfect waves grant **+2% permanent increase** (max 20%).
-- **REPAIR**: Kernel can be repaired for tokens. Cost starts at 500c and increases by 150c per use.
-
-### 2. ARCHITECT RANKS
-| Rank | XP Required | Starting Token Bonus |
-|------|-------------|----------------------|
-| **INITIATE** | 0 | +0c |
-| **SCRIPTER** | 1,000 | +50c |
-| **SYS_ARCHITECT** | 5,000 | +100c |
-| **SENIOR_ENGR** | 10,000 | +150c |
-| **ELITE_ARCHITECT**| 25,000 | +200c |
-| **CORE_GUARDIAN** | 50,000 | +300c |
-| **GOD_MOD_ADMIN** | 100,000 | +500c |
-
-## III. MAINFRAME MANIFEST (Lore & Meta)
-
-### 1. SYSTEM MODES
-- **STANDARD**: Standard rules. 850c start (plus rank bonus).
-- **HARDCORE**: 1000c start. **No Interest**. All towers cost 50% more. **2x XP Gain**.
-- **SUDDEN DEATH**: Integrity set to 1. No repairs. High-stakes logic preservation.
-- **ECO CHALLENGE**: **No Kill Bounties**. All income must be generated via the Interest system.
-- **ENDLESS LOOP**: No wave cap. Viral signatures gain exponential HP multipliers.
-
-### 2. ARCHITECT ONBOARDING (Tutorial)
-- **8-Step Guided Entry**:
-  0. Intro (Threat Detected) -> 1. Select MG -> 2. Node Intel (Radius) -> 3. Place (10,6) -> 4. Upgrade Intel -> 5. Test Purge (1 Glider) -> 6. Final Descriptive Popup (Kernel/UI/Viruses) -> 7. Reset to Wave 1.
-
-### 3. PERSISTENCE LAYER
-...
----
-
-## III. SYSTEM INITIALIZATION SCHEMATIC (Boot Sequence)
-
-| Phase | Event | Type | Delay/Speed |
-|-------|-------|------|-------------|
-| 0 | Studio Splash | Studio Logo | 3.5s |
-| 1 | auth --request-access | User Prompt | 35ms/char |
-| 3 | Access Authorized | Sys Response | 20ms/char |
-| 5 | Logging in as ARCHITECT | Status Alert | 20ms/char |
-| 6 | sys --init-protocols | User Prompt | 35ms/char |
-| 6.5 | Protocol Download | Loading Bar | 40ms/2% |
-| 7 | Module Uploads | Technical Logs | 400ms/line |
-| 9 | Status: Successful | Sys Response | 25ms/char |
-| 11 | Access: Granted | Sys Response | 25ms/char |
-| 13 | Caution: Threats Imminent | Alert | 25ms/char |
-| 16 | Virus Leak Stutter | Distortion | 400ms |
-| 18 | Access System Root | Manual Entry | User Click |
+### 2. BOOT SEQUENCE SCHEMATIC [PHASES]
+| Act | Phase | Action | Type | Condition |
+|-----|-------|--------|------|-----------|
+| **1** | 1 | `auth --request-access` | User | Auto-start |
+| **1** | 3 | Access Authorized | Sys | Act 1 response |
+| **1** | 4.1 | Welcome Back | Sys | Session start |
+| **CL** | 4.5 | [ CLEAR TERMINAL ] | Logic | 5s delay |
+| **2** | 5 | Welcome back, ARCHITECT | Log | Act 2 start |
+| **2** | 6.1 | `sys --mount-tactical-logic` | User | Act 2 command |
+| **2** | 6.6 | Protocol Download | Loader | Act 2 loading |
+| **2** | 7 | technical_logs.sh | Logs | Act 2 detail |
+| **CL** | 8.5 | [ CLEAR TERMINAL ] | Logic | Transition |
+| **3** | 10 | Status: Successful | Sys | Act 3 start |
+| **3** | 12 | Access: Granted | Sys | Act 3 response |
+| **3** | 13.5 | `sys --scan-integrity --deep` | User | **The Trigger** |
+| **3** | 14 | CRITICAL_ALERT | Alert | System Failure |
+| **3** | 14.5 | Manual Containment? | Prompt | Crisis Choice |
+| **3** | 14.7 | "Y" | User | Hesitation |
+| **3** | 14.9 | `sys --purge-auto --all` | User | Final Attempt |
+| **3** | 15.2 | AUTO_PURGE_FAILED | Error | Glitch Line |
+| **3** | 15.5 | EMERGENCY_HANDOFF | Handoff | Manual Req. |
+| **3** | 16 | RED GLITCH (300ms) | Effect | "INITIALIZE" |
+| **3** | 18 | SYSTEM ROOT | Entry | Main Menu |
 
 ---
+
+## II. TACTICAL DATABASE (Combat Specs)
+
+### 1. VIRAL SIGNATURES (Enemies)
+- **GLIDER**: 40 HP | 1.2x Speed | 18c | Standard unit.
+- **STRIDER**: 120 HP | 1.0x Speed | 35c | 50% Pulse MG Resistance.
+- **BEHEMOTH**: 450 HP | 0.6x Speed | 45c | High Priority / Tank.
+- **FRACTAL**: 2500 HP | 0.4x Speed | 180c | Boss (10 Kernel Damage).
+
+### 2. DEFENSE PROTOCOLS (Towers)
+- **PULSE MG**: 150c | 10 DMG | 4 Range | Fast.
+- **FROST RAY**: 250c | 2 DMG | 5 Range | Med (Freeze 30f).
+- **BLAST NOVA**: 350c | 30 DMG | 3 Range | Slow (AOE).
+- **RAILGUN**: 500c | 250 DMG | 10 Range | Slow (Pierce).
+- **TESLA LINK**: 750c | 45 DMG | 5 Range | Med (Chain Arcs).
+
+---
+
+## III. CORE SYSTEM ENGINES (Logic & Performance)
+
+### 1. ADAPTIVE SWARM ENGINE (Intelligence)
+- **Difficulty Grace (Wave 1-4)**: Engine runs at **35% intensity**.
+- **Wave 1 Fixed**: Strictly **10 GLIDERS** side-by-side.
+- **Hoard Counter**: If credits > 1500, swarm size and HP scale dynamically.
+- **Power Counter**: Enemy HP scales based on total turret DPS.
+- **Side-by-Side Movement**: Enemies travel in parallel lanes across the 2-wide path.
+
+### 2. PERFORMANCE LAYER (Efficiency)
+- **Concurrency Cap**: Max **40 concurrent enemies**.
+- **HP Compression**: Excess enemy count converted to HP multiplier (`currentWaveHpMult`).
+- **Resource Pooling**: 
+    - **Enemy Pool**: (Future implementation pending)
+    - **Graphic Pool**: Projectiles, muzzle flashes, and lightning are recycled via `ParticleManager`.
+
+### 3. AUDIO SYNTHESIS (Techno Engine)
+- **Routing**: Synth -> Master Lowpass Filter -> Stereo Delay -> Master Gain.
+- **Sidechain**: Kick drum triggers master volume ducking (pump effect).
+- **Tracks**: 15 unique tracks with analog-style waveforms (Sine, Saw, Square, Triangle).
+- **Rotation**: 3-minute phrases (128-384 beats @ 126 BPM).
+
+---
+
+## IV. MAINFRAME CONFIGURATION (UI & Settings)
+
+### 1. SYSTEM CALIBRATION
+- **CRT Scanlines**: Toggable 3px horizontal overlay.
+- **Glitch Events**: Toggle random background distortions.
+- **Auto-Pause**: Optional wave-end system lock.
+- **Stats Purge**: Reset all lifetime XP and persistence via Settings.
+
+### 2. ARCHITECT CLEARANCE (Progression)
+- **XP Scaling**: 50 XP per wave (Standard) | 100 XP per wave (Hardcore).
+- **Ranks**: INITIATE -> SCRIPTER -> SYS_ARCHITECT -> SENIOR_ENGR -> ELITE_ARCHITECT -> CORE_GUARDIAN -> GOD_MOD_ADMIN.
+
+---
+**BLUEPRINT VERIFIED: v3.5 // MONOLITH_STUDIOS**

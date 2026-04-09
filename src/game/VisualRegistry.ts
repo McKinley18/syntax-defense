@@ -26,7 +26,7 @@ export const VISUAL_REGISTRY: Record<EnemyType, VisualConfig> = {
         colorHex: '#00ffff',
         priority: 'LOW',
         baseHp: 30,
-        speed: 2,
+        speed: 1.8,
         reward: 25
     },
     [EnemyType.STRIDER]: {
@@ -36,7 +36,7 @@ export const VISUAL_REGISTRY: Record<EnemyType, VisualConfig> = {
         colorHex: '#ff00ff',
         priority: 'MEDIUM',
         baseHp: 150,
-        speed: 1.2,
+        speed: 2.6,
         reward: 25
     },
     [EnemyType.BEHEMOTH]: {
@@ -46,7 +46,7 @@ export const VISUAL_REGISTRY: Record<EnemyType, VisualConfig> = {
         colorHex: '#00ff00',
         priority: 'HIGH',
         baseHp: 400,
-        speed: 0.7,
+        speed: 0.8,
         reward: 150
     },
     [EnemyType.FRACTAL]: {

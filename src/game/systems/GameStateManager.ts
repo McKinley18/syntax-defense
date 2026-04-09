@@ -25,10 +25,18 @@ export class GameStateManager {
     public repairCost: number = 500; 
     
     public totalXP: number = 0;
+    public spentXP: number = 0;
     public totalScore: number = 0;
     public architectRank: string = "INITIATE";
     public lifetimeKills: number = 0;
     public highestWave: number = 0;
+
+    public upgrades = {
+        pulseMgOpt: 0,
+        kernelHardening: 0,
+        frostOverclock: 0,
+        tokenMining: 0
+    };
 
     public lastWaveSummary: WaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0, points: 0 };
 
@@ -78,11 +86,15 @@ export class GameStateManager {
 
     public clearStats() {
         this.totalXP = 0;
+        this.spentXP = 0;
         this.totalScore = 0;
         this.architectRank = "INITIATE";
         this.lifetimeKills = 0;
         this.highestWave = 0;
+        this.upgrades = { pulseMgOpt: 0, kernelHardening: 0, frostOverclock: 0, tokenMining: 0 };
         localStorage.removeItem('syntax_total_xp');
+        localStorage.removeItem('syntax_spent_xp');
+        localStorage.removeItem('syntax_upgrades');
         localStorage.removeItem('syntax_hall_of_fame');
         localStorage.removeItem('syntax_defense_save');
         this.saveXP();
@@ -124,6 +136,8 @@ export class GameStateManager {
 
     public saveXP() {
         localStorage.setItem('syntax_total_xp', String(this.totalXP));
+        localStorage.setItem('syntax_spent_xp', String(this.spentXP));
+        localStorage.setItem('syntax_upgrades', JSON.stringify(this.upgrades));
     }
 
     public loadXP() {
@@ -132,6 +146,10 @@ export class GameStateManager {
             this.totalXP = parseInt(xp);
             this.architectRank = this.calculateRank();
         }
+        const spent = localStorage.getItem('syntax_spent_xp');
+        if (spent) this.spentXP = parseInt(spent);
+        const upgs = localStorage.getItem('syntax_upgrades');
+        if (upgs) this.upgrades = JSON.parse(upgs);
     }
 
     public saveHallOfFame() {
@@ -153,11 +171,11 @@ export class GameStateManager {
 
     public repairKernel(): boolean {
         if (this.gameMode === 'SUDDEN_DEATH') return false; 
-        if (this.credits >= this.repairCost && this.integrity < 20) {
+        const maxIntegrity = 20 + (this.upgrades.kernelHardening * 5);
+        if (this.credits >= this.repairCost && this.integrity < maxIntegrity) {
             this.credits -= this.repairCost;
-            this.integrity = Math.min(20, this.integrity + 1);
+            this.integrity = Math.min(maxIntegrity, this.integrity + 1);
             this.repairCost += 150;
-            this.save();
             return true;
         }
         return false;
@@ -166,7 +184,6 @@ export class GameStateManager {
     public resetForNextWave() {
         if (this.integrity <= 0) return;
 
-        // CALCULATE WAVE POINTS
         const killPoints = this.lastWaveSummary.totalKills * 100;
         const econPoints = this.lastWaveSummary.interest * 10;
         const integrityPoints = this.integrity * 50;
@@ -176,14 +193,13 @@ export class GameStateManager {
         const waveXP = this.currentWave * 50 * (this.gameMode === 'HARDCORE' ? 2 : 1);
         this.totalXP += waveXP;
         this.saveXP();
-        this.saveHallOfFame(); // SAVE LIFETIME KILLS
+        this.saveHallOfFame(); 
         this.architectRank = this.calculateRank();
 
         if (this.currentWave > this.highestWave) {
             this.highestWave = this.currentWave;
         }
 
-        // PERFECT WAVE BONUS
         if (!this.integrityLostThisWave && this.gameMode !== 'HARDCORE') {
             this.addCredits(150, 'perfect'); 
             this.interestRate = Math.min(0.20, this.interestRate + 0.02);
@@ -201,7 +217,7 @@ export class GameStateManager {
         this.integrityLostThisWave = false;
         this.activeGlitch = 'NONE';
 
-        if (Math.random() < 0.25) { // SLIGHTLY INCREASED CHANCE
+        if (Math.random() < 0.25) { 
             const glitches: GlitchType[] = ['OVERCLOCK', 'LAG_SPIKE', 'SYSTEM_DRAIN'];
             this.activeGlitch = glitches[Math.floor(Math.random() * glitches.length)];
         }
@@ -214,62 +230,48 @@ export class GameStateManager {
 
     public isTowerUnlocked(type: number): boolean {
         const rank = this.architectRank;
-        // 0: PULSE_MG, 1: FROST_RAY, 2: BLAST_NOVA, 3: RAILGUN, 4: TESLA_LINK
-        if (type === 0) return true; // Pulse MG always unlocked
-        
-        if (type === 1) { // Frost Ray: Scripter+
-            return ["SCRIPTER", "SYS_ARCHITECT", "SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
-        }
-        if (type === 2) { // Blast Nova: Sys Architect+
-            return ["SYS_ARCHITECT", "SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
-        }
-        if (type === 3) { // Railgun: Senior Engr+
-            return ["SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
-        }
-        if (type === 4) { // Tesla Link: Elite Architect+
-            return ["ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
-        }
+        if (type === 0) return true; 
+        if (type === 1) return ["SCRIPTER", "SYS_ARCHITECT", "SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
+        if (type === 2) return ["SYS_ARCHITECT", "SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
+        if (type === 3) return ["SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
+        if (type === 4) return ["ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
         return false;
     }
 
     public resetGame(mode: GameMode, startingWave: number = 1) {
         this.gameMode = mode;
         const bonus = this.getRankBonus();
-        
-        // Mode-Specific Starting Capital
         if (mode === 'HARDCORE') this.credits = 1000;
-        else if (mode === 'ECO_CHALLENGE') this.credits = 1200; // Extra start for Eco
+        else if (mode === 'ECO_CHALLENGE') this.credits = 1200; 
         else this.credits = (startingWave === 1 ? 850 : 850 + bonus);
-
-        this.integrity = mode === 'SUDDEN_DEATH' ? 1 : 20;
+        const maxIntegrity = 20 + (this.upgrades.kernelHardening * 5);
+        this.integrity = mode === 'SUDDEN_DEATH' ? 1 : maxIntegrity;
         this.currentWave = startingWave; 
         this.repairCost = 500;
-        
-        // Mode-Specific Interest
+        const baseInterest = 0.10 + (this.upgrades.tokenMining * 0.02);
         if (mode === 'HARDCORE' || mode === 'SUDDEN_DEATH') this.interestRate = 0;
-        else if (mode === 'ECO_CHALLENGE') this.interestRate = 0.15; // Mastery Interest
-        else this.interestRate = 0.10;
-
+        else if (mode === 'ECO_CHALLENGE') this.interestRate = baseInterest + 0.05; 
+        else this.interestRate = baseInterest;
         this.lastWaveSummary = { kills: 0, totalKills: 0, interest: 0, perfectBonus: 0, refunds: 0, total: 0, points: 0 };
-        this.totalScore = 0; // Reset score for new session
+        this.totalScore = 0; 
         this.integrityLostThisWave = false;
         this.activeGlitch = 'NONE';
-        this.save();
     }
 
-    public save() {
+    public save(towers: any[] = []) {
         const data = {
             credits: this.credits,
             integrity: this.integrity,
             currentWave: this.currentWave,
             gameMode: this.gameMode,
             repairCost: this.repairCost,
-            interestRate: this.interestRate
+            interestRate: this.interestRate,
+            towers: towers 
         };
         localStorage.setItem('syntax_defense_save', JSON.stringify(data));
     }
 
-    public load(): boolean {
+    public load(): any {
         const raw = localStorage.getItem('syntax_defense_save');
         if (raw) {
             const data = JSON.parse(raw);
@@ -280,8 +282,8 @@ export class GameStateManager {
             this.repairCost = data.repairCost || 500;
             this.interestRate = data.interestRate || 0.10;
             this.loadXP();
-            return true;
+            return data;
         }
-        return false;
+        return null;
     }
 }

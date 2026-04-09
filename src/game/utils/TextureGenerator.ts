@@ -1,11 +1,15 @@
 import * as PIXI from 'pixi.js';
+import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
+import { TILE_SIZE } from '../systems/MapManager';
 
 export class TextureGenerator {
     private static instance: TextureGenerator;
     public metalTexture!: PIXI.Texture;
     public armorTexture!: PIXI.Texture;
     public sandTexture!: PIXI.Texture;
-    public binaryTexture!: PIXI.Texture; // New Texture for Path Flow
+    public binaryTexture!: PIXI.Texture;
+
+    public enemyTextures: Map<EnemyType, PIXI.Texture> = new Map();
 
     private constructor() {}
 
@@ -45,7 +49,6 @@ export class TextureGenerator {
         }
         this.sandTexture = app.renderer.generateTexture(sandG);
 
-        // Generate Binary Text Pattern
         const binaryContainer = new PIXI.Container();
         const style = new PIXI.TextStyle({ 
             fontFamily: 'Courier New', 
@@ -54,7 +57,6 @@ export class TextureGenerator {
             fontWeight: 'bold' 
         });
         
-        // Add random 0s and 1s
         for(let i=0; i<60; i++) {
             const t = new PIXI.Text({ text: Math.random() > 0.5 ? '0' : '1', style });
             t.x = Math.random() * 256;
@@ -62,12 +64,40 @@ export class TextureGenerator {
             t.alpha = 0.2 + Math.random() * 0.4;
             binaryContainer.addChild(t);
         }
-        // Add a background to ensure texture size is exactly 256x256
         const bg = new PIXI.Graphics();
         bg.rect(0, 0, 256, 256);
-        bg.fill({ color: 0x000000, alpha: 0.01 }); // Almost invisible
+        bg.fill({ color: 0x000000, alpha: 0.01 });
         binaryContainer.addChildAt(bg, 0);
-
         this.binaryTexture = app.renderer.generateTexture(binaryContainer);
+
+        // Pre-render Enemy Textures
+        for (const [key, config] of Object.entries(VISUAL_REGISTRY)) {
+            const type = parseInt(key) as EnemyType;
+            const g = new PIXI.Graphics();
+            const s = TILE_SIZE / 2 - 2; 
+
+            // Center the pivot by drawing relative to 0,0, but when generating texture
+            // it will capture the bounding box. To ensure the texture is centered
+            // properly on a sprite, we will set the anchor of the sprite to 0.5.
+            if (config.shape === 'circle') {
+                g.circle(0, 0, s);
+            } else if (config.shape === 'triangle') {
+                g.poly([-s, s, 0, -s, s, s]);
+            } else if (config.shape === 'square') {
+                g.rect(-s, -s, s*2, s*2);
+            } else if (config.shape === 'hexagon') {
+                g.poly([-s, 0, -s/2, -s, s/2, -s, s, 0, s/2, s, -s/2, s]);
+            }
+            g.fill({ color: config.color, alpha: 0.9 });
+            g.stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
+            
+            // Generate texture with a padded bounding box to ensure glow fits if added later
+            const renderTex = app.renderer.generateTexture(g);
+            this.enemyTextures.set(type, renderTex);
+        }
+    }
+
+    public getEnemyTexture(type: EnemyType): PIXI.Texture {
+        return this.enemyTextures.get(type)!;
     }
 }

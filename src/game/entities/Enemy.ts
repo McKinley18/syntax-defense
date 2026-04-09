@@ -3,6 +3,7 @@ import { GameContainer } from '../GameContainer';
 import { GameStateManager } from '../systems/GameStateManager';
 import { TILE_SIZE } from '../systems/MapManager';
 import { EnemyType, VISUAL_REGISTRY, type VisualConfig } from '../VisualRegistry';
+import { TextureGenerator } from '../utils/TextureGenerator';
 
 export { EnemyType };
 
@@ -18,11 +19,11 @@ export class Enemy {
     public isElite: boolean = false;
     public isGhost: boolean = false;
     public isRevealed: boolean = false; 
-    public hasThermalShield: boolean = false; // VIRAL LEARNING
+    public hasThermalShield: boolean = false; 
 
     private pathPoints: PIXI.Point[];
     private currentPointIndex: number = 0;
-    private visual: PIXI.Graphics;
+    private visual: PIXI.Sprite; // NOW USING SPRITE FOR BATCHING
     private shieldVisual?: PIXI.Graphics;
     private healthBar: PIXI.Graphics;
     private freezeTimer: number = 0;
@@ -34,8 +35,6 @@ export class Enemy {
         this.container = new PIXI.Container();
         this.pathPoints = GameContainer.instance!.pathManager.getPathPoints();
         
-        // LANE LOGIC: Move side-by-side on the 2-wide path
-        // TILE_SIZE is the unit, path is 2 units wide. Offset by -0.4 to 0.4 TILE_SIZE
         this.offsetVal = (Math.random() * TILE_SIZE * 0.8) - (TILE_SIZE * 0.4);
         
         const config = VISUAL_REGISTRY[type];
@@ -44,12 +43,10 @@ export class Enemy {
             this.isElite = true;
         }
 
-        // GHOST PACKET LOGIC: 15% chance after Wave 10
         if (waveNumber >= 10 && Math.random() < 0.15) {
             this.isGhost = true;
         }
 
-        // REMOVED WAVE-BASED SCALING: Enemies stay consistent strength
         const hpMult = (this.isElite ? 3.5 : 1);
         this.maxHealth = Math.floor(config.baseHp * hpMult);
         this.health = this.maxHealth;
@@ -57,11 +54,13 @@ export class Enemy {
 
         let finalSpeed = config.speed;
         
-        // REMOVED PROGRESSIVE SPEED PRESSURE: Consistent speed based on type
         if (GameStateManager.getInstance().activeGlitch === 'LAG_SPIKE') finalSpeed *= 0.7;
         this.speed = finalSpeed;
 
-        this.visual = this.createVisual(config);
+        // FETCH CACHED TEXTURE INSTEAD OF DRAWING PROCEDURALLY
+        const tex = TextureGenerator.getInstance().getEnemyTexture(type);
+        this.visual = new PIXI.Sprite(tex);
+        this.visual.anchor.set(0.5); // Center the sprite
         
         if (this.isElite) {
             this.visual.scale.set(1.5);
@@ -72,7 +71,7 @@ export class Enemy {
         }
 
         if (this.isGhost) {
-            this.container.alpha = 0.15; // Nearly invisible
+            this.container.alpha = 0.15; 
         }
 
         this.healthBar = new PIXI.Graphics();
@@ -80,31 +79,11 @@ export class Enemy {
 
         if (this.pathPoints.length > 0) {
             const startVec = GameContainer.instance!.pathManager.pathVectors[0] || { dx: 1, dy: 0 };
-            // Perpendicular vector for lane offset
             this.laneOffset = { dx: -startVec.dy * this.offsetVal, dy: startVec.dx * this.offsetVal };
             
             this.container.x = this.pathPoints[0].x + this.laneOffset.dx;
             this.container.y = this.pathPoints[0].y + this.laneOffset.dy;
         }
-    }
-
-    private createVisual(config: VisualConfig): PIXI.Graphics {
-        const g = new PIXI.Graphics();
-        const s = TILE_SIZE / 2 - 2; 
-        
-        if (config.shape === 'circle') {
-            g.circle(0, 0, s);
-        } else if (config.shape === 'triangle') {
-            g.poly([-s, s, 0, -s, s, s]);
-        } else if (config.shape === 'square') {
-            g.rect(-s, -s, s*2, s*2);
-        } else if (config.shape === 'hexagon') {
-            g.poly([-s, 0, -s/2, -s, s/2, -s, s, 0, s/2, s, -s/2, s]);
-        }
-        
-        g.fill({ color: config.color, alpha: 0.9 });
-        g.stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
-        return g;
     }
 
     public update(delta: number) {

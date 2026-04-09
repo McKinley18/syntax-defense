@@ -31,6 +31,11 @@ export class GameContainer {
     public isTutorialActive: boolean = false;
     public tutorialStep: number = 0;
 
+    private colorFilter: PIXI.ColorMatrixFilter;
+    private breachTimer: number = 0;
+    private purgeTimer: number = 0;
+    private baseShake: { x: number, y: number } = { x: 0, y: 0 };
+
     public static instance: GameContainer | null = null;
 
     private constructor() {
@@ -42,6 +47,7 @@ export class GameContainer {
         this.enemyLayer = new PIXI.Container();
         this.effectLayer = new PIXI.Container();
         this.uiLayer = new PIXI.Container();
+        this.colorFilter = new PIXI.ColorMatrixFilter();
     }
 
     public static async getInstance(): Promise<GameContainer> {
@@ -56,12 +62,12 @@ export class GameContainer {
         if (this.app.renderer) return;
 
         await this.app.init({
-            background: '#0a0a0a',
             resizeTo: window,
             antialias: true,
             roundPixels: true,
             resolution: window.devicePixelRatio || 1,
             autoDensity: true,
+            backgroundAlpha: 0 
         });
 
         const tg = TextureGenerator.getInstance();
@@ -71,6 +77,8 @@ export class GameContainer {
         if (container && !container.contains(this.app.canvas)) {
             container.appendChild(this.app.canvas);
         }
+
+        this.viewport.filters = [this.colorFilter];
 
         this.app.stage.addChild(this.viewport);
         this.viewport.addChild(this.groundLayer, this.pathLayer, this.towerLayer, this.enemyLayer, this.effectLayer);
@@ -83,11 +91,9 @@ export class GameContainer {
         this.waveManager = new WaveManager(this);
         this.inputHandler = new InputHandler();
 
-        // INITIALIZE KERNEL
         this.kernel = new Kernel(0, 0);
         this.towerLayer.addChild(this.kernel.container);
 
-        // SYNC WITH STATE MANAGER (FOR RESTORED SESSIONS)
         this.waveManager.prepareWave(false); 
         
         window.addEventListener('resize', this.handleResize);
@@ -110,10 +116,35 @@ export class GameContainer {
         GameContainer.instance = null; 
     }
 
+    public triggerBreachEffect() {
+        this.breachTimer = 20; 
+    }
+
+    public triggerPurgeEffect() {
+        this.purgeTimer = 10; 
+    }
+
     public update(ticker: PIXI.Ticker) {
         if (this.isPaused) return;
 
-        // PERFORMANCE AUTO-THROTTLE
+        if (this.breachTimer > 0) {
+            this.breachTimer -= ticker.deltaTime;
+            this.colorFilter.reset();
+            this.colorFilter.colorTone(0xff0000, 0.6, 0xffffff, 0); 
+            this.viewport.x = this.baseShake.x + (Math.random() * 10 - 5);
+            this.viewport.y = this.baseShake.y + (Math.random() * 10 - 5);
+        } else if (this.purgeTimer > 0) {
+            this.purgeTimer -= ticker.deltaTime;
+            this.colorFilter.reset();
+            this.colorFilter.brightness(1.2 + (this.purgeTimer / 30), true); 
+            this.viewport.x = this.baseShake.x;
+            this.viewport.y = this.baseShake.y;
+        } else {
+            this.colorFilter.reset();
+            this.viewport.x = this.baseShake.x;
+            this.viewport.y = this.baseShake.y;
+        }
+
         if (ticker.FPS < 45) {
             this.particleManager.isThrottled = true;
         } else if (ticker.FPS > 55) {
