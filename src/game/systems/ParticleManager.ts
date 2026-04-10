@@ -29,7 +29,7 @@ export class ParticleManager {
             g.clear();
             g.alpha = 1;
             g.scale.set(1);
-            g.position.set(0, 0); // RESET POSITION
+            g.position.set(0, 0);
             return g;
         }
         return new PIXI.Graphics();
@@ -89,6 +89,9 @@ export class ParticleManager {
     }
 
     public spawnFloatingText(x: number, y: number, text: string) {
+        // ONLY SHOW REWARDS (+), HIDE ALL DAMAGE NOISE
+        if (!text.includes('+')) return;
+
         const style = new PIXI.TextStyle({
             fontFamily: 'Courier New',
             fontSize: 14,
@@ -113,44 +116,39 @@ export class ParticleManager {
             scale: false
         });
     }
-public spawnHitMarker(x: number, y: number, amount: number) {
-    const marker = HitMarker.create(x, y, amount);
-    this.game.effectLayer.addChild(marker.container);
-    this.particles.push({
-        sprite: marker.container,
-        vx: 0, vy: -0.5, life: 60, maxLife: 60, fade: true, scale: false,
-        marker: marker // CUSTOM FIELD FOR UPDATE
-    });
-}
 
-public addEffect(graphics: PIXI.Graphics, frames: number) {
-    this.particles.push({
-        sprite: graphics,
-        vx: 0,
-        vy: 0,
-        life: frames,
-        maxLife: frames,
-        fade: true,
-        scale: false
-    });
-}
+    public spawnHitMarker(x: number, y: number, amount: number) {
+        // DISABLED: Remove floating damage numbers from HUD
+    }
 
-public update(delta: number) {    for (let i = this.particles.length - 1; i >= 0; i--) {
-        const p = this.particles[i];
+    public addEffect(graphics: PIXI.Graphics, frames: number) {
+        this.particles.push({
+            sprite: graphics,
+            vx: 0,
+            vy: 0,
+            life: frames,
+            maxLife: frames,
+            fade: true,
+            scale: false
+        });
+    }
 
-        if (p.marker) {
-            if (!p.marker.update(delta)) {
-                this.game.effectLayer.removeChild(p.sprite);
-                HitMarker.release(p.marker);
-                this.particles.splice(i, 1);
+    public update(delta: number) {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+
+            if (p.marker) {
+                if (!p.marker.update(delta)) {
+                    this.game.effectLayer.removeChild(p.sprite);
+                    HitMarker.release(p.marker);
+                    this.particles.splice(i, 1);
+                }
+                continue;
             }
-            continue;
-        }
 
-        p.life -= delta;
-        p.sprite.x += p.vx * delta;
-        p.sprite.y += p.vy * delta;
             p.life -= delta;
+            p.sprite.x += p.vx * delta;
+            p.sprite.y += p.vy * delta;
 
             if (p.fade) {
                 p.sprite.alpha = p.life / p.maxLife;

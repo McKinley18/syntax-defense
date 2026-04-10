@@ -6,10 +6,18 @@ export class AudioManager {
     private masterGain: GainNode | null = null;
     private sfxGain: GainNode | null = null;
     
+    // Background Hum
+    private humOsc: OscillatorNode | null = null;
+    private humGain: GainNode | null = null;
+    private humCrusher: BiquadFilterNode | null = null;
+    
     public isSfxMuted: boolean = false;
     public isAmbientMuted: boolean = false; 
     public sfxVolume: number = 0.7;
     public musicVolume: number = 0.5;
+
+    // Track 0-14 root notes (A minor pentatonic mapped to scale roughly)
+    private scale = [220, 261.63, 329.63, 392, 440, 523.25, 659.25, 783.99];
 
     private constructor() {
         this.isSfxMuted = localStorage.getItem('syntax_sfx_muted') === 'true';
@@ -46,6 +54,8 @@ export class AudioManager {
             MusicManager.getInstance().init(this.ctx, this.masterGain);
             MusicManager.getInstance().setVolume(this.isAmbientMuted ? 0 : this.musicVolume);
             
+            this.initHum();
+
             if (!this.isAmbientMuted) {
                 MusicManager.getInstance().start();
             }
@@ -55,12 +65,65 @@ export class AudioManager {
         }
     }
 
+    private initHum() {
+        if (!this.ctx) return;
+        this.humOsc = this.ctx.createOscillator();
+        this.humGain = this.ctx.createGain();
+        this.humCrusher = this.ctx.createBiquadFilter();
+
+        this.humOsc.type = 'sine';
+        this.humOsc.frequency.value = 55; // Deep server room hum (A1)
+
+        this.humCrusher.type = 'highpass';
+        this.humCrusher.frequency.value = 20;
+
+        this.humGain.gain.value = 0.05; // Very subtle
+
+        this.humOsc.connect(this.humCrusher);
+        this.humCrusher.connect(this.humGain);
+        this.humGain.connect(this.masterGain!);
+
+        this.humOsc.start();
+    }
+
+    public updateHum(integrity: number) {
+        if (!this.humGain || !this.humCrusher || !this.humOsc || !this.ctx) return;
+        if (integrity <= 0) {
+            this.humGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+            return;
+        }
+
+        const healthRatio = Math.max(0, Math.min(1, integrity / 20));
+        
+        if (healthRatio < 0.3) {
+            this.humOsc.type = 'square';
+            this.humCrusher.type = 'lowpass';
+            this.humCrusher.frequency.setTargetAtTime(100 + (Math.random() * 500), this.ctx.currentTime, 0.1);
+            this.humGain.gain.setTargetAtTime(0.1 + (Math.random() * 0.05), this.ctx.currentTime, 0.1);
+        } else {
+            this.humOsc.type = 'sine';
+            this.humCrusher.type = 'highpass';
+            this.humCrusher.frequency.setTargetAtTime(20, this.ctx.currentTime, 0.5);
+            this.humGain.gain.setTargetAtTime(0.05, this.ctx.currentTime, 0.5);
+        }
+    }
+
     public async resume() {
         if (!this.ctx) this.init();
         if (this.ctx && this.ctx.state === 'suspended') {
             await this.ctx.resume();
         }
-        // Music start removed from here - managed by App.tsx logic
+    }
+
+    private getPanNode(x: number, maxX: number): StereoPannerNode | GainNode {
+        if (!this.ctx) return this.ctx!.createGain();
+        const panVal = Math.max(-1, Math.min(1, (x / maxX) * 2 - 1));
+        if (this.ctx.createStereoPanner) {
+            const panner = this.ctx.createStereoPanner();
+            panner.pan.value = panVal * 0.8; 
+            return panner;
+        }
+        return this.ctx.createGain(); 
     }
 
     public playUiClick() {
@@ -68,7 +131,7 @@ export class AudioManager {
     }
 
     public playTypeClick() {
-        this.playProcedural(600, 600, 0.015, 'square', 0.03); // Lowered from 0.05
+        this.playProcedural(600, 600, 0.015, 'square', 0.03); 
     }
 
     public playBreach() {
@@ -79,32 +142,104 @@ export class AudioManager {
         this.playProcedural(300, 900, 0.15, 'sine', 0.2);
     }
 
-    public playPurge() {
-        this.playProcedural(1000, 50, 0.25, 'sawtooth', 0.2);
+    public playPurge(x: number = window.innerWidth / 2, maxX: number = window.innerWidth) {
+        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        
+        const baseNote = this.scale[Math.floor(Math.random() * this.scale.length)];
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const panner = this.getPanNode(x, maxX);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(baseNote * 2, time);
+        osc.frequency.exponentialRampToValueAtTime(baseNote / 2, time + 0.25);
+        
+        gain.gain.setValueAtTime(0.2 * this.sfxVolume, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+        
+        osc.connect(gain);
+        gain.connect(panner);
+        panner.connect(this.sfxGain!);
+        
+        osc.start(time);
+        osc.stop(time + 0.25);
     }
 
-    // UNIQUE TURRET SOUNDS
-    public playFirePulse() { // MG
-        this.playProcedural(600, 200, 0.06, 'square', 0.1);
+    public playRankUp() {
+        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const time = this.ctx.currentTime;
+
+        const carrier = this.ctx.createOscillator();
+        const modulator = this.ctx.createOscillator();
+        const modGain = this.ctx.createGain();
+        const envGain = this.ctx.createGain();
+
+        carrier.type = 'sine';
+        modulator.type = 'sine';
+
+        carrier.frequency.value = 440; 
+        modulator.frequency.value = 440 * 2.5; 
+
+        modGain.gain.setValueAtTime(1000, time);
+        modGain.gain.exponentialRampToValueAtTime(10, time + 3.0);
+
+        envGain.gain.setValueAtTime(0.3 * this.sfxVolume, time);
+        envGain.gain.setTargetAtTime(0.4 * this.sfxVolume, time + 0.1, 0.1);
+        envGain.gain.exponentialRampToValueAtTime(0.001, time + 4.0);
+
+        modulator.connect(modGain);
+        modGain.connect(carrier.frequency);
+        carrier.connect(envGain);
+        envGain.connect(this.sfxGain!);
+
+        carrier.start(time);
+        modulator.start(time);
+        carrier.stop(time + 4.0);
+        modulator.stop(time + 4.0);
     }
-    public playFireFrost() { // FROST
-        this.playProcedural(800, 1200, 0.2, 'sine', 0.08);
+
+    public playFirePulse(x: number, maxX: number) { 
+        this.playSpatial(600, 200, 0.06, 'square', 0.1, x, maxX);
     }
-    public playFireBlast() { // BLAST
-        this.playProcedural(200, 60, 0.25, 'sawtooth', 0.12);
+    public playFireFrost(x: number, maxX: number) { 
+        this.playSpatial(800, 1200, 0.2, 'sine', 0.08, x, maxX);
     }
-    public playFireTesla() { // TESLA
-        this.playProcedural(1200, 1500, 0.1, 'sawtooth', 0.07);
+    public playFireBlast(x: number, maxX: number) { 
+        this.playSpatial(200, 60, 0.25, 'sawtooth', 0.12, x, maxX);
     }
-    public playFireRail() { // RAIL
-        this.playProcedural(2500, 100, 0.2, 'square', 0.12);
+    public playFireTesla(x: number, maxX: number) { 
+        this.playSpatial(1200, 1500, 0.1, 'sawtooth', 0.07, x, maxX);
+    }
+    public playFireRail(x: number, maxX: number) { 
+        this.playSpatial(2500, 100, 0.2, 'square', 0.12, x, maxX);
+    }
+
+    private playSpatial(start: number, end: number, dur: number, type: OscillatorType, vol: number, x: number, maxX: number) {
+        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const panner = this.getPanNode(x, maxX);
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(start, time);
+        if (start !== end) osc.frequency.exponentialRampToValueAtTime(end, time + dur);
+        
+        gain.gain.setValueAtTime(vol * this.sfxVolume, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+        
+        osc.connect(gain);
+        gain.connect(panner);
+        panner.connect(this.sfxGain!);
+        osc.start(time);
+        osc.stop(time + dur);
     }
 
     public playDramaticGlitch() {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
         const time = this.ctx.currentTime;
         
-        // Layer 1: Downward Sawtooth Sweep
         const osc1 = this.ctx.createOscillator();
         const g1 = this.ctx.createGain();
         osc1.type = 'sawtooth';
@@ -114,7 +249,6 @@ export class AudioManager {
         g1.gain.linearRampToValueAtTime(0, time + 0.4);
         osc1.connect(g1); g1.connect(this.sfxGain!);
         
-        // Layer 2: White Noise Burst
         const bufferSize = this.ctx.sampleRate * 0.2;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);

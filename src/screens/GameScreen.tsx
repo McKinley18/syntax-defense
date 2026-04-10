@@ -116,6 +116,23 @@ const GameScreen: React.FC<GameScreenProps> = ({
   setSelectedTower,
   onSetHoveredTower
 }) => {
+  const [vitalsUptime, setVitalsUptime] = React.useState(0);
+  const [vitalsEntropy, setVitalsEntropy] = React.useState(0.14);
+
+  useEffect(() => {
+    const itv = setInterval(() => {
+      setVitalsUptime(prev => prev + 1);
+      setVitalsEntropy(0.14 + (Math.random() * 0.05));
+    }, 1000);
+    return () => clearInterval(itv);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   if (!game) return null;
 
   const tutorialStepRef = useRef(tutorialStep);
@@ -127,7 +144,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
     if (!game) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger hotkeys if typing in an input (though we have none here)
       if (e.target instanceof HTMLInputElement) return;
 
       if (e.key === '1' && isTowerUnlocked(0)) onSelectTurret(0);
@@ -167,20 +183,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
     };
 
     const handleTowerPlaced = () => {
-      console.log("Node placed. Tutorial active:", isTutorialActive, "Current step:", tutorialStepRef.current);
       if (isTutorialActive && tutorialStepRef.current === 3) {
-        console.log("Advancing to Step 4 (Upgrade Popup)");
         onSetTutorialStep(4);
       }
-      onSelectTurret(-1); // Clear selection after successful placement
+      onSelectTurret(-1);
     };
 
     const handleTowerSelected = (t: Tower) => {
       setSelectedTower(t);
-    };
-
-    const handleTowerUpgraded = () => {
-      // No longer needed for tutorial flow
     };
 
     const handleTowerHover = (t: Tower | null) => {
@@ -191,7 +201,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
     game.towerManager.onTowerPlaced = handleTowerPlaced;
     game.towerManager.onTowerSelected = handleTowerSelected;
     game.towerManager.onTowerHover = handleTowerHover;
-    game.towerManager.onTowerUpgraded = handleTowerUpgraded;
 
   }, [game, isTutorialActive, tutorialStep, onSetTutorialStep, setSelectedTower, onSetHoveredTower]);
 
@@ -206,7 +215,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
               <p>&gt; KERNEL INTEGRITY: {integrity}/20</p>
               <p>&gt; FINAL TOKENS: {credits}</p>
             </div>
-            <button className="cyan-menu-btn back-btn" onClick={onQuitToMenu} style={{ marginTop: '20px' }}>RETURN TO ROOT</button>
+            <button className="blue-button back-btn" onClick={onQuitToMenu} style={{ marginTop: '20px' }}>RETURN TO ROOT</button>
           </div>
         </div>
       )}
@@ -226,7 +235,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
               <div className="pause-options grid-options">
                 <button className="blue-button" onClick={() => onTogglePause(false)}>RESUME</button>
                 <button className="blue-button" onClick={() => onShowSettings(true)}>SETTINGS</button>
-                <button className="blue-button" onClick={() => { onTogglePause(false); /* show tutorial logic */ }}>HOW TO PLAY</button>
+                <button className="blue-button" onClick={() => { onTogglePause(false); }}>HOW TO PLAY</button>
                 <button className="blue-button" onClick={onSaveAndQuit} disabled={isWaveActive} style={{ opacity: isWaveActive ? 0.5 : 1 }}>SAVE & EXIT</button>
                 <button className="blue-button" onClick={onQuitToMenu} style={{ background: 'rgba(255, 51, 0, 0.2)', borderColor: '#ff3300', gridColumn: 'span 2' }}>ABANDON</button>
               </div>
@@ -250,64 +259,53 @@ const GameScreen: React.FC<GameScreenProps> = ({
         </div>
       )}
       {gamePhase === 'PREP' && waveSummary && wave >= 1 && showWaveSummaryPopup && !isPaused && integrity > 0 && !isTutorialActive && (
-        <div className="victory-overlay ui-layer">
-          <div className="popup-title">WAVE {wave} COMPLETE</div>
-          <div className="manual-text" style={{ textAlign: 'center', marginBottom: '8px', fontSize: '0.9rem', color: '#00ff66' }}>&gt; SWARM PURGE SUCCESSFUL. ANALYSIS COMPLETE.</div>
+        <div className="victory-overlay ui-layer ultra-compact">
+          <div className="popup-title">SWARM {wave} PURGED</div>
           
-          <div style={{ width: '100%', marginBottom: '15px' }}>
-            <span style={{ color: 'var(--neon-cyan)', fontSize: '0.6rem', fontWeight: 900, display: 'block', marginBottom: '8px', textAlign: 'center', letterSpacing: '2px' }}>DELETED_SIGNATURES</span>
-            <div className="intel-row-horizontal" style={{ marginTop: 0 }}>
-              {[EnemyType.GLIDER, EnemyType.STRIDER, EnemyType.BEHEMOTH, EnemyType.FRACTAL].filter(type => {
-                // Show Glider always, Strider from wave 4, Behemoth from wave 8, Fractal from wave 10
-                if (type === EnemyType.STRIDER) return wave >= 4;
-                if (type === EnemyType.BEHEMOTH) return wave >= 8;
-                if (type === EnemyType.FRACTAL) return wave >= 10;
-                return true;
-              }).map(type => {
-                const reg = VISUAL_REGISTRY[type];
-                return (
-                  <div key={type} className="intel-card-minimal" data-enemy={type} style={{ minWidth: '80px' }}>
-                    <div className="mini-enemy">
-                      <div className={`shape ${reg.shape}`} style={reg.shape !== 'triangle' ? { background: reg.colorHex } : { borderBottomColor: reg.colorHex }}></div>
-                    </div>
-                    <div className="intel-label-small" style={{ fontSize: '0.5rem' }}>{reg.name}</div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="stats-row-compact">
+            <div className="stats-item-mini"><div className="lbl">KILLS</div><div className="val">+{waveSummary.totalKills}</div></div>
+            <div className="stats-item-mini"><div className="lbl">TOKENS</div><div className="val">+{Math.abs(waveSummary.kills)}c</div></div>
+            <div className="stats-item-mini"><div className="lbl">POINTS</div><div className="val">+{waveSummary.points}</div></div>
+            <div className="stats-item-mini"><div className="lbl">TOTAL</div><div className="val">+{waveSummary.total}c</div></div>
           </div>
-
-          <div className="stats-grid">
-            <div className="stats-item"><div className="stats-label">ENEMIES DELETED</div><div className="stats-value">+{waveSummary.totalKills}</div></div>
-            <div className="stats-item"><div className="stats-label">TOKENS EARNED</div><div className="stats-value">+{Math.abs(waveSummary.kills)}c</div></div>
-            <div className="stats-item"><div className="stats-label">POINTS EARNED</div><div className="stats-value">+{waveSummary.points}</div></div>
-            <div className="stats-item"><div className="stats-label">TOTAL INCOME</div><div className="stats-value">+{waveSummary.total}c</div></div>
-          </div>
-          <button className="massive-exec-button" style={{ marginTop: '10px' }} onClick={() => { onSetShowWaveSummary(false); onPrepareWave(true); onSetShowCombatIntel(true); }}>VIEW NEXT SWARM INTEL</button>
+          
+          <button className="massive-exec-button compact-btn-long" onClick={() => { onSetShowWaveSummary(false); onPrepareWave(true); onSetShowCombatIntel(true); }}>NEXT MISSION INTEL</button>
         </div>
       )}
       {gamePhase === 'PREP' && !showWaveSummaryPopup && showCombatIntel && !isPaused && integrity > 0 && !isTutorialActive && (
-        <div className="pre-wave-overlay ui-layer">
+        <div className="pre-wave-overlay ui-layer ultra-compact">
           <div className="popup-title">SWARM DATA DETECTED</div>
-          <div className="manual-text" style={{ fontSize: '0.75rem', color: 'var(--neon-blue)', marginBottom: '10px' }}>&gt; ANALYZING MISSION: {waveName}... SCANNING VIRAL SIGNATURES...</div>
+          
+          <div className="manual-text" style={{ fontSize: '0.65rem', color: '#888', textAlign: 'center', marginBottom: '5px' }}>
+            SCANNING MISSION: {waveName}
+          </div>
+
           {activeGlitch !== 'NONE' && (
-            <div style={{ fontSize: '0.7rem', color: 'var(--neon-red)', textAlign: 'center', fontWeight: 900, border: '1px solid var(--neon-red)', padding: '5px', marginBottom: '10px' }}>CAUTION: SYSTEM {activeGlitch} DETECTED</div>
+            <div className="glitch-warning-box">
+              <div style={{ color: 'var(--neon-red)', fontWeight: 900, fontSize: '0.65rem' }}>CAUTION: {activeGlitch} MALFUNCTION</div>
+              <div style={{ fontSize: '0.55rem', color: '#aaa', marginTop: '2px' }}>
+                {activeGlitch === 'OVERCLOCK' ? "SYSTEM STRESS: ALL NODES FIRING 20% SLOWER." : 
+                 activeGlitch === 'LAG_SPIKE' ? "NETWORK LATENCY: VIRUS VELOCITY REDUCED BY 30%." :
+                 "SYSTEM DRAIN: KERNEL REPAIR PROTOCOLS DISABLED."}
+              </div>
+            </div>
           )}
-          <div className="intel-row-horizontal">
+
+          <div className="intel-row-horizontal" style={{ margin: '5px 0' }}>
             {upcomingEnemies.map((entry, idx) => {
               const reg = VISUAL_REGISTRY[entry.type];
               if (!reg) return null;
               return (
-                <div key={idx} className="intel-card-minimal">
-                  <div className="symbol-only">
-                    <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '20px', borderLeftWidth: '10px', borderRightWidth: '10px' } : { background: reg.colorHex, width: '20px', height: '20px' }}></div>
+                <div key={idx} className="intel-card-minimal" style={{ padding: '4px 8px', gap: '5px' }}>
+                  <div className="mini-enemy" style={{ width: '20px', height: '20px' }}>
+                    <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '14px', borderLeftWidth: '7px', borderRightWidth: '14px' } : { background: reg.colorHex, width: '14px', height: '14px' }}></div>
                   </div>
-                  <div className="intel-label-small">{reg.name} (x{entry.count})</div>
+                  <div className="intel-label-small" style={{ fontSize: '0.55rem' }}>{reg.name} x{entry.count}</div>
                 </div>
               );
             })}
           </div>
-          <button className="massive-exec-button" style={{ marginTop: '10px', padding: '10px', fontSize: '0.8rem' }} onClick={() => { onExecuteWave(); onSetShowCombatIntel(false); }}>EXECUTE DEFENSE PROTOCOL</button>
+          <button className="massive-exec-button compact-btn-long" onClick={() => { onExecuteWave(); onSetShowCombatIntel(false); }}>EXECUTE DEFENSE</button>
         </div>
       )}
 

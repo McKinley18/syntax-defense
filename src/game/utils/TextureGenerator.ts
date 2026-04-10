@@ -74,11 +74,9 @@ export class TextureGenerator {
         for (const [key, config] of Object.entries(VISUAL_REGISTRY)) {
             const type = parseInt(key) as EnemyType;
             const g = new PIXI.Graphics();
-            const s = TILE_SIZE / 2 - 2; 
+            // Size them to fit side-by-side on a 40px path (approx 18px wide)
+            const s = TILE_SIZE / 4.5; 
 
-            // Center the pivot by drawing relative to 0,0, but when generating texture
-            // it will capture the bounding box. To ensure the texture is centered
-            // properly on a sprite, we will set the anchor of the sprite to 0.5.
             if (config.shape === 'circle') {
                 g.circle(0, 0, s);
             } else if (config.shape === 'triangle') {

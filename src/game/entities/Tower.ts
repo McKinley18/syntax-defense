@@ -181,11 +181,13 @@ export class Tower {
 
         // TRIGGER UNIQUE SFX
         const am = AudioManager.getInstance();
-        if (this.type === TowerType.PULSE_MG) am.playFirePulse();
-        else if (this.type === TowerType.FROST_RAY) am.playFireFrost();
-        else if (this.type === TowerType.BLAST_NOVA) am.playFireBlast();
-        else if (this.type === TowerType.RAILGUN) am.playFireRail();
-        else if (this.type === TowerType.TESLA_LINK) am.playFireTesla();
+        const maxX = window.innerWidth;
+        const x = this.container.x;
+        if (this.type === TowerType.PULSE_MG) am.playFirePulse(x, maxX);
+        else if (this.type === TowerType.FROST_RAY) am.playFireFrost(x, maxX);
+        else if (this.type === TowerType.BLAST_NOVA) am.playFireBlast(x, maxX);
+        else if (this.type === TowerType.RAILGUN) am.playFireRail(x, maxX);
+        else if (this.type === TowerType.TESLA_LINK) am.playFireTesla(x, maxX);
 
         if (this.type === TowerType.TESLA_LINK) {
             this.chainFire(target, allEnemies, totalDmg);

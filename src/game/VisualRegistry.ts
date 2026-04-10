@@ -26,7 +26,7 @@ export const VISUAL_REGISTRY: Record<EnemyType, VisualConfig> = {
         colorHex: '#00ffff',
         priority: 'LOW',
         baseHp: 30,
-        speed: 1.8,
+        speed: 1.2,
         reward: 25
     },
     [EnemyType.STRIDER]: {

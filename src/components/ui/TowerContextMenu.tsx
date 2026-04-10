@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tower } from '../../game/entities/Tower';
+import { AudioManager } from '../../game/systems/AudioManager';
 
 interface TowerContextMenuProps {
   selectedTower: Tower;
@@ -18,12 +19,14 @@ const TowerContextMenu: React.FC<TowerContextMenuProps> = ({
   onSell,
   onClose
 }) => {
+  const am = AudioManager.getInstance();
+
   return (
-    <div className="tower-context-overlay" onClick={onClose}>
+    <div className="tower-context-overlay" onClick={() => { am.playUiClick(); onClose(); }}>
       <div className="tower-context-box" onClick={(e) => e.stopPropagation()}>
         <div className="context-header">
           <span className="context-title">NODE_CONTEXT_v{selectedTower.level}.0</span>
-          <button className="close-context" onClick={onClose}>&times;</button>
+          <button className="close-context" onClick={() => { am.playUiClick(); onClose(); }}>&times;</button>
         </div>
         
         <div className="context-body">
@@ -38,14 +41,14 @@ const TowerContextMenu: React.FC<TowerContextMenuProps> = ({
           <div className="context-actions">
             <button 
               className="blue-button context-btn" 
-              onClick={onUpgrade}
+              onClick={() => { am.playUiClick(); onUpgrade(); }}
               disabled={credits < upgradeCost || selectedTower.level >= 3}
             >
               {selectedTower.level >= 3 ? 'MAX_LEVEL' : `OVERCLOCK: ${upgradeCost}c`}
             </button>
             <button 
               className="blue-button context-btn" 
-              onClick={onSell}
+              onClick={() => { am.playUiClick(); onSell(); }}
               style={{ borderColor: 'var(--neon-red)', color: 'var(--neon-red)' }}
             >
               PURGE_NODE

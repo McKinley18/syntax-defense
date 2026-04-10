@@ -7,6 +7,9 @@ import { MapManager } from './systems/MapManager';
 import { InputHandler } from './systems/InputHandler';
 import { TextureGenerator } from './utils/TextureGenerator';
 import { Kernel } from './entities/Kernel';
+import { GameStateManager } from './systems/GameStateManager';
+import { AudioManager } from './systems/AudioManager';
+import { MusicManager } from './systems/MusicManager';
 
 export class GameContainer {
     public app: PIXI.Application;
@@ -155,6 +158,12 @@ export class GameContainer {
         if (this.isFastForward) delta *= 2;
 
         const enemies = this.waveManager.enemies;
+        
+        // ADAPTIVE AUDIO
+        const stress = Math.min(1.0, enemies.length / 30); // 30 enemies = max stress
+        MusicManager.getInstance().setSystemStress(stress);
+        AudioManager.getInstance().updateHum(GameStateManager.getInstance().integrity);
+
         this.waveManager.update(delta);
         this.towerManager.update(delta);
         this.particleManager.update(delta);

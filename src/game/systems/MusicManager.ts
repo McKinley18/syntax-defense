@@ -4,9 +4,14 @@ export class MusicManager {
     private static instance: MusicManager;
     private ctx: AudioContext | null = null;
     private masterGain: GainNode | null = null;
-    private mainFilter: BiquadFilterNode | null = null;
+    private globalFilter: BiquadFilterNode | null = null;
+    
+    // Global Busses
     private delayNode: DelayNode | null = null;
     private delayGain: GainNode | null = null;
+    private reverbNode: ConvolverNode | null = null;
+    private reverbGain: GainNode | null = null;
+    private distortionNode: WaveShaperNode | null = null;
     
     private isPlaying: boolean = false;
     private nextNoteTime: number = 0;
@@ -20,7 +25,6 @@ export class MusicManager {
         const saved = localStorage.getItem('syntax_enabled_tracks');
         if (saved) {
             this.enabledTracks = JSON.parse(saved);
-            // Ensure array is sized correctly if loading from older save
             if (this.enabledTracks.length < 15) {
                 const extra = new Array(15 - this.enabledTracks.length).fill(true);
                 this.enabledTracks = [...this.enabledTracks, ...extra];
@@ -35,23 +39,80 @@ export class MusicManager {
         return MusicManager.instance;
     }
 
+    private createDistortionCurve(amount: number) {
+        const k = amount;
+        const n_samples = 44100;
+        const curve = new Float32Array(n_samples);
+        const deg = Math.PI / 180;
+        for (let i = 0; i < n_samples; ++i) {
+            const x = i * 2 / n_samples - 1;
+            curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+        }
+        return curve;
+    }
+
+    private createReverbImpulse(ctx: AudioContext, duration: number, decay: number) {
+        const sampleRate = ctx.sampleRate;
+        const length = sampleRate * duration;
+        const impulse = ctx.createBuffer(2, length, sampleRate);
+        for (let i = 0; i < 2; i++) {
+            const channel = impulse.getChannelData(i);
+            for (let j = 0; j < length; j++) {
+                channel[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / length, decay);
+            }
+        }
+        return impulse;
+    }
+
     public init(ctx: AudioContext, masterGain: GainNode) {
         this.ctx = ctx;
-        this.mainFilter = ctx.createBiquadFilter();
-        this.mainFilter.type = 'lowpass';
-        this.mainFilter.frequency.value = 2500;
-        this.mainFilter.Q.value = 1.0;
         this.masterGain = ctx.createGain();
         this.masterGain.gain.value = 0.25; 
+        
+        this.globalFilter = ctx.createBiquadFilter();
+        this.globalFilter.type = 'lowpass';
+        this.globalFilter.frequency.value = 20000; // Starts fully open
+        this.globalFilter.Q.value = 1.0;
+        
         this.delayNode = ctx.createDelay(1.0);
         this.delayNode.delayTime.value = 0.375; 
         this.delayGain = ctx.createGain();
-        this.delayGain.gain.value = 0.15;
-        this.mainFilter.connect(this.masterGain);
+        this.delayGain.gain.value = 0.2;
+        const delayFeedback = ctx.createGain();
+        delayFeedback.gain.value = 0.4;
         this.delayNode.connect(this.delayGain);
-        this.delayGain.connect(this.mainFilter);
-        this.delayGain.connect(this.delayNode); 
-        this.masterGain.connect(masterGain);
+        this.delayGain.connect(this.masterGain);
+        this.delayGain.connect(delayFeedback);
+        delayFeedback.connect(this.delayNode);
+
+        this.reverbNode = ctx.createConvolver();
+        this.reverbNode.buffer = this.createReverbImpulse(ctx, 3.0, 2.0);
+        this.reverbGain = ctx.createGain();
+        this.reverbGain.gain.value = 0.3;
+        this.reverbNode.connect(this.reverbGain);
+        this.reverbGain.connect(this.masterGain);
+
+        this.distortionNode = ctx.createWaveShaper();
+        this.distortionNode.curve = this.createDistortionCurve(400); 
+        this.distortionNode.oversample = '4x';
+        const distFilter = ctx.createBiquadFilter();
+        distFilter.type = 'lowpass';
+        distFilter.frequency.value = 3000;
+        this.distortionNode.connect(distFilter);
+        distFilter.connect(this.masterGain);
+
+        this.masterGain.connect(this.globalFilter);
+        this.globalFilter.connect(masterGain);
+    }
+
+    public setSystemStress(stress: number) {
+        if (!this.ctx || !this.globalFilter) return;
+        // Stress 0 -> Muffled (800Hz), Stress 1 -> Fully open (20000Hz)
+        const minFreq = 800;
+        const maxFreq = 20000;
+        // Exponentially open the filter based on stress
+        const targetFreq = minFreq + (maxFreq - minFreq) * Math.pow(stress, 1.5); 
+        this.globalFilter.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.5);
     }
 
     public start() {
@@ -78,7 +139,7 @@ export class MusicManager {
     public previewTrack(id: TrackID) {
         if (!this.ctx || !this.isPlaying) return;
         this.currentTrack = id;
-        this.beatIndex = (Math.floor(this.beatIndex / 4) * 4);
+        this.beatIndex = (Math.floor(this.beatIndex / 16) * 16); 
     }
 
     private scheduler() {
@@ -91,15 +152,11 @@ export class MusicManager {
     }
 
     private advanceNote() {
-        const tempo = 126.0;
+        const tempo = 130.0;
         const secondsPerBeat = 60.0 / tempo / 4; 
         this.nextNoteTime += secondsPerBeat;
-        this.beatIndex = (this.beatIndex + 1) % 384; 
-
-        if (this.mainFilter) {
-            const mod = Math.sin(this.ctx!.currentTime * 0.1) * 1000;
-            this.mainFilter.frequency.setTargetAtTime(2000 + mod, this.ctx!.currentTime, 0.5);
-        }
+        // 2600 notes @ 130BPM = Exactly 5 minutes
+        this.beatIndex = (this.beatIndex + 1) % 2600; 
 
         if (this.beatIndex === 0) {
             this.pickNextTrack();
@@ -112,161 +169,195 @@ export class MusicManager {
         this.currentTrack = indices[Math.floor(Math.random() * indices.length)] as TrackID;
     }
 
-    private playBeat(index: number, time: number) {
+    private playBeat(i: number, t: number) {
         if (!this.ctx) return;
-        if (index % 4 === 0 && this.masterGain) {
-            this.masterGain.gain.setTargetAtTime(0.1, time, 0.01);
-            this.masterGain.gain.setTargetAtTime(0.45, time + 0.1, 0.05);
+
+        // --- STUDIO ARRANGEMENT GATING ---
+        // Intro: 0-400 | Build: 400-800 | Peak: 800-2000 | Breakdown: 2000-2300 | Outro: 2300-2600
+        const isIntro = i < 400;
+        const isBuild = i >= 400 && i < 800;
+        const isPeak = i >= 800 && i < 2000;
+        const isBreakdown = i >= 2000 && i < 2300;
+        const isOutro = i >= 2300;
+
+        if (i % 4 === 0 && !isBreakdown && this.masterGain) {
+            this.masterGain.gain.setTargetAtTime(0.12, t, 0.01);
+            this.masterGain.gain.setTargetAtTime(0.45, t + 0.15, 0.1);
         }
+
+        const config = { i, t, isIntro, isBuild, isPeak, isBreakdown, isOutro };
 
         switch(this.currentTrack) {
-            case 0: this.playTrack0(index, time); break;
-            case 1: this.playTrack1(index, time); break;
-            case 2: this.playTrack2(index, time); break;
-            case 3: this.playTrack3(index, time); break;
-            case 4: this.playTrack4(index, time); break;
-            case 5: this.playTrack5(index, time); break;
-            case 6: this.playTrack6(index, time); break;
-            case 7: this.playTrack7(index, time); break;
-            case 8: this.playTrack8(index, time); break;
-            case 9: this.playTrack9(index, time); break;
-            case 10: this.playTrack10(index, time); break;
-            case 11: this.playTrack11(index, time); break;
-            case 12: this.playTrack12(index, time); break;
-            case 13: this.playTrack13(index, time); break;
-            case 14: this.playTrack14(index, time); break;
+            case 0: this.playTrack0(config); break;
+            case 1: this.playTrack1(config); break;
+            case 2: this.playTrack2(config); break;
+            case 3: this.playTrack3(config); break;
+            case 4: this.playTrack4(config); break;
+            case 5: this.playTrack5(config); break;
+            case 6: this.playTrack6(config); break;
+            case 7: this.playTrack7(config); break;
+            case 8: this.playTrack8(config); break;
+            case 9: this.playTrack9(config); break;
+            case 10: this.playTrack10(config); break;
+            case 11: this.playTrack11(config); break;
+            case 12: this.playTrack12(config); break;
+            case 13: this.playTrack13(config); break;
+            case 14: this.playTrack14(config); break;
         }
     }
 
-    private playTrack0(i: number, t: number) { 
-        if (i % 4 === 0) this.triggerKick(t);
-        if (i % 16 === 8) this.triggerSnare(t, 0.1, 800);
-        const mel = [220, 0, 261, 293, 0, 220, 0, 196];
-        if (mel[i % 8] > 0) this.triggerSynth(mel[i % 8], 0.2, 'sine', 0.05, t, true);
+    private playTrack0(c: any) { // INDUSTRIAL_BEYER
+        if (c.i % 4 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 1.3, 0.4);
+        if (c.i % 8 === 4 && (c.isPeak || c.isBuild || c.isOutro)) this.triggerClap(c.t, 0.5, true);
+        if (c.i % 2 === 1 && !c.isIntro) this.triggerHat(c.t, 0.2, 0.04);
+        if (c.i % 4 === 2 && (c.isPeak || c.isBreakdown)) this.triggerAcidPluck(55, 0.1, c.t, false);
     }
 
-    private playTrack1(i: number, t: number) { 
-        if (i % 4 === 0) this.triggerKick(t, 1.2);
-        if (i % 8 === 4) this.triggerSnare(t, 0.15, 1200);
-        if (i % 2 === 1) this.triggerHat(t, 0.02);
-        const bass = [41, 0, 41, 0, 41, 41, 49, 0];
-        if (bass[i % 8] > 0) this.triggerSynth(bass[i % 8], 0.15, 'sawtooth', 0.08, t);
+    private playTrack1(c: any) { // MINIMAL_HAWTIN
+        if (c.i % 4 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 0.8, 0.15);
+        if ((c.i % 16 === 7 || c.i % 16 === 13) && !c.isIntro) this.triggerMinimalPerc(c.t, 0.3, 1500, true);
+        if (c.i % 2 === 1 && (c.isBuild || c.isPeak)) this.triggerHat(c.t, 0.1, 0.02);
+        if (c.i % 32 === 0) this.triggerAmbientPad(220, 2.0, c.t);
     }
 
-    private playTrack2(i: number, t: number) { 
-        if (i % 4 === 0) this.triggerKick(t);
-        if (i % 4 === 2) this.triggerHat(t, 0.04);
-        const arp = [440, 523, 659, 783, 880, 783, 659, 523];
-        if (i % 2 === 1) this.triggerSynth(arp[Math.floor(i/2) % 8], 0.1, 'triangle', 0.04, t, true);
+    private playTrack2(c: any) { // ACID_DE_WITTE
+        if (c.i % 4 === 0 && !c.isBreakdown) this.triggerRumbleKick(c.t);
+        if (c.i % 4 === 2 && (c.isPeak || c.isOutro)) this.triggerHat(c.t, 0.3, 0.1);
+        const acid = [55, 55, 110, 55, 65, 55, 130, 55];
+        if (!c.isIntro) this.triggerAcidPluck(acid[c.i % 8], 0.15, c.t, c.i % 16 === 6 && c.isPeak);
     }
 
-    private playTrack3(i: number, t: number) { 
-        if (i % 2 === 0) this.triggerKick(t, 0.8);
-        if (i % 8 === 4) this.triggerSnare(t, 0.08, 600);
-        const seq = [110, 110, 146, 110, 164, 110, 146, 130];
-        if (i % 4 === 1) this.triggerSynth(seq[Math.floor(i/4) % 8], 0.2, 'square', 0.06, t);
+    private playTrack3(c: any) { // IDM_APHEX
+        if ((c.i % 16 === 0 || c.i % 16 === 3 || c.i % 16 === 10) && !c.isBreakdown) this.triggerDeepKick(c.t, 1.0, 0.2);
+        if ((c.i % 4 === 1 || c.i % 16 === 14) && (c.isBuild || c.isPeak)) this.triggerFMPerc(c.t, 800, 2.0, 0.2);
+        if (c.i % 2 === 1 && !c.isIntro) this.triggerHat(c.t, 0.1, 0.01);
+        if (c.i % 64 === 0) [220, 261, 329].forEach(n => this.triggerAmbientPad(n, 4.0, c.t));
     }
 
-    private playTrack4(i: number, t: number) { 
-        if (i % 6 === 0) this.triggerKick(t, 1.1);
-        if (i % 16 === 12) this.triggerSnare(t, 0.2, 400);
-        if (i % 8 === 0) this.triggerSynth(55, 0.6, 'sine', 0.1, t, true);
-        if (i % 12 === 4) this.triggerSynth(880, 0.05, 'sine', 0.02, t, true);
+    private playTrack4(c: any) { // DARK_DRONE
+        if (c.i % 8 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 1.5, 0.6);
+        if (c.i % 4 !== 0 && !c.isIntro) this.triggerSubBass(41, 0.1, c.t);
+        if (c.i % 64 === 0) this.triggerAmbientPad(55, 8.0, c.t);
+        if (c.i % 16 === 12 && (c.isPeak || c.isOutro)) this.triggerClap(c.t, 0.2, true);
     }
 
-    private playTrack5(i: number, t: number) { 
-        if (i % 4 === 0) this.triggerKick(t);
-        if (i % 8 === 4) this.triggerSnare(t, 0.1, 1500);
-        if (i % 4 >= 2) this.triggerHat(t, 0.03);
-        const chords = [329, 392, 440, 293];
-        if (i % 16 === 0) {
-            this.triggerSynth(chords[Math.floor(i/16) % 4], 0.8, 'sine', 0.05, t, true);
-            this.triggerSynth(chords[Math.floor(i/16) % 4] * 1.5, 0.8, 'sine', 0.03, t, true);
-        }
+    private playTrack5(c: any) { // HIGH_SPEED_SYNC
+        if (c.i % 4 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 1.1, 0.2);
+        if (!c.isIntro) this.triggerHat(c.t, 0.15, 0.03); 
+        if (c.i % 8 === 4 && (c.isPeak || c.isBuild)) this.triggerClap(c.t, 0.4, false);
+        if (c.i % 4 === 2 && c.isPeak) this.triggerMinimalPerc(c.t, 0.2, 400, true);
     }
 
-    private playTrack6(i: number, t: number) { 
-        if (i % 4 === 0) this.triggerKick(t, 1.3);
-        if (i % 4 === 2) this.triggerHat(t, 0.05);
-        const seq = [440, 440, 523, 440, 587, 440, 523, 659];
-        if (i % 2 === 0) this.triggerSynth(seq[i % 8], 0.08, 'square', 0.04, t, true);
+    private playTrack6(c: any) { // AGGRESSIVE_OVERCLOCK
+        if (c.i % 4 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 1.4, 0.3);
+        if ((c.i % 16 === 4 || c.i % 16 === 12) && !c.isIntro) this.triggerClap(c.t, 0.6, true);
+        const lead = [110, 110, 146, 110, 164, 110, 130, 110];
+        if (c.isPeak || c.isBreakdown) this.triggerAcidPluck(lead[c.i % 8], 0.2, c.t, c.isPeak);
     }
 
-    private playTrack7(i: number, t: number) { 
-        if (i % 4 === 0) this.triggerKick(t, 0.9);
-        if (i % 16 === 8) this.triggerSnare(t, 0.12, 1000);
-        const bass = [55, 55, 65, 55, 73, 55, 65, 82];
-        this.triggerSynth(bass[Math.floor(i/2) % 8], 0.1, 'sawtooth', 0.07, t);
+    private playTrack7(c: any) { // AIRY_MEMORY_LEAK
+        if (c.i % 8 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 0.7, 0.3);
+        if (c.i % 4 === 2 && !c.isIntro) this.triggerHat(c.t, 0.05, 0.1);
+        const mel = [440, 523, 659, 783, 880, 783, 659, 523];
+        if (c.i % 2 === 0 && (c.isPeak || c.isBreakdown)) this.triggerMinimalPerc(c.t, 0.1, mel[Math.floor(c.i/4)%8], true);
+        if (c.i % 32 === 0) this.triggerAmbientPad(329, 4.0, c.t);
     }
 
-    private playTrack8(i: number, t: number) { 
-        if (i % 3 === 0) this.triggerKick(t, 1.1);
-        if (i % 16 === 10) this.triggerSnare(t, 0.15, 300);
-        if (i % 4 === 1) this.triggerSynth(Math.random() * 100 + 100, 0.05, 'square', 0.03, t, true);
+    private playTrack8(c: any) { // HYPNOTIC_SCAN
+        if (c.i % 4 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 1.0, 0.2);
+        if (c.i % 4 !== 0 && !c.isIntro) this.triggerSubBass(49, 0.15, c.t);
+        if (c.i % 16 === 10 && c.isPeak) this.triggerMinimalPerc(c.t, 0.3, 2000, true);
+        if (c.i % 4 === 2 && (c.isBuild || c.isPeak)) this.triggerHat(c.t, 0.2, 0.05);
     }
 
-    private playTrack9(i: number, t: number) { 
-        if (i % 8 === 0) this.triggerKick(t);
-        if (i % 8 === 4) this.triggerSnare(t, 0.05, 2000);
-        const mel = [293, 329, 349, 392, 440, 392, 349, 329];
-        if (i % 4 === 0) this.triggerSynth(mel[Math.floor(i/8) % 8], 1.2, 'sine', 0.06, t, true);
+    private playTrack9(c: any) { // BREACH_PEAK_TIME
+        if (c.i % 4 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 1.2, 0.3);
+        if (c.i % 8 === 4 && !c.isIntro) this.triggerClap(c.t, 0.5, true);
+        if (c.i % 2 === 1 && (c.isPeak || c.isOutro)) this.triggerHat(c.t, 0.25, 0.06);
+        const riff = [110, 110, 220, 110, 110, 110, 164, 196];
+        if (c.i % 4 === 3 && c.isPeak) this.triggerAcidPluck(riff[Math.floor(c.i/4)%8], 0.1, c.t, false);
     }
 
-    private playTrack10(i: number, t: number) { 
-        if (i % 2 === 0) this.triggerKick(t, 1.5);
-        if (i % 4 === 1) this.triggerHat(t, 0.06);
-        const lead = [110, 110, 110, 146, 110, 110, 164, 110];
-        if (i % 2 === 1) this.triggerSynth(lead[i % 8], 0.15, 'sawtooth', 0.1, t);
+    private playTrack10(c: any) { // GHOST_AMBIENT
+        if (c.i % 16 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 0.6, 0.5);
+        if (c.i % 32 === 8 && (c.isPeak || c.isBreakdown)) this.triggerFMPerc(c.t, 400, 4.0, 0.1);
+        if (c.i % 64 === 0) [110, 138, 164].forEach(n => this.triggerAmbientPad(n, 6.0, c.t));
     }
 
-    // --- NEW MODENRN TECHNO TRACKS (11-14) ---
-
-    private playTrack11(i: number, t: number) { // CYBER PUNK (Syncopated Saw)
-        if (i % 4 === 0) this.triggerKick(t, 1.2);
-        if (i % 16 === 4 || i % 16 === 12) this.triggerSnare(t, 0.1, 1000);
-        if (i % 2 === 1) this.triggerHat(t, 0.03);
-        const bass = [41, 41, 41, 49, 41, 41, 55, 41];
-        if (i % 4 === 2) this.triggerSynth(bass[Math.floor(i/4)%8], 0.1, 'sawtooth', 0.08, t);
+    private playTrack11(c: any) { // LOGIC_RUMBLE
+        if (!c.isBreakdown) this.triggerRumbleKick(c.t);
+        if (c.i % 4 === 2 && !c.isIntro) this.triggerHat(c.t, 0.4, 0.15);
+        if ((c.i % 16 === 4 || c.i % 16 === 12) && (c.isPeak || c.isBuild)) this.triggerClap(c.t, 0.3, false);
+        if (c.i % 16 === 14 && c.isPeak) this.triggerFMPerc(c.t, 1200, 1.5, 0.2);
     }
 
-    private playTrack12(i: number, t: number) { // DEEP TECH (Percussive Sine)
-        if (i % 4 === 0) this.triggerKick(t, 1.0);
-        if (i % 8 === 4) this.triggerSnare(t, 0.05, 1500);
-        const perc = [220, 220, 330, 220, 440, 220, 330, 550];
-        if (i % 2 === 0) this.triggerSynth(perc[i%8], 0.02, 'sine', 0.04, t, true);
+    private playTrack12(c: any) { // POLY_NEURAL
+        if (c.i % 3 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 0.9, 0.15);
+        if (c.i % 5 === 0 && (c.isPeak || c.isBuild)) this.triggerMinimalPerc(c.t, 0.2, 3000, true);
+        if (c.i % 7 === 0 && c.isPeak) this.triggerFMPerc(c.t, 600, 3.0, 0.1);
+        if (!c.isIntro) this.triggerHat(c.t, 0.05, 0.02);
     }
 
-    private playTrack13(i: number, t: number) { // ACID LOGIC (Square Slide)
-        if (i % 4 === 0) this.triggerKick(t, 1.4);
-        if (i % 16 === 8) this.triggerSnare(t, 0.12, 800);
-        const seq = [110, 123, 146, 164, 110, 123, 146, 196];
-        this.triggerSynth(seq[i%8], 0.15, 'square', 0.03, t, true);
+    private playTrack13(c: any) { // KERNEL_ACID_STORM
+        if (c.i % 4 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 1.2, 0.2);
+        if (c.i % 2 === 1 && !c.isIntro) this.triggerHat(c.t, 0.2, 0.03);
+        const storm = [55, 65, 73, 82, 110, 130, 146, 164];
+        if (c.isPeak || c.isBreakdown) this.triggerAcidPluck(storm[c.i % 8], 0.2, c.t, c.isPeak);
     }
 
-    private playTrack14(i: number, t: number) { // NEURAL NET (Minimal Triangle)
-        if (i % 8 === 0) this.triggerKick(t, 0.9);
-        if (i % 16 === 12) this.triggerSnare(t, 0.04, 2000);
-        const mel = [440, 0, 523, 0, 659, 0, 587, 0];
-        if (mel[i%8] > 0) this.triggerSynth(mel[i%8], 0.05, 'triangle', 0.02, t, true);
+    private playTrack14(c: any) { // CINEMATIC_EXIT
+        if (c.i % 16 === 0 && !c.isBreakdown) this.triggerDeepKick(c.t, 1.8, 0.8);
+        if (c.i % 64 === 0) this.triggerAmbientPad(41, 10.0, c.t);
+        if (c.i % 16 === 12 && !c.isIntro) this.triggerClap(c.t, 0.4, true);
+        if (c.i % 8 === 6 && (c.isPeak || c.isBreakdown)) this.triggerFMPerc(c.t, 200, 5.0, 0.15);
     }
 
-    private triggerKick(t: number, punch: number = 1.0) {
+    private triggerDeepKick(t: number, punch: number = 1.0, decay: number = 0.4) {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
+        const gain = this.ctx.createGain();
+        const clickOsc = this.ctx.createOscillator();
+        const clickGain = this.ctx.createGain();
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(150 * punch, t);
-        osc.frequency.exponentialRampToValueAtTime(40, t + 0.15);
-        g.gain.setValueAtTime(0.5, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-        osc.connect(g);
-        g.connect(this.mainFilter!);
-        osc.start(t);
-        osc.stop(t + 0.2);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.1); 
+        gain.gain.setValueAtTime(1.0, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        clickOsc.type = 'square';
+        clickOsc.frequency.setValueAtTime(800, t);
+        clickGain.gain.setValueAtTime(0.2, t);
+        clickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.015);
+        osc.connect(gain);
+        clickOsc.connect(clickGain);
+        gain.connect(this.masterGain!);
+        clickGain.connect(this.masterGain!);
+        osc.start(t); osc.stop(t + decay);
+        clickOsc.start(t); clickOsc.stop(t + 0.02);
     }
 
-    private triggerSnare(t: number, vol: number, freq: number) {
+    private triggerRumbleKick(t: number) {
+        this.triggerDeepKick(t, 1.2, 0.3);
+        if (!this.ctx || !this.reverbNode) return;
+        const rumbleOsc = this.ctx.createOscillator();
+        const rumbleGain = this.ctx.createGain();
+        const rumbleFilter = this.ctx.createBiquadFilter();
+        rumbleOsc.type = 'square';
+        rumbleOsc.frequency.setValueAtTime(45, t);
+        rumbleGain.gain.setValueAtTime(0, t);
+        rumbleGain.gain.setTargetAtTime(0.4, t + 0.1, 0.05); 
+        rumbleGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        rumbleFilter.type = 'lowpass';
+        rumbleFilter.frequency.value = 150;
+        rumbleOsc.connect(rumbleGain);
+        rumbleGain.connect(rumbleFilter);
+        rumbleFilter.connect(this.reverbNode);
+        rumbleOsc.start(t);
+        rumbleOsc.stop(t + 0.5);
+    }
+
+    private triggerClap(t: number, vol: number, sendToReverb: boolean = false) {
         if (!this.ctx) return;
-        const bufferSize = this.ctx.sampleRate * 0.1;
+        const bufferSize = this.ctx.sampleRate * 0.15;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
@@ -274,57 +365,147 @@ export class MusicManager {
         noise.buffer = buffer;
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.value = freq;
-        const g = this.ctx.createGain();
-        g.gain.setValueAtTime(vol, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        filter.frequency.value = 1200;
+        filter.Q.value = 0.5;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(vol * 0.2, t + 0.01);
+        gain.gain.setValueAtTime(vol, t + 0.015);
+        gain.gain.exponentialRampToValueAtTime(vol * 0.1, t + 0.03);
+        gain.gain.setValueAtTime(vol * 0.8, t + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
         noise.connect(filter);
-        filter.connect(g);
-        g.connect(this.mainFilter!);
+        filter.connect(gain);
+        gain.connect(this.masterGain!);
+        if (sendToReverb && this.reverbNode) gain.connect(this.reverbNode);
         noise.start(t);
-        noise.stop(t + 0.1);
+        noise.stop(t + 0.15);
     }
 
-    private triggerHat(t: number, vol: number) {
+    private triggerMinimalPerc(t: number, vol: number, freq: number, sendToDelay: boolean) {
         if (!this.ctx) return;
-        const filter = this.ctx.createBiquadFilter();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.8, t + 0.05);
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        if (sendToDelay && this.delayNode) gain.connect(this.delayNode);
+        osc.start(t);
+        osc.stop(t + 0.05);
+    }
+
+    private triggerFMPerc(t: number, carrierFreq: number, modIndex: number, vol: number) {
+        if (!this.ctx) return;
+        const carrier = this.ctx.createOscillator();
+        const modulator = this.ctx.createOscillator();
+        const modGain = this.ctx.createGain();
+        const envGain = this.ctx.createGain();
+        carrier.type = 'sine';
+        modulator.type = 'sine';
+        carrier.frequency.value = carrierFreq;
+        modulator.frequency.value = carrierFreq * 1.414;
+        modGain.gain.setValueAtTime(carrierFreq * modIndex, t);
+        modGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+        envGain.gain.setValueAtTime(vol, t);
+        envGain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        modulator.connect(modGain);
+        modGain.connect(carrier.frequency);
+        carrier.connect(envGain);
+        envGain.connect(this.masterGain!);
+        if (this.reverbNode) envGain.connect(this.reverbNode);
+        carrier.start(t);
+        modulator.start(t);
+        carrier.stop(t + 0.25);
+        modulator.stop(t + 0.25);
+    }
+
+    private triggerHat(t: number, vol: number, decay: number) {
+        if (!this.ctx) return;
+        const ctx = this.ctx;
+        const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21];
+        const baseFreq = 40;
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
         filter.type = 'highpass';
         filter.frequency.value = 8000;
-        const g = this.ctx.createGain();
-        g.gain.setValueAtTime(vol, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
-        const osc = this.ctx.createOscillator();
-        osc.type = 'square';
-        osc.frequency.value = 10000;
-        osc.connect(filter);
-        filter.connect(g);
-        g.connect(this.mainFilter!);
-        osc.start(t);
-        osc.stop(t + 0.02);
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
+        ratios.forEach(ratio => {
+            const osc = ctx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.value = baseFreq * ratio;
+            osc.connect(filter);
+            osc.start(t);
+            osc.stop(t + decay);
+        });
+        filter.connect(gain);
+        gain.connect(this.masterGain!);
     }
 
-    private triggerSynth(freq: number, dur: number, type: OscillatorType, vol: number, t: number, sendToDelay: boolean = false) {
+    private triggerSubBass(freq: number, vol: number, t: number) {
         if (!this.ctx) return;
         const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        const sub = this.ctx.createOscillator();
-        sub.type = 'sine';
-        sub.frequency.value = freq / 2;
-        const subG = this.ctx.createGain();
-        subG.gain.value = vol * 0.5;
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, t);
-        osc.frequency.setTargetAtTime(freq * 1.005, t + 0.05, 0.1);
-        g.gain.setValueAtTime(vol, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-        osc.connect(g);
-        sub.connect(subG);
-        subG.connect(g);
-        g.connect(this.mainFilter!);
-        if (sendToDelay && this.delayNode) g.connect(this.delayNode);
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.01, t);
+        gain.gain.setTargetAtTime(vol, t + 0.05, 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
         osc.start(t);
-        sub.start(t);
-        osc.stop(t + dur);
-        sub.stop(t + dur);
+        osc.stop(t + 0.2);
+    }
+
+    private triggerAcidPluck(freq: number, vol: number, t: number, accent: boolean) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t);
+        filter.type = 'lowpass';
+        filter.Q.value = accent ? 15 : 8;
+        filter.frequency.setValueAtTime(accent ? freq * 12 : freq * 6, t);
+        filter.frequency.exponentialRampToValueAtTime(freq, t + (accent ? 0.2 : 0.1));
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        osc.connect(filter);
+        if (this.distortionNode && accent) {
+            filter.connect(this.distortionNode);
+        } else {
+            filter.connect(gain);
+            gain.connect(this.masterGain!);
+        }
+        osc.start(t);
+        osc.stop(t + 0.25);
+    }
+
+    private triggerAmbientPad(freq: number, dur: number, t: number) {
+        if (!this.ctx) return;
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        osc1.type = 'triangle';
+        osc1.frequency.value = freq;
+        osc2.type = 'sine';
+        osc2.frequency.value = freq * 1.01; 
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.linearRampToValueAtTime(0.15, t + (dur * 0.3));
+        gain.gain.linearRampToValueAtTime(0.001, t + dur);
+        filter.type = 'lowpass';
+        filter.frequency.value = 800;
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain!);
+        if (this.reverbNode) gain.connect(this.reverbNode);
+        osc1.start(t); osc2.start(t);
+        osc1.stop(t + dur); osc2.stop(t + dur);
     }
 }

@@ -69,7 +69,7 @@ const BootScreen: React.FC<BootScreenProps> = ({
 
             {/* ACT 2: MOUNTING & LOADING (Clean) */}
             {bootPhase >= 6.1 && bootPhase < 13.5 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ color: '#fff', fontSize: '0.85rem' }}>
                   &gt; <TerminalText text="sys --mount-tactical-logic --force" speed={35} onComplete={() => setBootPhase(6.2)} humanTyping={true} isGlitched={false} />
                   {bootPhase === 6.2 && <span className="terminal-cursor"></span>}
@@ -77,11 +77,10 @@ const BootScreen: React.FC<BootScreenProps> = ({
                 {bootPhase >= 6.5 && (
                   <div style={{ color: '#00ff66', fontSize: '0.85rem' }}>
                     &gt; <TerminalText text="MOUNTING_LOGIC_PACKETS... INITIATING_DOWNLOAD." speed={20} onComplete={() => setBootPhase(6.6)} isGlitched={false} />
-                    {bootPhase === 6.5 && <span className="terminal-cursor"></span>}
                   </div>
                 )}
                 {bootPhase >= 6.6 && (
-                  <div style={{ width: '250px', height: '15px', border: '1px solid #00ff66', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ width: '250px', height: '15px', border: '1px solid #00ff66', position: 'relative', overflow: 'hidden', margin: '10px 0' }}>
                     <div style={{ height: '100%', background: '#00ff66', width: `${bootProgress}%` }}></div>
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: bootProgress > 50 ? '#000' : '#00ff66', fontWeight: 900 }}>
                       {bootProgress}% LOADED
@@ -92,7 +91,7 @@ const BootScreen: React.FC<BootScreenProps> = ({
                   <div key={i} style={{ color: '#00ff66', fontSize: '0.75rem' }}>&gt; {log}</div>
                 ))}
                 {bootPhase >= 9 && (
-                  <div style={{ color: '#00ff66', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ color: '#00ff66', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
                     <div>&gt; <TerminalText text="Status: Successful." speed={25} onComplete={() => setBootPhase(11)} isGlitched={false} />{bootPhase === 11 && <span className="terminal-cursor"></span>}</div>
                     {bootPhase >= 12 && (
                       <div>&gt; <TerminalText text="Access: Granted." speed={25} onComplete={() => setBootPhase(13)} isGlitched={false} />{bootPhase === 13 && <span className="terminal-cursor"></span>}</div>
@@ -120,9 +119,9 @@ const BootScreen: React.FC<BootScreenProps> = ({
                 </div>
 
                 {bootPhase >= 14 && (
-                  <div className="glitch-line" style={{ marginTop: '12px', fontSize: '0.85rem' }}>
+                  <div className="glitch-line" style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--neon-red)' }}>
                     <TerminalText text=">> CRITICAL_ALERT: MALICIOUS_DATA_INBOUND [STORM_LEVEL_7]" speed={25} onComplete={() => { if (bootPhase === 14) setBootPhase(14.1); }} isGlitched={true} />
-                    {bootPhase === 14.1 && <span className="terminal-cursor fast-blink"></span>}
+                    {bootPhase === 14.1 && <span className="terminal-cursor fast-blink" style={{ background: 'var(--neon-red)' }}></span>}
                   </div>
                 )}
 
@@ -148,7 +147,7 @@ const BootScreen: React.FC<BootScreenProps> = ({
                 )}
 
                 {bootPhase >= 15.2 && (
-                  <div className="glitch-line" style={{ fontSize: '0.8rem', marginTop: '8px', fontWeight: 900 }}>
+                  <div className="glitch-line" style={{ fontSize: '0.8rem', marginTop: '8px', fontWeight: 900, color: 'var(--neon-red)' }}>
                     <TerminalText 
                       text="ERROR: AUTO_PURGE_FAILED [GLITCH_OVERLOAD]" 
                       speed={20} 

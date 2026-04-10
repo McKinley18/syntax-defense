@@ -90,23 +90,23 @@ const ArchiveScreen: React.FC<ArchiveScreenProps> = ({
             <div className="info-tabs">
               {archiveCategory === 'TACTICAL' && (
                 <>
-                  <button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => setInfoTab('VIRAL DB')}>VIRUSES</button>
-                  <button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => setInfoTab('PROTOCOLS')}>TURRETS</button>
-                  <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => setInfoTab('THREATS')}>THREATS</button>
+                  <button className={infoTab === 'VIRAL DB' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('VIRAL DB'); }}>VIRUSES</button>
+                  <button className={infoTab === 'PROTOCOLS' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('PROTOCOLS'); }}>TURRETS</button>
+                  <button className={infoTab === 'THREATS' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('THREATS'); }}>THREATS</button>
                 </>
               )}
               {archiveCategory === 'HANDBOOK' && (
                 <>
-                  <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => setInfoTab('LOGIC')}>LOGIC</button>
-                  <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => setInfoTab('RANKS')}>RANKS</button>
-                  <button className={infoTab === 'UPGRADES' ? 'active' : ''} onClick={() => setInfoTab('UPGRADES')}>UPGRADES</button>
+                  <button className={infoTab === 'LOGIC' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('LOGIC'); }}>LOGIC</button>
+                  <button className={infoTab === 'RANKS' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('RANKS'); }}>RANKS</button>
+                  <button className={infoTab === 'UPGRADES' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('UPGRADES'); }}>UPGRADES</button>
                 </>
               )}
               {archiveCategory === 'MANIFEST' && (
                 <>
-                  <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => setInfoTab('LORE')}>LORE</button>
-                  <button className={infoTab === 'HALL_OF_FAME' ? 'active' : ''} onClick={() => setInfoTab('HALL_OF_FAME')}>RECORDS</button>
-                  <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => setInfoTab('CREDITS')}>CREDITS</button>
+                  <button className={infoTab === 'LORE' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('LORE'); }}>LORE</button>
+                  <button className={infoTab === 'HALL_OF_FAME' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('HALL_OF_FAME'); }}>RECORDS</button>
+                  <button className={infoTab === 'CREDITS' ? 'active' : ''} onClick={() => { am.playUiClick(); setInfoTab('CREDITS'); }}>CREDITS</button>
                 </>
               )}
             </div>

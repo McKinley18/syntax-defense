@@ -67,7 +67,6 @@ function App() {
   const [isVictorious, setIsVictorious] = useState(false);
   const [resetStatus, setResetStatus] = useState("");
   const [isTypingComplete, setIsTypingComplete] = useState(false);
-  const [audioReady, setAudioReady] = useState(false);
   const [showWaveSummaryPopup, setShowWaveSummaryPopup] = useState(false);
   const [showCombatIntel, setShowCombatIntel] = useState(false);
   const [showSettingsInGame, setShowSettingsInGame] = useState(false);
@@ -117,7 +116,7 @@ function App() {
       const timer = setTimeout(() => {
         setShowStudioSplash(false);
         setStudioComplete(true);
-      }, 3500);
+      }, 7000);
       return () => clearTimeout(timer);
     }
   }, [isLandscape, showStudioSplash, studioComplete]);
@@ -142,13 +141,20 @@ function App() {
       setUptime(prev => prev + 1);
       setEntropy(Math.max(0, 0.14 + (Math.random() * 0.05 - 0.025)));
     }, 1000);
+    
+    // UNIFIED GLOBAL GLITCH TRIGGER
     const triggerGlitch = () => {
       if (!glitchEffectsEnabled) { setMenuGlitchActive(false); return; }
+      
       setMenuGlitchActive(true);
-      setTimeout(() => setMenuGlitchActive(false), 100 + Math.random() * 150);
-      setTimeout(triggerGlitch, 30000 + Math.random() * 30000);
+      // Synchronized glitch duration
+      setTimeout(() => setMenuGlitchActive(false), 150 + Math.random() * 200);
+      
+      // Schedule next global event
+      setTimeout(triggerGlitch, 15000 + Math.random() * 20000);
     };
-    const initialGlitch = setTimeout(triggerGlitch, 20000 + Math.random() * 10000);
+    
+    const initialGlitch = setTimeout(triggerGlitch, 5000 + Math.random() * 5000);
     return () => { clearInterval(updateDiag); clearTimeout(initialGlitch); };
   }, [screen, glitchEffectsEnabled]);
 
@@ -167,6 +173,7 @@ function App() {
     }
     else if (bootPhase === 1 && lastTriggeredPhaseRef.current < 1) {
         lastTriggeredPhaseRef.current = 1;
+        AudioManager.getInstance().playPlacement();
     }
     else if (bootPhase === 2 && lastTriggeredPhaseRef.current < 2) {
         lastTriggeredPhaseRef.current = 2;
@@ -223,7 +230,7 @@ function App() {
         const itv = setInterval(() => {
             if (bootLogIndexRef.current < logs.length) { 
                 setBootLogs(prev => [...prev, logs[bootLogIndexRef.current]]); 
-                if (audioReady) AudioManager.getInstance().playTypeClick(); 
+                AudioManager.getInstance().playTypeClick(); 
                 bootLogIndexRef.current++; 
             } else { 
                 clearInterval(itv); 
@@ -256,7 +263,7 @@ function App() {
     }
     else if (bootPhase === 14 && lastTriggeredPhaseRef.current < 14) {
         lastTriggeredPhaseRef.current = 14;
-        if (audioReady) AudioManager.getInstance().playDramaticGlitch();
+        AudioManager.getInstance().playDramaticGlitch();
         setTimeout(() => setBootPhase(14.1), 1200);
     }
     else if (bootPhase === 14.1 && lastTriggeredPhaseRef.current < 14.1) {
@@ -275,20 +282,20 @@ function App() {
         lastTriggeredPhaseRef.current = 15;
         setTimeout(() => {
             setBootPhase(15.2);
-            if (audioReady) AudioManager.getInstance().playDramaticGlitch();
+            AudioManager.getInstance().playDramaticGlitch();
         }, 1800);
     }
     else if (bootPhase === 15.4 && lastTriggeredPhaseRef.current < 15.4) {
         lastTriggeredPhaseRef.current = 15.4;
         setTimeout(() => {
             setBootPhase(15.5);
-            if (audioReady) AudioManager.getInstance().playDramaticGlitch();
+            AudioManager.getInstance().playDramaticGlitch();
         }, 1200);
     }
     else if (bootPhase === 16 && lastTriggeredPhaseRef.current < 16) {
         lastTriggeredPhaseRef.current = 16;
-        const am = AudioManager.getInstance();
-        setTimeout(() => { setIsReadyGlitched(true); setIsDistorted(true); if (audioReady) am.playGlitchBuzz(); }, 100);
+        AudioManager.getInstance().playDramaticGlitch();
+        setTimeout(() => { setIsReadyGlitched(true); setIsDistorted(true); }, 100);
         setTimeout(() => { 
             setIsReadyGlitched(false); 
             setIsDistorted(false); 
@@ -296,15 +303,7 @@ function App() {
             if (!skipIntro) setScreen('MENU'); 
         }, 400);
     }
-  }, [bootPhase, audioReady, isLandscape, studioComplete, skipIntro]);
-
-  useEffect(() => {
-    const itv = setInterval(() => {
-      const ready = AudioManager.getInstance().isReady();
-      setAudioReady(ready);
-    }, 100);
-    return () => clearInterval(itv);
-  }, [screen]);
+  }, [bootPhase, isLandscape, studioComplete, skipIntro]);
 
   const wakeAudioSystem = async () => {
     await AudioManager.getInstance().resume();
@@ -332,9 +331,7 @@ function App() {
 
   const startNewGame = (mode: GameMode) => {
     AudioManager.getInstance().playUiClick(); cleanupGame();
-    // PURGE OLD SESSION DATA FOR FRESH START
     localStorage.removeItem('syntax_defense_save');
-    
     if (localStorage.getItem('syntax_tutorial_done') !== 'true') {
       GameStateManager.getInstance().resetGame(mode, 0); setIsTutorialActive(true); setTutorialStep(0);
     } else { GameStateManager.getInstance().resetGame(mode); setShowCombatIntel(true); }
@@ -380,10 +377,10 @@ function App() {
     const update = () => {
       if (tutorialStep === 1 && firstTurretRef.current) {
         const rect = firstTurretRef.current.getBoundingClientRect();
-        // POINT TO CENTER OF TURRET BOX
         if (rect.width > 0) setTilePos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, ts: 0 });
-      } else if ((tutorialStep === 2 || tutorialStep === 3) && game) {
-        const wp = { x: 10 * TILE_SIZE + TILE_SIZE/2, y: 6 * TILE_SIZE + TILE_SIZE/2 };
+      } else if ((tutorialStep === 2 || tutorialStep === 3) && game && game.pathManager.pathCells.length > 0) {
+        const pathY = game.pathManager.pathCells[0].y;
+        const wp = { x: 10 * TILE_SIZE + TILE_SIZE/2, y: (pathY + 2) * TILE_SIZE + TILE_SIZE/2 };
         const globalPos = game.viewport.toGlobal(wp);
         setTilePos({ x: globalPos.x, y: globalPos.y, ts: TILE_SIZE });
       }
@@ -402,7 +399,6 @@ function App() {
   };
 
   const isUnlocked = (type: number) => {
-    // ENFORCE TUTORIAL RESTRICTION
     if (isTutorialActive && tutorialStep <= 1) return type === 0;
     return GameStateManager.getInstance().isTowerUnlocked(type);
   };
@@ -419,8 +415,8 @@ function App() {
             parsed.towers.forEach((td: any) => {
               const tower = new Tower(td.type, td.x, td.y);
               for(let i=1; i < td.level; i++) tower.upgrade(); 
-              g.towerManager.towers.push(tower);
               g.towerLayer.addChild(tower.container);
+              g.towerManager.towers.push(tower);
             });
             (g.towerManager as any).recalculateLinks();
           }
@@ -463,30 +459,38 @@ function App() {
 
   return (
     <div className="game-wrapper">
-      {!isLandscape ? (
-        <div className="orientation-warning ui-layer" style={{ display: 'flex' }}>
+      {!isLandscape && (
+        <div className="orientation-warning ui-layer" style={{ display: 'flex', zIndex: 200000 }}>
           <div className="rotate-icon">📱</div>
           <h2>LANDSCAPE MODE REQUIRED</h2>
           <p>&gt; PLEASE ROTATE YOUR DEVICE TO INITIALIZE SYSTEM.</p>
         </div>
-      ) : !studioComplete ? (
-        <div className="studio-splash ui-layer" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#000', zIndex: 60000 }}>
-          <div className="monolith-monument" style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', marginBottom: '30px', opacity: 0, animation: 'fade-in-out 3.5s forwards' }}>
-            <div style={{ width: '8px', height: '40px', background: 'var(--neon-cyan)', boxShadow: '0 0 15px var(--neon-cyan)' }}></div>
-            <div style={{ width: '16px', height: '75px', background: 'var(--neon-cyan)', boxShadow: '0 0 25px var(--neon-cyan)' }}></div>
-            <div style={{ width: '8px', height: '40px', background: 'var(--neon-cyan)', boxShadow: '0 0 15px var(--neon-cyan)' }}></div>
+      )}
+
+      {isLandscape && showStudioSplash && !studioComplete && (
+        <div className="studio-splash ui-layer">
+          <div className="manifest-wrapper">
+            <div className="pillars-bg">
+              <div className="pillar side"></div>
+              <div className="pillar center"></div>
+              <div className="pillar side"></div>
+            </div>
+            <h1 className="manifest-text">MONOLITH</h1>
+            <div className="manifest-subtext">PRESENTS</div>
           </div>
-          <div style={{ color: 'var(--neon-cyan)', fontSize: '1.8rem', letterSpacing: '16px', fontWeight: 900, textAlign: 'center', animation: 'fade-in-out 3.5s forwards' }}>MONOLITH</div>
-          <div style={{ color: '#111', fontSize: '0.5rem', marginTop: '20px', letterSpacing: '8px', fontWeight: 300, animation: 'fade-in-out 3.5s forwards' }}>PRESENTS</div>
         </div>
-      ) : screen === 'BOOT' ? (
+      )}
+
+      {studioComplete && screen === 'BOOT' && (
         <BootScreen 
           isDistorted={isDistorted} skipIntro={skipIntro} bootPhase={bootPhase} 
           bootProgress={bootProgress} bootLogs={bootLogs} 
           isReadyGlitched={isReadyGlitched} 
           wakeAudioSystem={wakeAudioSystem} setBootPhase={setBootPhase}
         />
-      ) : (
+      )}
+
+      {studioComplete && screen !== 'BOOT' && (
         <>
           <div id="game-container"></div>      
           {['MENU', 'ARCHIVE', 'MODES', 'SETTINGS', 'GAME'].includes(screen) && (

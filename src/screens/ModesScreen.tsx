@@ -39,7 +39,7 @@ const ModesScreen: React.FC<ModesScreenProps> = ({
               </button>
             ))}
           </div>
-          <button className="cyan-menu-btn back-btn" onClick={() => { am.playUiClick(); onSetScreen('MENU'); setIsTypingComplete(false); }} style={{ pointerEvents: 'auto' }}>RETURN TO ROOT</button>
+          <button className="blue-button back-btn" onClick={() => { am.playUiClick(); onSetScreen('MENU'); setIsTypingComplete(false); }} style={{ pointerEvents: 'auto' }}>RETURN TO ROOT</button>
         </div>
       )}
     </div>

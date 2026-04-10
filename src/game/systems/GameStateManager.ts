@@ -1,3 +1,5 @@
+import { AudioManager } from './AudioManager';
+
 export type GlitchType = 'NONE' | 'OVERCLOCK' | 'LAG_SPIKE' | 'SYSTEM_DRAIN';
 export type GameMode = 'STANDARD' | 'HARDCORE' | 'ENDLESS' | 'SUDDEN_DEATH' | 'ECO_CHALLENGE';
 export type GamePhase = 'PREP' | 'WAVE';
@@ -194,7 +196,12 @@ export class GameStateManager {
         this.totalXP += waveXP;
         this.saveXP();
         this.saveHallOfFame(); 
+        
+        const previousRank = this.architectRank;
         this.architectRank = this.calculateRank();
+        if (previousRank !== this.architectRank) {
+            AudioManager.getInstance().playRankUp();
+        }
 
         if (this.currentWave > this.highestWave) {
             this.highestWave = this.currentWave;
@@ -229,12 +236,12 @@ export class GameStateManager {
     }
 
     public isTowerUnlocked(type: number): boolean {
-        const rank = this.architectRank;
-        if (type === 0) return true; 
-        if (type === 1) return ["SCRIPTER", "SYS_ARCHITECT", "SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
-        if (type === 2) return ["SYS_ARCHITECT", "SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
-        if (type === 3) return ["SENIOR_ENGR", "ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
-        if (type === 4) return ["ELITE_ARCHITECT", "CORE_GUARDIAN", "GOD_MOD_ADMIN"].includes(rank);
+        const wave = this.currentWave;
+        if (type === 0) return true; // Pulse MG: Always
+        if (type === 1) return wave >= 3;  // Frost Ray: Swarm 3
+        if (type === 2) return wave >= 6;  // Blast Nova: Swarm 6
+        if (type === 3) return wave >= 9;  // Railgun: Swarm 9
+        if (type === 4) return wave >= 12; // Tesla Link: Swarm 12
         return false;
     }
 

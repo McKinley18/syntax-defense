@@ -15,6 +15,16 @@ interface MainMenuProps {
   mousePos: { x: number, y: number };
 }
 
+interface VitalChar {
+  char: string;
+  originalChar: string;
+  glitched: boolean;
+}
+
+interface VitalLine {
+  chars: VitalChar[];
+}
+
 const MainMenu: React.FC<MainMenuProps> = ({
   isDistorted,
   hasSave,
@@ -28,15 +38,70 @@ const MainMenu: React.FC<MainMenuProps> = ({
   entropy,
   menuGlitchActive
 }) => {
-  const [vitals, setVitals] = React.useState<string[]>(["KERNEL_STABLE", "AUTH_ACTIVE", "LINK_SECURE"]);
+  const [vitals, setVitals] = React.useState<VitalLine[]>([
+    { chars: "KERNEL_STABLE".split('').map(c => ({ char: c, originalChar: c, glitched: false })) },
+    { chars: "AUTH_ACTIVE".split('').map(c => ({ char: c, originalChar: c, glitched: false })) },
+    { chars: "LINK_SECURE".split('').map(c => ({ char: c, originalChar: c, glitched: false })) }
+  ]);
 
+  const lastTextRef = React.useRef("");
+  const symbols = ["@", "#", "$", "%", "&", "*", "†", "‡", "§", "¶", "∑", "Ω", "≈", "∆", "√"];
+
+  // 1. DATA TICKER (No repeat logic)
   React.useEffect(() => {
-    const lines = ["MEM_PTR: 0x8F2", "SYSCALL_OK", "DATA_SYNC: 100%", "PACKET_FLUX: 0.02", "GUEST_LINK: EST"];
+    const lines = [
+      "MEM_PTR: 0x8F2", "SYSCALL_OK", "DATA_SYNC: 100%", "PACKET_FLUX: 0.02", 
+      "GUEST_LINK: EST", "TRACERT_HOP: 4", "BUFFER_SYNC: OK", "SOCKET_INIT",
+      "DAEMON_RESP", "IO_PORT: 8080", "LOG_INIT: SUCCESS", "STACK_DUMP: NULL",
+      "CRYPTO_HASH: VAL", "ROOT_ACCESS: DENIED", "FIREWALL: UP", "DNS_RESOLVE: OK"
+    ];
+
     const itv = setInterval(() => {
-      setVitals(prev => [lines[Math.floor(Math.random()*lines.length)], ...prev].slice(0, 3));
+      setVitals(prev => {
+        let nextText = lines[Math.floor(Math.random() * lines.length)];
+        // PREVENT BACK-TO-BACK REPEATS
+        while (nextText === lastTextRef.current) {
+          nextText = lines[Math.floor(Math.random() * lines.length)];
+        }
+        lastTextRef.current = nextText;
+
+        const nextChars = nextText.split('').map(c => ({ char: c, originalChar: c, glitched: false }));
+        return [{ chars: nextChars }, ...prev].slice(0, 3);
+      });
     }, 3000);
+
     return () => clearInterval(itv);
   }, []);
+
+  // 2. SYNCED GLITCH EFFECT (Reacts to Title Flicker)
+  React.useEffect(() => {
+    if (menuGlitchActive) {
+      // Trigger temporary corruption on all visible lines
+      setVitals(current => {
+        return current.map(line => ({
+          chars: line.chars.map(vc => {
+            const willGlitch = Math.random() < 0.2;
+            return {
+              ...vc,
+              char: willGlitch ? symbols[Math.floor(Math.random() * symbols.length)] : vc.char,
+              glitched: willGlitch
+            };
+          })
+        }));
+      });
+    } else {
+      // Restore all characters to original state
+      setVitals(current => {
+        return current.map(line => ({
+          chars: line.chars.map(vc => ({
+            ...vc,
+            char: vc.originalChar,
+            glitched: false
+          }))
+        }));
+      });
+    }
+  }, [menuGlitchActive]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -58,10 +123,8 @@ const MainMenu: React.FC<MainMenuProps> = ({
       <div className="full-screen-scan"></div>
       <div className="full-page-scanline"></div>
       
-      {/* 1. BREADCRUMBS */}
       <div className="menu-breadcrumbs">ARCHITECT@SYNTAX_CORE:~/ROOT$</div>
 
-      {/* 2. DIAGNOSTICS */}
       <div className="menu-diagnostics">
         <div className="diag-line">UPTIME: {formatTime(uptime)}</div>
         <div className="diag-line">ENTROPY: {entropy.toFixed(3)}%</div>
@@ -122,9 +185,16 @@ const MainMenu: React.FC<MainMenuProps> = ({
         </div>
       </div>
 
-      {/* 3. SYSTEM VITALS TICKER */}
       <div className="menu-vitals-ticker">
-        {vitals.map((v, i) => <div key={i} className="vital-line">&gt; {v}</div>)}
+        {vitals.map((v, i) => (
+          <div key={i} className="vital-line">
+            &gt; {v.chars.map((vc, ci) => (
+              <span key={ci} className={vc.glitched ? 'vital-symbol-red' : ''}>
+                {vc.char}
+              </span>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -82,18 +82,7 @@ export class TowerManager {
                     if (!this.getTowerAt(worldPos.x, worldPos.y)) {
                         const cost = this.getAdjustedCost(this.selectedTurretType);
                         if (GameStateManager.getInstance().credits >= cost) {
-                            let cx = worldPos.x;
-                            let cy = worldPos.y;
-                            
-                            // TUTORIAL OVERRIDE: Snap to the expected position
-                            if (this.game.isTutorialActive) {
-                                // If they click buildable, force it to the expected tutorial spot (10, 6)
-                                // This ensures the handleTowerPlaced callback finds the right state
-                                cx = 10 * TILE_SIZE + TILE_SIZE/2;
-                                cy = 6 * TILE_SIZE + TILE_SIZE/2;
-                            }
-
-                            const center = this.game.isTutorialActive ? {x: cx, y: cy} : this.game.mapManager.getTileCenter(worldPos.x, worldPos.y);
+                            const center = this.game.mapManager.getTileCenter(worldPos.x, worldPos.y);
                             this.placeTower(this.selectedTurretType, center.x, center.y);
                             GameStateManager.getInstance().addCredits(-cost);
                             AudioManager.getInstance().playPlacement();

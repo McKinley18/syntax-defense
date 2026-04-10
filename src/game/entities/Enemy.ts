@@ -35,7 +35,8 @@ export class Enemy {
         this.container = new PIXI.Container();
         this.pathPoints = GameContainer.instance!.pathManager.getPathPoints();
         
-        this.offsetVal = (Math.random() * TILE_SIZE * 0.8) - (TILE_SIZE * 0.4);
+        // Use discrete lanes (-10 or +10) so they travel perfectly side-by-side
+        this.offsetVal = Math.random() < 0.5 ? -10 : 10;
         
         const config = VISUAL_REGISTRY[type];
         
@@ -151,9 +152,9 @@ export class Enemy {
 
     private updateHealthBar() {
         this.healthBar.clear();
-        const width = TILE_SIZE * 0.8;
-        const height = 4;
-        const yOffset = this.isElite ? -25 : -18;
+        const width = 20; // Reduced to match smaller enemies
+        const height = 3;
+        const yOffset = this.isElite ? -20 : -14;
         const pct = Math.max(0, this.health / this.maxHealth);
 
         // Background
