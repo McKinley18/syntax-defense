@@ -117,7 +117,7 @@ export class ParticleManager {
         });
     }
 
-    public spawnHitMarker(x: number, y: number, amount: number) {
+    public spawnHitMarker() {
         // DISABLED: Remove floating damage numbers from HUD
     }
 

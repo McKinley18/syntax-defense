@@ -116,23 +116,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
   setSelectedTower,
   onSetHoveredTower
 }) => {
-  const [vitalsUptime, setVitalsUptime] = React.useState(0);
-  const [vitalsEntropy, setVitalsEntropy] = React.useState(0.14);
-
-  useEffect(() => {
-    const itv = setInterval(() => {
-      setVitalsUptime(prev => prev + 1);
-      setVitalsEntropy(0.14 + (Math.random() * 0.05));
-    }, 1000);
-    return () => clearInterval(itv);
-  }, []);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
   if (!game) return null;
 
   const tutorialStepRef = useRef(tutorialStep);

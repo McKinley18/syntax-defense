@@ -117,7 +117,7 @@ export class WaveManager {
         this.isWaveActive = true;
         this.isSummaryActive = false;
         this.spawnTimer = 60; 
-        GameStateManager.getInstance().phase = 'COMBAT';
+        GameStateManager.getInstance().phase = 'WAVE';
     }
 
     public update(delta: number) {
@@ -181,7 +181,7 @@ export class WaveManager {
     }
 
     private spawnEnemy(type: EnemyType) {
-        const enemy = new Enemy(type, this.game.pathManager.getPathPoints());
+        const enemy = new Enemy(type, this.waveNumber);
         this.enemies.push(enemy);
         this.game.enemyLayer.addChild(enemy.container);
     }

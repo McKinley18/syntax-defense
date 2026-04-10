@@ -189,7 +189,7 @@ export class Enemy {
         this.health -= finalDamage;
 
         if (GameContainer.instance) {
-            GameContainer.instance.particleManager.spawnHitMarker(this.container.x, this.container.y, finalDamage);
+            GameContainer.instance.particleManager.spawnHitMarker();
         }
 
         if (this.isElite || this.type === 3) {
@@ -201,5 +201,9 @@ export class Enemy {
 
     public freeze(duration: number) {
         this.freezeTimer = duration;
+    }
+
+    public destroy() {
+        this.container.destroy({ children: true });
     }
 }
