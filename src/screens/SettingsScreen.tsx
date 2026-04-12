@@ -78,6 +78,24 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
     fn();
   };
 
+  const SwitchButton = ({ active, onToggle, activeLabel = 'ACTIVE', inactiveLabel = 'NULL' }: { active: boolean, onToggle: () => void, activeLabel?: string, inactiveLabel?: string }) => (
+    <button 
+      className={`blue-button track-toggle ${active ? 'enabled' : 'disabled'}`} 
+      onClick={() => handleAction(onToggle)} 
+      style={{ 
+        width: '100%', 
+        background: active ? 'rgba(0, 255, 255, 0.15)' : 'rgba(255, 102, 0, 0.1)',
+        borderColor: active ? 'var(--neon-cyan)' : '#ff6600',
+        color: active ? 'var(--neon-cyan)' : '#ff6600',
+        fontWeight: 900,
+        letterSpacing: '2px',
+        textShadow: active ? '0 0 8px var(--neon-cyan)' : '0 0 8px #ff6600'
+      }}
+    >
+      {active ? `DISABLE [${activeLabel}]` : `ENABLE [${inactiveLabel}]`}
+    </button>
+  );
+
   return (
     <div className="encyclopedia ui-layer">
       <div className="enc-header command-header">
@@ -93,9 +111,8 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <div className="setting-row">
                   <div className="setting-label-row">
                     <span>SKIP SYSTEM BOOT</span>
-                    <span style={{ color: skipIntro ? 'var(--neon-cyan)' : '#666' }}>{skipIntro ? 'ENABLED' : 'DISABLED'}</span>
                   </div>
-                  <button className={`blue-button track-toggle ${skipIntro ? 'enabled' : 'disabled'}`} onClick={() => handleAction(toggleSkipIntro)} style={{ width: '100%' }}>{skipIntro ? 'DISABLE' : 'ENABLE'}</button>
+                  <SwitchButton active={skipIntro} onToggle={toggleSkipIntro} activeLabel="BYPASS" inactiveLabel="STABLE" />
                 </div>
                 <div className="setting-row" style={{ marginTop: '10px', position: 'relative' }}>
                   <div className="setting-label-row"><span>TUTORIAL DATA</span></div>
@@ -125,12 +142,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <div className="settings-module">
                 <h3>Mainframe Calibration</h3>
                 <div className="setting-row">
-                  <div className="setting-label-row"><span>CRT SCANLINES</span><span style={{ color: crtEnabled ? 'var(--neon-cyan)' : '#666' }}>{crtEnabled ? 'ACTIVE' : 'NULL'}</span></div>
-                  <button className={`blue-button track-toggle ${crtEnabled ? 'enabled' : 'disabled'}`} onClick={() => handleAction(toggleCrt)} style={{ width: '100%' }}>{crtEnabled ? 'DISABLE' : 'ENABLE'}</button>
+                  <div className="setting-label-row"><span>CRT SCANLINES</span></div>
+                  <SwitchButton active={crtEnabled} onToggle={toggleCrt} activeLabel="ACTIVE" inactiveLabel="NULL" />
                 </div>
                 <div className="setting-row" style={{ marginTop: '8px' }}>
-                  <div className="setting-label-row"><span>GLITCH EVENTS</span><span style={{ color: glitchEffectsEnabled ? 'var(--neon-cyan)' : '#666' }}>{glitchEffectsEnabled ? 'ACTIVE' : 'NULL'}</span></div>
-                  <button className={`blue-button track-toggle ${glitchEffectsEnabled ? 'enabled' : 'disabled'}`} onClick={() => handleAction(toggleGlitch)} style={{ width: '100%' }}>{glitchEffectsEnabled ? 'DISABLE' : 'ENABLE'}</button>
+                  <div className="setting-label-row"><span>GLITCH EFFECTS</span></div>
+                  <SwitchButton active={glitchEffectsEnabled} onToggle={toggleGlitch} activeLabel="ACTIVE" inactiveLabel="NULL" />
                 </div>
               </div>
 
@@ -147,17 +164,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <button className="blue-button compact-btn" onClick={() => handleAction(toggleAmbient)} style={{ marginTop: '5px' }}>{ambientMuted ? 'UNMUTE MUSIC' : 'MUTE MUSIC'}</button>
                 </div>
                 <div className="setting-row">
-                  <div className="setting-label-row"><span>ACTIVE PLAYLIST (TAP NAME TO PREVIEW)</span></div>
+                  <div className="setting-label-row"><span>ACTIVE PLAYLIST</span></div>
                   <div className="track-list">
                     {[
-                      'AMBIENT TECH', 'INDUSTRIAL DEPTH', 'LIQUID DATA', 'CORE SEQUENCER', 'GHOST VOICES', 'UPLINK SYNC',
-                      'NEON NIGHTS', 'GRID RUNNER', 'SYSTEM ERROR', 'VIRTUAL HORIZON', 'CORE BREACH',
-                      'CYBER PUNK', 'DEEP TECH', 'ACID LOGIC', 'NEURAL NET'
+                      'CORE_LOGIC', 'NEON_BREACH', 'LIQUID_DATA', 'VOID_SIGNAL', 'GRID_RUNNER'
                     ].map((name, id) => (
                       <div key={id} className="track-item">
                         <span className="track-name" onClick={() => handleAction(() => onPreviewTrack(id))} style={{ cursor: 'pointer', color: 'var(--neon-cyan)', textDecoration: 'underline' }}>{name}</span>
                         <button className={`blue-button track-toggle ${enabledTracks[id] ? 'enabled' : 'disabled'}`} onClick={() => handleAction(() => toggleTrack(id))}>
-                          {enabledTracks[id] ? 'ACTIVE' : 'OFF'}
+                          {enabledTracks[id] ? 'ON' : 'OFF'}
                         </button>
                       </div>
                     ))}
@@ -168,12 +183,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <div className="settings-module">
                 <h3>Combat Protocols</h3>
                 <div className="setting-row">
-                  <div className="setting-label-row"><span>AUTO-PAUSE (WAVE END)</span><span style={{ color: autoPauseEnabled ? 'var(--neon-cyan)' : '#666' }}>{autoPauseEnabled ? 'ACTIVE' : 'OFF'}</span></div>
-                  <button className={`blue-button track-toggle ${autoPauseEnabled ? 'enabled' : 'disabled'}`} onClick={() => handleAction(toggleAutoPause)} style={{ width: '100%' }}>{autoPauseEnabled ? 'DISABLE' : 'ENABLE'}</button>
+                  <div className="setting-label-row"><span>AUTO-PAUSE (WAVE END)</span></div>
+                  <SwitchButton active={autoPauseEnabled} onToggle={toggleAutoPause} activeLabel="ACTIVE" inactiveLabel="OFF" />
                 </div>
                 <div className="setting-row" style={{ marginTop: '8px' }}>
-                  <div className="setting-label-row"><span>PERMANENT RANGE HUD</span><span style={{ color: showAllRanges ? 'var(--neon-cyan)' : '#666' }}>{showAllRanges ? 'ACTIVE' : 'OFF'}</span></div>
-                  <button className={`blue-button track-toggle ${showAllRanges ? 'enabled' : 'disabled'}`} onClick={() => handleAction(toggleShowRanges)} style={{ width: '100%' }}>{showAllRanges ? 'DISABLE' : 'ENABLE'}</button>
+                  <div className="setting-label-row"><span>PERMANENT RANGE HUD</span></div>
+                  <SwitchButton active={showAllRanges} onToggle={toggleShowRanges} activeLabel="ACTIVE" inactiveLabel="OFF" />
                 </div>
               </div>
 

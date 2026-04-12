@@ -4,6 +4,27 @@ import { EnemyType } from '../game/entities/Enemy';
 import { Tower, TowerType } from '../game/entities/Tower';
 import TacticalDashboard from '../components/ui/TacticalDashboard';
 import TowerContextMenu from '../components/ui/TowerContextMenu';
+import { GameStateManager } from '../game/systems/GameStateManager';
+
+const EnemyIcon = ({ type, color }: { type: number, color: string }) => {
+  switch (type) {
+    case 0:
+      return <div style={{ width: '20px', height: '20px', position: 'relative', background: color, clipPath: 'polygon(50% 0%, 100% 100%, 50% 80%, 0% 100%)' }}></div>;
+    case 1:
+      return <div style={{ width: '0', height: '0', borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderLeft: `14px solid ${color}` }}></div>;
+    case 2:
+      return <div style={{ width: '22px', height: '16px', background: '#222', border: `2px solid ${color}`, borderRadius: '2px', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
+        <div style={{ width: '4px', height: '4px', background: color }}></div>
+        <div style={{ width: '4px', height: '4px', background: color }}></div>
+      </div>;
+    case 3:
+      return <div style={{ width: '24px', height: '24px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'absolute', width: '20px', height: '20px', border: `2px solid ${color}`, transform: 'rotate(45deg)' }}></div>
+        <div style={{ position: 'absolute', width: '10px', height: '10px', background: color }}></div>
+      </div>;
+    default: return null;
+  }
+};
 
 interface GameScreenProps {
   game: any;
@@ -50,8 +71,8 @@ interface GameScreenProps {
   onToggleFastForward: () => void;
   onRepair: () => void;
   onSelectTurret: (type: number) => void;
-  onUpgradeTower: () => void;
-  onSellTower: () => void;
+  onUpgradeTower: (tower: Tower) => void;
+  onSellTower: (tower: Tower) => void;
   onCloseTowerContext: () => void;
   isTowerUnlocked: (type: number) => boolean;
   getTowerCount: (type: TowerType) => number;
@@ -157,8 +178,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
     if (!game) return;
     
     const handleWaveEnd = () => {
-      if (isTutorialActive && tutorialStepRef.current === 5) {
-        onSetTutorialStep(6);
+      if (isTutorialActive && tutorialStepRef.current === 9) {
+        onSetTutorialStep(10);
       }
       if (autoPauseEnabled && !isTutorialActive) {
         onTogglePause(true);
@@ -168,22 +189,33 @@ const GameScreen: React.FC<GameScreenProps> = ({
     const handleTowerPlaced = () => {
       if (isTutorialActive && tutorialStepRef.current === 3) {
         onSetTutorialStep(4);
+      } else {
+        onSelectTurret(-1);
       }
-      onSelectTurret(-1);
     };
 
-    const handleTowerSelected = (t: Tower) => {
+    const handleTowerSelected = (t: Tower | null) => {
       setSelectedTower(t);
+      if (game?.towerManager) {
+        game.towerManager.selectedTower = t;
+      }
+      if (isTutorialActive && tutorialStepRef.current === 6 && t) {
+        console.log("Tutorial: Node selected, moving to Step 7");
+        onSetTutorialStep(7);
+      }
     };
+
 
     const handleTowerHover = (t: Tower | null) => {
       onSetHoveredTower(t);
     };
 
-    game.waveManager.onWaveEnd = handleWaveEnd;
-    game.towerManager.onTowerPlaced = handleTowerPlaced;
-    game.towerManager.onTowerSelected = handleTowerSelected;
-    game.towerManager.onTowerHover = handleTowerHover;
+    if (game?.waveManager && game?.towerManager) {
+      game.waveManager.onWaveEnd = handleWaveEnd;
+      game.towerManager.onTowerPlaced = handleTowerPlaced;
+      game.towerManager.onTowerSelected = handleTowerSelected;
+      game.towerManager.onTowerHover = handleTowerHover;
+    }
 
   }, [game, isTutorialActive, tutorialStep, onSetTutorialStep, setSelectedTower, onSetHoveredTower]);
 
@@ -280,8 +312,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
               if (!reg) return null;
               return (
                 <div key={idx} className="intel-card-minimal" style={{ padding: '4px 8px', gap: '5px' }}>
-                  <div className="mini-enemy" style={{ width: '20px', height: '20px' }}>
-                    <div className={`shape ${reg.shape}`} style={reg.shape === 'triangle' ? { borderBottomColor: reg.colorHex, borderBottomWidth: '14px', borderLeftWidth: '7px', borderRightWidth: '14px' } : { background: reg.colorHex, width: '14px', height: '14px' }}></div>
+                  <div className="mini-enemy" style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <EnemyIcon type={entry.type} color={reg.colorHex} />
                   </div>
                   <div className="intel-label-small" style={{ fontSize: '0.55rem' }}>{reg.name} x{entry.count}</div>
                 </div>
@@ -301,26 +333,37 @@ const GameScreen: React.FC<GameScreenProps> = ({
                 &gt; WARNING: VIRAL DATA INTRUSION DETECTED.<br /><br />
                 SYSTEM ARCHITECT: INITIALIZE DEFENSE PROTOCOLS IMMEDIATELY.
               </div>
-              <button className="massive-exec-button" onClick={() => onSetTutorialStep(1)}>INITIALIZE</button>
+              <button className="massive-exec-button" onClick={() => {
+                onSetTutorialStep(1);
+                game.waveManager.prepareWave(false);
+              }}>INITIALIZE</button>
             </div>
           )}
           {tutorialStep === 1 && (
+            <div className="tutorial-window">
+              <div className="popup-title">SELECT PROTOCOL</div>
+              <div className="manual-text" style={{ fontSize: '0.75rem', color: '#fff', textAlign: 'center', margin: '5px 0' }}>
+                &gt; SELECT THE <b>PULSE MG</b> FROM THE DEFENSE ARRAY BELOW.
+              </div>
+            </div>
+          )}
+          {tutorialStep === 1 && tilePos.x > -500 && (
             <>
-              <div className="tutorial-pointer" style={{ left: tilePos.x, top: tilePos.y - 65 }}>SELECT PULSE MG PROTOCOL</div>
-              <div className="tutorial-highlight" style={{ left: tilePos.x - 45, top: tilePos.y - 55, width: 90, height: 110 }}></div>
+              <div className="tutorial-pointer" style={{ left: tilePos.x, top: tilePos.y - 75, opacity: tilePos.y > 0 ? 1 : 0 }}>SELECT PULSE MG PROTOCOL</div>
+              <div className="tutorial-highlight" style={{ left: tilePos.x - 50, top: tilePos.y - 50, width: 100, height: 100, opacity: tilePos.y > 0 ? 1 : 0 }}></div>
             </>
           )}
           {tutorialStep === 2 && (
             <div className="tutorial-window">
               <div className="popup-title">DEFENSE NODES</div>
               <div className="manual-text" style={{ fontSize: '0.75rem', color: '#fff', textAlign: 'center', margin: '10px 0' }}>
-                &gt; NODES PURGE THREATS WITHIN THEIR LOGIC RADIUS (CYAN CIRCLE).<br /><br />
+                &gt; NODES PURGE THREATS WITHIN THEIR LOGIC RADIUS.<br /><br />
                 STRATEGIC OVERLAP AND THROUGHPUT ARE KEY TO CORE SURVIVAL.
               </div>
               <button className="massive-exec-button" onClick={() => onSetTutorialStep(3)}>CONTINUE</button>
             </div>
           )}
-          {tutorialStep === 3 && (
+          {tutorialStep === 3 && tilePos.x > -500 && tilePos.y > 0 && (
             <>
               <div className="tutorial-pointer" style={{ left: tilePos.x, top: tilePos.y - (tilePos.ts / 2) - 10 }}>DEPLOY NODE AT HIGHLIGHTED LOCATION</div>
               <div className="tutorial-highlight" style={{ left: tilePos.x - (tilePos.ts / 2), top: tilePos.y - (tilePos.ts / 2), width: tilePos.ts, height: tilePos.ts }}></div>
@@ -328,19 +371,47 @@ const GameScreen: React.FC<GameScreenProps> = ({
           )}
           {tutorialStep === 4 && (
             <div className="tutorial-window">
-              <div className="popup-title">SYSTEM UPGRADES</div>
+              <div className="popup-title">DEPLOYMENT SUCCESSFUL</div>
               <div className="manual-text" style={{ fontSize: '0.75rem', color: '#fff', textAlign: 'center', margin: '10px 0' }}>
-                &gt; NODES CAN BE OVERCLOCKED FOR INCREASED THROUGHPUT.<br /><br />
-                CLICK 'CONTINUE' TO START THE TEST PURGE.
+                &gt; NODE STABILIZED. INITIALIZING STATUS LINK...
               </div>
-              <button className="massive-exec-button" onClick={() => {
-                game.waveManager.startWave();
-                onSetTutorialStep(5);
-              }}>CONTINUE</button>
+              <button className="massive-exec-button" onClick={() => onSetTutorialStep(5)}>CONTINUE</button>
             </div>
           )}
-          {tutorialStep === 5 && <div className="tutorial-ui-empty"></div>}
-          {tutorialStep === 6 && (
+          {tutorialStep === 5 && (
+            <div className="tutorial-window">
+              <div className="popup-title">STATUS INSPECTION</div>
+              <div className="manual-text" style={{ fontSize: '0.75rem', color: '#fff', textAlign: 'center', margin: '10px 0' }}>
+                &gt; NODES CAN BE INSPECTED TO VIEW REAL-TIME PERFORMANCE AND OVERCLOCK OPTIONS.
+              </div>
+              <button className="massive-exec-button" onClick={() => onSetTutorialStep(6)}>CONTINUE</button>
+            </div>
+          )}
+          {tutorialStep === 6 && tilePos.y > 0 && (
+            <>
+              <div className="tutorial-pointer" style={{ left: tilePos.x, top: tilePos.y - 50 }}>SELECT THIS NODE</div>
+              <div className="tutorial-highlight circular" style={{ left: tilePos.x - 20, top: tilePos.y - 20, width: 40, height: 40 }}></div>
+            </>
+          )}
+          {tutorialStep === 7 && !selectedTower && (
+            <div className="tutorial-window">
+              <div className="popup-title">UPGRADE COMPLETE</div>
+              <div className="manual-text" style={{ fontSize: '0.75rem', color: '#fff', textAlign: 'center', margin: '10px 0' }}>
+                &gt; NODES CAN BE OVERCLOCKED FOR INCREASED THROUGHPUT.<br /><br />
+                TACTICAL PREP FINALIZED. START THE SWARM DATA PURGE.
+              </div>
+              <button className="massive-exec-button" onClick={() => {
+                onExecuteWave();
+                onSetTutorialStep(9); 
+                if (game?.towerManager) {
+                  game.towerManager.clearRanges();
+                }
+              }}>START PURGE</button>
+            </div>
+          )}
+          {tutorialStep === 8 && <div className="tutorial-ui-empty"></div>}
+          {tutorialStep === 9 && <div className="tutorial-ui-empty"></div>}
+          {tutorialStep === 10 && (
             <div className="tutorial-window scrollable">
               <div className="popup-title" style={{ color: '#00ff66' }}>PURGE SUCCESSFUL</div>
               
@@ -370,8 +441,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
                       const reg = VISUAL_REGISTRY[v.type];
                       return (
                         <div key={reg.name} style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', border: '1px solid #222', display: 'flex', alignItems: 'center', gap: '10px' }} data-enemy={v.type}>
-                          <div className="mini-enemy">
-                            <div className={`shape ${reg.shape}`} style={reg.shape !== 'triangle' ? { background: reg.colorHex } : { borderBottomColor: reg.colorHex }}></div>
+                          <div className="mini-enemy" style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <EnemyIcon type={v.type} color={reg.colorHex} />
                           </div>
                           <div style={{ fontSize: '0.6rem' }}><b style={{ color: reg.colorHex }}>{reg.name}:</b> {v.desc}</div>
                         </div>
@@ -386,13 +457,13 @@ const GameScreen: React.FC<GameScreenProps> = ({
         </div>
       )}
 
-      {selectedTower && !isPaused && integrity > 0 && (
+      {selectedTower && !isPaused && integrity > 0 && (!isTutorialActive || (isTutorialActive && tutorialStep >= 7)) && (
         <TowerContextMenu
           selectedTower={selectedTower}
           credits={credits}
           upgradeCost={getUpgradeCost(selectedTower)}
-          onUpgrade={onUpgradeTower}
-          onSell={onSellTower}
+          onUpgrade={() => onUpgradeTower(selectedTower)}
+          onSell={() => onSellTower(selectedTower)}
           onClose={onCloseTowerContext}
         />
       )}
@@ -435,7 +506,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       )}
 
       <TacticalDashboard
-        wave={wave}
+        wave={(GameStateManager.getInstance() as any).displayWave}
         waveName={waveName}
         credits={credits}
         integrity={integrity}
@@ -450,7 +521,10 @@ const GameScreen: React.FC<GameScreenProps> = ({
         onPause={() => onTogglePause(true)}
         onToggleFastForward={onToggleFastForward}
         onRepair={onRepair}
-        onSelectTurret={onSelectTurret}
+        onSelectTurret={(type) => {
+          onSelectTurret(type);
+          if (isTutorialActive && tutorialStep === 1 && type === 0) onSetTutorialStep(2);
+        }}
         firstTurretRef={firstTurretRef}
       />
     </div>

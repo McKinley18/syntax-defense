@@ -12,7 +12,7 @@ export class Enemy {
     public health: number;
     public maxHealth: number;
     public type: EnemyType;
-    public speed: number;
+    public speed: number = 1.0; // Initialize with default
     public reward: number;
     public totalProgress: number = 0;
     public reachedGoal: boolean = false;
@@ -20,26 +20,41 @@ export class Enemy {
     public isGhost: boolean = false;
     public isRevealed: boolean = false; 
     public hasThermalShield: boolean = false; 
+    public shieldIntegrity: number = 0;
+    public isSplitter: boolean = false;
+    public parentProgress: number = 0; // To sync split children
+    public lane: 'A' | 'B';
 
     private pathPoints: PIXI.Point[];
     private currentPointIndex: number = 0;
-    private visual: PIXI.Sprite; // NOW USING SPRITE FOR BATCHING
-    private shieldVisual?: PIXI.Graphics;
-    private healthBar: PIXI.Graphics;
+    private visual!: PIXI.Sprite; 
+    private healthBar: PIXI.Graphics = new PIXI.Graphics();
+    private shieldVisual: PIXI.Graphics | null = null;
     private freezeTimer: number = 0;
-    private laneOffset: { dx: number, dy: number } = { dx: 0, dy: 0 };
-    private offsetVal: number = 0;
 
-    constructor(type: EnemyType, waveNumber: number) {
+
+    constructor(type: EnemyType, waveNumber: number, initialProgress: number = 0, lane: 'A' | 'B' | null = null) {
         this.type = type;
         this.container = new PIXI.Container();
-        this.pathPoints = GameContainer.instance!.pathManager.getPathPoints();
         
-        // Use discrete lanes (-10 or +10) so they travel perfectly side-by-side
-        this.offsetVal = Math.random() < 0.5 ? -10 : 10;
+        // ASSIGN SMOOTH LANE: 50/50 chance for A or B (or inherit from parent)
+        this.lane = lane || (Math.random() < 0.5 ? 'A' : 'B');
+        this.pathPoints = GameContainer.instance!.pathManager.getLanePoints(this.lane);
+        
+        // TACTICAL MANDATE: Wave 1 (Tutorial) enemies are ALWAYS targetable.
+        this.isRevealed = (waveNumber === 1) || (!this.isGhost);
         
         const config = VISUAL_REGISTRY[type];
         
+        // COMPLEX BEHAVIOR INITIALIZATION
+        if (type === EnemyType.BEHEMOTH) {
+            this.hasThermalShield = true;
+            this.shieldIntegrity = Math.floor(config.baseHp * 0.5);
+            this.isSplitter = true; // Behemoths split into 2 Striders
+        } else if (type === EnemyType.STRIDER && Math.random() < 0.2) {
+            this.isSplitter = true; // Some Striders split into 3 Gliders
+        }
+
         if (waveNumber % 5 === 0 && Math.random() < 0.15) {
             this.isElite = true;
         }
@@ -50,18 +65,27 @@ export class Enemy {
 
         const hpMult = (this.isElite ? 3.5 : 1);
         this.maxHealth = Math.floor(config.baseHp * hpMult);
+        
+        // FORCED TUTORIAL LETHALITY: Wave 1 (Level 0)
+        if (waveNumber === 1) {
+            this.maxHealth = 50; 
+            this.isRevealed = true;
+            this.speed = 1.0; 
+        }
+        
         this.health = this.maxHealth;
         this.reward = Math.floor(config.reward * (this.isElite ? 2.5 : 1));
 
-        let finalSpeed = config.speed;
-        
+        let finalSpeed = this.speed || config.speed;
         if (GameStateManager.getInstance().activeGlitch === 'LAG_SPIKE') finalSpeed *= 0.7;
         this.speed = finalSpeed;
 
-        // FETCH CACHED TEXTURE INSTEAD OF DRAWING PROCEDURALLY
         const tex = TextureGenerator.getInstance().getEnemyTexture(type);
         this.visual = new PIXI.Sprite(tex);
-        this.visual.anchor.set(0.5); // Center the sprite
+        this.visual.anchor.set(0.5);
+        this.visual.scale.set(1.0); // Reset scale to avoid ghost HMR effects
+        this.visual.tint = type === EnemyType.GLIDER ? 0x00ffff : 0xffffff;
+        this.visual.rotation = Math.PI / 2; // Point Right (System Start)
         
         if (this.isElite) {
             this.visual.scale.set(1.5);
@@ -78,12 +102,38 @@ export class Enemy {
         this.healthBar = new PIXI.Graphics();
         this.container.addChild(this.visual, this.healthBar);
 
+        if (this.hasThermalShield) {
+            this.shieldVisual = new PIXI.Graphics();
+            this.container.addChild(this.shieldVisual);
+        }
+
+        // INITIAL POSITION & SYNC
         if (this.pathPoints.length > 0) {
-            const startVec = GameContainer.instance!.pathManager.pathVectors[0] || { dx: 1, dy: 0 };
-            this.laneOffset = { dx: -startVec.dy * this.offsetVal, dy: startVec.dx * this.offsetVal };
-            
-            this.container.x = this.pathPoints[0].x + this.laneOffset.dx;
-            this.container.y = this.pathPoints[0].y + this.laneOffset.dy;
+            if (initialProgress > 0) {
+                // Sync split child to parent's exact position on path
+                this.jumpToProgress(initialProgress);
+            } else {
+                this.container.x = this.pathPoints[0].x;
+                this.container.y = this.pathPoints[0].y;
+            }
+        }
+    }
+
+    private jumpToProgress(progress: number) {
+        let current = 0;
+        for (let i = 0; i < this.pathPoints.length - 1; i++) {
+            const p1 = this.pathPoints[i];
+            const p2 = this.pathPoints[i+1];
+            const d = Math.sqrt((p2.x - p1.x)**2 + (p2.y - p1.y)**2);
+            if (current + d > progress) {
+                const ratio = (progress - current) / d;
+                this.container.x = p1.x + (p2.x - p1.x) * ratio;
+                this.container.y = p1.y + (p2.y - p1.y) * ratio;
+                this.currentPointIndex = i;
+                this.totalProgress = progress;
+                return;
+            }
+            current += d;
         }
     }
 
@@ -99,6 +149,9 @@ export class Enemy {
         if (this.isGhost) {
             this.container.alpha = this.isRevealed ? 1.0 : 0.15;
             this.healthBar.visible = this.isRevealed;
+        } else {
+            this.container.alpha = 1.0;
+            this.healthBar.visible = true;
         }
 
         if (this.currentPointIndex >= this.pathPoints.length - 1) {
@@ -106,101 +159,71 @@ export class Enemy {
             return;
         }
 
+        // SMOOTH MOVEMENT ALONG SPLINE
         const target = this.pathPoints[this.currentPointIndex + 1];
-        const vec = GameContainer.instance!.pathManager.pathVectors[this.currentPointIndex];
+        const dx = target.x - this.container.x;
+        const dy = target.y - this.container.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
         const moveStep = this.speed * delta;
-        
-        // Update lane offset based on current direction to stay in "lane"
-        const perp = { dx: -vec.dy, dy: vec.dx };
-        this.laneOffset = { dx: perp.dx * this.offsetVal, dy: perp.dy * this.offsetVal };
-        
-        let reached = false;
-        // Check progress against target point (ignoring lane offset for logic)
-        const currentPureX = this.container.x - this.laneOffset.dx;
-        const currentPureY = this.container.y - this.laneOffset.dy;
 
-        if (vec.dx !== 0) {
-            if (vec.dx > 0 && currentPureX + moveStep >= target.x) reached = true;
-            else if (vec.dx < 0 && currentPureX - moveStep <= target.x) reached = true;
-        } else {
-            if (vec.dy > 0 && currentPureY + moveStep >= target.y) reached = true;
-            else if (vec.dy < 0 && currentPureY - moveStep <= target.y) reached = true;
-        }
-
-        if (reached) {
+        if (dist <= moveStep) {
+            this.container.x = target.x;
+            this.container.y = target.y;
             this.currentPointIndex++;
-            if (this.currentPointIndex < this.pathPoints.length - 1) {
-                const nextVec = GameContainer.instance!.pathManager.pathVectors[this.currentPointIndex];
-                const nextPerp = { dx: -nextVec.dy, dy: nextVec.dx };
-                this.container.x = target.x + (nextPerp.dx * this.offsetVal);
-                this.container.y = target.y + (nextPerp.dy * this.offsetVal);
-            } else {
-                this.container.x = target.x + this.laneOffset.dx;
-                this.container.y = target.y + this.laneOffset.dy;
-            }
         } else {
-            this.container.x += vec.dx * moveStep;
-            this.container.y += vec.dy * moveStep;
+            const vx = dx / dist;
+            const vy = dy / dist;
+            this.container.x += vx * moveStep;
+            this.container.y += vy * moveStep;
+            
+            // Dynamic Facing: Point in direction of movement
+            this.visual.rotation = Math.atan2(vy, vx) + Math.PI / 2;
         }
-        
+
         this.totalProgress += moveStep;
-        this.visual.rotation += 0.05 * delta;
-        this.updateHealthBar();
-        
-        this.isRevealed = false; // Reset for next frame
+        this.drawHealthBar();
+        this.drawShield();
     }
 
-    private updateHealthBar() {
+    private drawShield() {
+        if (!this.shieldVisual) return;
+        this.shieldVisual.clear();
+        if (this.shieldIntegrity <= 0) return;
+
+        const pulse = 0.6 + Math.sin(Date.now() * 0.01) * 0.2;
+        this.shieldVisual.circle(0, 0, TILE_SIZE * 0.8);
+        this.shieldVisual.stroke({ width: 2, color: 0x00ffff, alpha: pulse });
+        this.shieldVisual.fill({ color: 0x00ffff, alpha: 0.1 });
+    }
+
+    private drawHealthBar() {
         this.healthBar.clear();
-        const width = 20; // Reduced to match smaller enemies
-        const height = 3;
-        const yOffset = this.isElite ? -20 : -14;
-        const pct = Math.max(0, this.health / this.maxHealth);
-
-        // Background
-        this.healthBar.rect(-width/2, yOffset, width, height);
-        this.healthBar.fill(0x1a1a1a);
-        this.healthBar.stroke({ width: 1, color: 0x333333 });
-
-        // Fill
-        this.healthBar.rect(-width/2, yOffset, width * pct, height);
-        this.healthBar.fill(pct > 0.5 ? 0x00ffcc : pct > 0.25 ? 0xffcc00 : 0xff3300);
-    }
-
-    public renderShield() {
-        if (this.hasThermalShield && !this.shieldVisual) {
-            this.shieldVisual = new PIXI.Graphics();
-            this.shieldVisual.circle(0, 0, (TILE_SIZE / 2) + 2);
-            this.shieldVisual.stroke({ width: 2, color: 0xff3300, alpha: 0.8 });
-            this.container.addChild(this.shieldVisual);
-        }
-    }
-
-    public takeDamage(amount: number, sourceType?: number): boolean {
-        let finalDamage = amount;
+        if (this.health >= this.maxHealth) return;
         
-        if (this.hasThermalShield && sourceType === 0) { // PULSE_MG
-            finalDamage *= 0.5; // 50% RESISTANCE
-            if (GameContainer.instance) {
-                GameContainer.instance.particleManager.spawnFloatingText(this.container.x, this.container.y - 20, "RESIST");
-            }
+        const w = 24;
+        const h = 3;
+        const pct = this.health / this.maxHealth;
+        
+        this.healthBar.rect(-w/2, -20, w, h);
+        this.healthBar.fill({ color: 0x333333 });
+        this.healthBar.rect(-w/2, -20, w * pct, h);
+        this.healthBar.fill({ color: pct > 0.5 ? 0x00ff66 : pct > 0.25 ? 0xffcc00 : 0xff3300 });
+    }
+
+    public takeDamage(amount: number) {
+        // ABSOLUTE LETHALITY: No immunity checks
+        this.health -= amount;
+        
+        if (this.health <= 0) {
+            this.health = 0;
         }
         
-        this.health -= finalDamage;
-
-        if (GameContainer.instance) {
-            GameContainer.instance.particleManager.spawnHitMarker();
-        }
-
-        if (this.isElite || this.type === 3) {
-            this.updateHealthBar();
-        }
-
-        return this.health <= 0;
+        this.drawHealthBar();
+        console.log(`ENEMY: Hit received. DMG: ${amount}, Remaining HP: ${this.health}`);
     }
 
-    public freeze(duration: number) {
-        this.freezeTimer = duration;
+    public applyFreeze(duration: number) {
+        this.freezeTimer = Math.max(this.freezeTimer, duration);
     }
 
     public destroy() {

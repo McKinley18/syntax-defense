@@ -40,6 +40,7 @@ export class GameContainer {
     private baseShake: { x: number, y: number } = { x: 0, y: 0 };
 
     public static instance: GameContainer | null = null;
+    private static initPromise: Promise<GameContainer> | null = null;
 
     private constructor() {
         this.app = new PIXI.Application();
@@ -54,15 +55,27 @@ export class GameContainer {
     }
 
     public static async getInstance(): Promise<GameContainer> {
-        if (!GameContainer.instance) {
-            GameContainer.instance = new GameContainer();
-            await GameContainer.instance.init();
-        }
-        return GameContainer.instance;
+        if (this.instance && this.instance.app && this.instance.app.renderer) return this.instance;
+        if (this.initPromise) return this.initPromise;
+
+        this.initPromise = (async () => {
+            const instance = new GameContainer();
+            await instance.init();
+            if (instance.app && instance.app.renderer) {
+                GameContainer.instance = instance;
+            }
+            return instance;
+        })();
+
+        return this.initPromise;
     }
 
     private async init() {
         if (this.app.renderer) return;
+
+        // NUCLEAR RESET: Kill all stale state
+        GameStateManager.getInstance().hardReset();
+        TextureGenerator.getInstance().enemyTextures.clear(); // Kill cached shapes
 
         await this.app.init({
             resizeTo: window,
@@ -94,29 +107,104 @@ export class GameContainer {
         this.waveManager = new WaveManager(this);
         this.inputHandler = new InputHandler();
 
-        this.kernel = new Kernel(0, 0);
+        this.kernel = new Kernel(this, 0, 0);
         this.towerLayer.addChild(this.kernel.container);
 
-        this.waveManager.prepareWave(false); 
-        
         window.addEventListener('resize', this.handleResize);
         this.app.ticker.add(this.update, this);
     }
 
     private handleResize = () => {
-        if (this.app.renderer) {
+        if (this.app && this.app.renderer) {
             this.app.renderer.resize(window.innerWidth, window.innerHeight);
             if (this.mapManager) this.mapManager.render();
         }
     };
 
+    public update(ticker: PIXI.Ticker) {
+        if (this.isPaused || !this.app || !this.app.renderer) return;
+
+        try {
+            if (this.breachTimer > 0) {
+                this.breachTimer -= ticker.deltaTime;
+                this.colorFilter.reset();
+                this.colorFilter.colorTone(0xff0000, 0.6, 0xffffff, 0, false); 
+                this.viewport.x = this.baseShake.x + (Math.random() * 10 - 5);
+                this.viewport.y = this.baseShake.y + (Math.random() * 10 - 5);
+            } else if (this.purgeTimer > 0) {
+                this.purgeTimer -= ticker.deltaTime;
+                this.colorFilter.reset();
+                this.colorFilter.brightness(1.2 + (this.purgeTimer / 30), true); 
+                this.viewport.x = this.baseShake.x;
+                this.viewport.y = this.baseShake.y;
+            } else {
+                this.colorFilter.reset();
+                this.viewport.x = this.baseShake.x;
+                this.viewport.y = this.baseShake.y;
+            }
+
+            if (ticker.FPS < 45) {
+                if (this.particleManager) this.particleManager.isThrottled = true;
+            } else if (ticker.FPS > 55) {
+                if (this.particleManager) this.particleManager.isThrottled = false;
+            }
+
+            let delta = ticker.deltaTime;
+            if (this.isFastForward) delta *= 2;
+
+            const enemies = this.waveManager ? this.waveManager.enemies : [];
+            
+            // ADAPTIVE AUDIO
+            const stress = Math.min(1.0, enemies.length / 30); 
+            MusicManager.getInstance().setSystemStress(stress);
+            AudioManager.getInstance().updateHum(GameStateManager.getInstance().integrity);
+
+            if (this.waveManager) this.waveManager.update(delta);
+            if (this.towerManager) this.towerManager.update(delta);
+            if (this.particleManager) this.particleManager.update(delta);
+            if (this.kernel) this.kernel.update(delta, this.waveManager?.enemies || []);
+            if (this.mapManager) this.mapManager.update();
+            if (this.kernel) this.kernel.update(delta, enemies);
+        } catch (e) {
+            // Silently skip update if middle of destruction
+        }
+    }
+
     public destroy() {
         window.removeEventListener('resize', this.handleResize);
-        if (this.app.ticker) {
-            this.app.ticker.remove(this.update, this);
+        
+        try {
+            if (this.app) {
+                this.app.ticker.stop();
+                this.app.ticker.remove(this.update, this);
+                this.app.stop();
+            }
+
+            if (this.viewport) {
+                this.viewport.filters = null;
+            }
+            if (this.app && this.app.stage) {
+                this.app.stage.filters = null;
+                this.app.stage.removeChildren();
+            }
+
+            const app = this.app;
+            (this as any).app = null;
+            (this as any).waveManager = null;
+            (this as any).towerManager = null;
+            (this as any).particleManager = null;
+            (this as any).mapManager = null;
+            (this as any).viewport = null;
+            
+            if (app) {
+                app.destroy(true, { children: true, texture: true });
+            }
+        } catch (e) {
+            console.warn("PIXI Cleanup Warning:", e);
         }
-        this.app.destroy(true, { children: true });
+        
         GameContainer.instance = null; 
+        (GameContainer as any).initPromise = null; 
     }
 
     public triggerBreachEffect() {
@@ -125,49 +213,5 @@ export class GameContainer {
 
     public triggerPurgeEffect() {
         this.purgeTimer = 10; 
-    }
-
-    public update(ticker: PIXI.Ticker) {
-        if (this.isPaused) return;
-
-        if (this.breachTimer > 0) {
-            this.breachTimer -= ticker.deltaTime;
-            this.colorFilter.reset();
-            this.colorFilter.colorTone(0xff0000, 0.6, 0xffffff, 0, false); 
-            this.viewport.x = this.baseShake.x + (Math.random() * 10 - 5);
-            this.viewport.y = this.baseShake.y + (Math.random() * 10 - 5);
-        } else if (this.purgeTimer > 0) {
-            this.purgeTimer -= ticker.deltaTime;
-            this.colorFilter.reset();
-            this.colorFilter.brightness(1.2 + (this.purgeTimer / 30), true); 
-            this.viewport.x = this.baseShake.x;
-            this.viewport.y = this.baseShake.y;
-        } else {
-            this.colorFilter.reset();
-            this.viewport.x = this.baseShake.x;
-            this.viewport.y = this.baseShake.y;
-        }
-
-        if (ticker.FPS < 45) {
-            this.particleManager.isThrottled = true;
-        } else if (ticker.FPS > 55) {
-            this.particleManager.isThrottled = false;
-        }
-
-        let delta = ticker.deltaTime;
-        if (this.isFastForward) delta *= 2;
-
-        const enemies = this.waveManager.enemies;
-        
-        // ADAPTIVE AUDIO
-        const stress = Math.min(1.0, enemies.length / 30); // 30 enemies = max stress
-        MusicManager.getInstance().setSystemStress(stress);
-        AudioManager.getInstance().updateHum(GameStateManager.getInstance().integrity);
-
-        this.waveManager.update(delta);
-        this.towerManager.update(delta);
-        this.particleManager.update(delta);
-        if (this.mapManager) this.mapManager.update(delta);
-        if (this.kernel) this.kernel.update(delta, enemies);
     }
 }

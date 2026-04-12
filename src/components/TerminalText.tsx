@@ -12,6 +12,7 @@ interface TerminalTextProps {
   permanentGlitch?: boolean;
   humanTyping?: boolean; 
   decryptionMode?: boolean; 
+  isCommand?: boolean; 
 }
 
 const TerminalText = ({ 
@@ -24,20 +25,28 @@ const TerminalText = ({
   isGlitched = false, 
   permanentGlitch = false,
   humanTyping = false,
-  decryptionMode = false
+  decryptionMode = false,
+  isCommand = false
 }: TerminalTextProps) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isFinished, setIsFinished] = useState(false);
   const onCompleteRef = useRef(onComplete);
+  const hasCompletedCallbackFired = useRef(false);
 
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
   useEffect(() => {
     let isCancelled = false;
+    
     const startTimeout = setTimeout(() => {
-      if (isCancelled) return;
-      let i = 0;
+      if (isCancelled || hasCompletedCallbackFired.current) return;
       
+      if (isCommand) {
+          const am = AudioManager.getInstance();
+          if (am.isReady()) am.playTerminalCommand();
+      }
+
+      let i = 0;
       const runStep = () => {
         if (isCancelled) return;
         
@@ -56,12 +65,19 @@ const TerminalText = ({
         
         if (i > 0 && i <= text.length && text[i-1] !== ' ') {
           const am = AudioManager.getInstance();
-          if (am.isReady()) am.playTypeClick();
+          if (am.isReady()) {
+              if (humanTyping) am.playTypeClick();
+              else am.playUiClick();
+          }
         }
         
         if (stopAtChar !== undefined && i === stopAtChar) {
           setDisplayedText(text.slice(0, i)); 
-          if (onCompleteRef.current) onCompleteRef.current();
+          setIsFinished(true);
+          if (!hasCompletedCallbackFired.current) {
+              hasCompletedCallbackFired.current = true;
+              if (onCompleteRef.current) onCompleteRef.current();
+          }
           return;
         }
 
@@ -76,40 +92,44 @@ const TerminalText = ({
         } else {
             setDisplayedText(text);
             setIsFinished(true);
-            if (onCompleteRef.current) onCompleteRef.current();
+            if (!hasCompletedCallbackFired.current) {
+                hasCompletedCallbackFired.current = true;
+                if (onCompleteRef.current) onCompleteRef.current();
+            }
         }
       };
 
       runStep();
-
-      // INDEPENDENT PERSISTENT MUTATION (Only if glitched AND act 3)
-      let mutationInterval: any;
-      if (isGlitched) {
-          const glitchPool = "!@#$%^&*()_+-=[]{}|;:,.<>/?0123456789ɐqɔpǝɟƃɥᴉɾʞlɯuodbɹsʇnʌʍxʎz▰▱▲△▴▵▼▽◸◹◺◻◼◽◾◿";
-          mutationInterval = setInterval(() => {
-              if (isCancelled) return;
-              setDisplayedText(prev => {
-                  if (prev.length === 0 || (!permanentGlitch && isFinished)) return prev;
-                  const chars = prev.split('');
-                  const idx = Math.floor(Math.random() * chars.length);
-                  if (chars[idx] === ' ') return prev;
-                  if (Math.random() < glitchProbability) {
-                      chars[idx] = glitchPool[Math.floor(Math.random() * glitchPool.length)];
-                  } else {
-                      chars[idx] = text[idx] || chars[idx];
-                  }
-                  return chars.join('');
-              });
-          }, 35);
-      }
-
-      return () => { 
-          isCancelled = true; 
-          if (mutationInterval) clearInterval(mutationInterval);
-      };
     }, delay);
+
     return () => { isCancelled = true; clearTimeout(startTimeout); };
-  }, [text, speed, delay, stopAtChar, glitchProbability, isGlitched, permanentGlitch, humanTyping, decryptionMode]);
+  }, [text, speed, delay, stopAtChar, humanTyping, decryptionMode]);
+
+  // SEPARATE GLITCH EFFECT (Doesn't re-trigger typing)
+  useEffect(() => {
+      if (!isGlitched || !isFinished) return;
+      
+      let isCancelled = false;
+      const glitchPool = "!@#$%^&*()_+-=[]{}|;:,.<>/?0123456789ɐqɔpǝɟƃɥᴉɾʞlɯuodbɹsʇnʌʍxʎz▰▱▲△▴▵▼▽◸◹◺◻◼◽◾◿";
+      
+      const mutationInterval = setInterval(() => {
+          if (isCancelled) return;
+          setDisplayedText(prev => {
+              if (prev.length === 0 || !permanentGlitch) return prev;
+              const chars = prev.split('');
+              const idx = Math.floor(Math.random() * chars.length);
+              if (chars[idx] === ' ') return prev;
+              if (Math.random() < glitchProbability) {
+                  chars[idx] = glitchPool[Math.floor(Math.random() * glitchPool.length)];
+              } else {
+                  chars[idx] = text[idx] || chars[idx];
+              }
+              return chars.join('');
+          });
+      }, 35);
+
+      return () => { isCancelled = true; clearInterval(mutationInterval); };
+  }, [isGlitched, isFinished, text, glitchProbability, permanentGlitch]);
 
   return (
     <span style={{ position: 'relative' }}>

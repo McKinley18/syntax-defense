@@ -18,20 +18,22 @@ export interface VisualConfig {
     reward: number;
 }
 
+export const FINAL_PURGE_WAVE = 50;
+
 export const VISUAL_REGISTRY: Record<EnemyType, VisualConfig> = {
     [EnemyType.GLIDER]: {
         name: 'GLIDER',
-        shape: 'circle',
+        shape: 'triangle',
         color: 0x00ffff,
         colorHex: '#00ffff',
         priority: 'LOW',
-        baseHp: 30,
-        speed: 1.2,
+        baseHp: 50,
+        speed: 1.8,
         reward: 25
     },
     [EnemyType.STRIDER]: {
         name: 'STRIDER',
-        shape: 'triangle',
+        shape: 'circle',
         color: 0xff00ff,
         colorHex: '#ff00ff',
         priority: 'MEDIUM',

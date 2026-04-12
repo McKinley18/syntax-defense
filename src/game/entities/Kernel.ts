@@ -11,7 +11,7 @@ export class Kernel {
     private flashTimer: number = 0;
     private overdriveTimer: number = 0;
 
-    constructor(x: number, y: number) {
+    constructor(game: GameContainer, x: number, y: number) {
         this.container = new PIXI.Container();
         this.container.x = x;
         this.container.y = y;
@@ -38,7 +38,7 @@ export class Kernel {
         this.core.stroke({ width: 2, color: 0xffffff });
         this.container.addChild(this.core);
 
-        GameContainer.instance!.effectLayer.addChild(this.container);
+        game.effectLayer.addChild(this.container);
     }
 
     public triggerFlash() {
@@ -48,12 +48,16 @@ export class Kernel {
     public update(delta: number, enemies: Enemy[]) {
         const integrity = GameStateManager.getInstance().integrity;
         
+        // MAINFRAME HEARTBEAT
+        const time = Date.now() * 0.003;
+        const pulse = 1.0 + Math.sin(time) * 0.08;
+        this.container.scale.set(pulse);
+
         const rotSpeed = 0.02 + (20 - integrity) * 0.005;
         this.ring1.rotation += rotSpeed * delta;
         this.ring2.rotation -= (rotSpeed * 0.5) * delta;
+        this.ring1.alpha = 0.4 + Math.sin(time * 1.5) * 0.2;
 
-        const pulse = 0.8 + Math.sin(Date.now() * 0.005) * 0.2;
-        this.core.scale.set(pulse);
         this.core.alpha = 0.6 + (integrity / 20) * 0.4;
 
         if (this.flashTimer > 0) {
@@ -84,7 +88,7 @@ export class Kernel {
             const dx = e.container.x - this.container.x;
             const dy = e.container.y - this.container.y;
             if (dx*dx + dy*dy < 15000) { // ~120px range
-                e.takeDamage(100);
+                e.takeDamage(100); 
             }
         });
 

@@ -1,27 +1,56 @@
-<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background Glow -->
-  <circle cx="64" cy="64" r="60" fill="url(#paint0_radial)" fill-opacity="0.3"/>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Deep Space Black Base with Rounded Corners -->
+  <rect width="256" height="256" rx="56" fill="#020508"/>
   
-  <!-- Outer Hexagon Border (Neon Blue) -->
-  <path d="M64 4L114.66 33.25V91.75L64 121L13.34 91.75V33.25L64 4Z" stroke="#00ffff" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Mainframe Grid -->
+  <rect width="256" height="256" rx="56" fill="url(#grid)"/>
+
+  <!-- Outer Tactical HUD Ring -->
+  <circle cx="128" cy="128" r="96" stroke="#00ffff" stroke-width="3" stroke-dasharray="4 8" stroke-opacity="0.5"/>
+  <circle cx="128" cy="128" r="88" stroke="#00ffff" stroke-width="2" stroke-opacity="0.3"/>
   
-  <!-- Inner Glow -->
-  <path d="M64 12L106 36.25V86.75L64 111L22 86.75V36.25L64 12Z" stroke="#00ffff" stroke-width="1.5" stroke-opacity="0.5" stroke-dasharray="8 4"/>
+  <!-- Crosshairs -->
+  <path d="M 128 16 L 128 40 M 128 216 L 128 240 M 16 128 L 40 128 M 216 128 L 240 128" stroke="#00ffff" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Central Hexagon: System Bounds (Neon Pink) -->
+  <polygon points="128,48 196,88 196,168 128,208 60,168 60,88" stroke="#ff00ff" stroke-width="6" stroke-opacity="0.9" fill="none" filter="url(#glowPink)"/>
   
-  <!-- The 'S' for Syntax (Neon Pink) -->
-  <path d="M44 48C44 42 48 40 54 40H74C80 40 84 44 84 50C84 56 80 58 74 58H54C48 58 44 60 44 66C44 72 48 76 54 76H74C80 76 84 74 84 68" stroke="#ff00ff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-  
+  <!-- Central Emblem: The Glider Arrow (Official Cyan Spec) -->
+  <g filter="url(#glowCyan)">
+    <!-- Base Fill -->
+    <path d="M 128 72 L 168 168 L 128 144 L 88 168 Z" fill="#00ffff"/>
+    <!-- Outer White Stroke -->
+    <path d="M 128 72 L 168 168 L 128 144 L 88 168 Z" fill="none" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Accent Nodes (Orange & Cyan) -->
+  <circle cx="128" cy="144" r="8" fill="#020508" stroke="#00ffff" stroke-width="3"/>
+  <circle cx="60" cy="88" r="6" fill="#ffaa00" filter="url(#glowOrange)"/>
+  <circle cx="196" cy="168" r="6" fill="#ffaa00" filter="url(#glowOrange)"/>
+  <circle cx="196" cy="88" r="6" fill="#ffaa00" filter="url(#glowOrange)"/>
+  <circle cx="60" cy="168" r="6" fill="#ffaa00" filter="url(#glowOrange)"/>
+
   <!-- CRT Scanlines Overlay -->
-  <rect x="0" y="0" width="128" height="128" fill="url(#scanlines)" fill-opacity="0.15"/>
+  <pattern id="scanlines" width="256" height="4" patternUnits="userSpaceOnUse">
+    <rect width="256" height="2" fill="#000000" fill-opacity="0.5"/>
+  </pattern>
+  <rect width="256" height="256" rx="56" fill="url(#scanlines)" style="mix-blend-mode: overlay;"/>
+
+  <!-- Glowing Edge Border -->
+  <rect x="4" y="4" width="248" height="248" rx="52" stroke="#00ffff" stroke-width="2" stroke-opacity="0.2"/>
 
   <defs>
-    <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(64 64) rotate(90) scale(60)">
-      <stop stop-color="#00ffff"/>
-      <stop offset="1" stop-color="#00ffff" stop-opacity="0"/>
-    </radialGradient>
-    
-    <pattern id="scanlines" width="128" height="4" patternUnits="userSpaceOnUse">
-      <rect width="128" height="2" fill="black"/>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#00ffff" stroke-width="1" stroke-opacity="0.15"/>
     </pattern>
+    <filter id="glowCyan" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#00ffff" flood-opacity="1"/>
+    </filter>
+    <filter id="glowPink" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#ff00ff" flood-opacity="0.8"/>
+    </filter>
+    <filter id="glowOrange" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ffaa00" flood-opacity="1"/>
+    </filter>
   </defs>
 </svg>

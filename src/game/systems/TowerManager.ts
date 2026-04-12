@@ -15,12 +15,14 @@ export class TowerManager {
     public onTowerUpgraded: (() => void) | null = null;
     public onPlacementCancelled: (() => void) | null = null;
     public showAllRanges: boolean = false;
+    public selectedTower: Tower | null = null;
     
     private previewGraphics: PIXI.Graphics;
     private previewTurret: PIXI.Container;
     private linkGraphics: PIXI.Graphics;
     private rangeGraphics: PIXI.Graphics;
     private game: GameContainer;
+    public lastPlacementTime: number = 0;
 
     constructor(game: GameContainer) {
         this.game = game;
@@ -41,9 +43,22 @@ export class TowerManager {
         
         // Setup visual for preview
         this.previewTurret.removeChildren();
+        
+        // Add range circle attached to the preview container
+        const config = TOWER_CONFIGS[type];
+        const gsm = GameStateManager.getInstance();
+        const boost = 1 + (gsm.upgrades.signalBoost * 0.02);
+        const range = config.range * TILE_SIZE * boost;
+        
+        const rangeCircle = new PIXI.Graphics();
+        rangeCircle.circle(0, 0, range);
+        rangeCircle.fill({ color: config.color, alpha: 0.15 });
+        rangeCircle.stroke({ width: 2, color: config.color, alpha: 0.5 });
+        this.previewTurret.addChild(rangeCircle);
+
         const dummy = new Tower(type, 0, 0);
         this.previewTurret.addChild(dummy.container);
-        this.previewTurret.alpha = 0.6;
+        this.previewTurret.alpha = 0.8;
         this.previewTurret.visible = true;
     }
 
@@ -77,13 +92,16 @@ export class TowerManager {
                 const gy = Math.floor(worldPos.y / TILE_SIZE);
                 const visibleRows = Math.floor(window.innerHeight / TILE_SIZE);
                 const isBoundary = gy <= 0 || gy >= visibleRows - 1;
+                const isWave0 = GameStateManager.getInstance().currentWave === 0;
 
-                if (this.game.mapManager.isBuildable(worldPos.x, worldPos.y) && !isBoundary) {
+                // Tutorial override: Allow placement anywhere buildable (or even path if needed for tutorial success)
+                if ((this.game.mapManager.isBuildable(worldPos.x, worldPos.y) && !isBoundary) || isWave0) {
                     if (!this.getTowerAt(worldPos.x, worldPos.y)) {
                         const cost = this.getAdjustedCost(this.selectedTurretType);
                         if (GameStateManager.getInstance().credits >= cost) {
                             const center = this.game.mapManager.getTileCenter(worldPos.x, worldPos.y);
                             this.placeTower(this.selectedTurretType, center.x, center.y);
+                            this.lastPlacementTime = Date.now();
                             GameStateManager.getInstance().addCredits(-cost);
                             AudioManager.getInstance().playPlacement();
                             
@@ -92,11 +110,16 @@ export class TowerManager {
                             this.isPlacing = false;
                             this.previewGraphics.clear();
                             this.previewTurret.visible = false;
-                            e.preventDefault();
                         }
                     }
                 }
             } else {
+                // TUTORIAL LOCK: Selection is ONLY permitted during Step 5 of the tutorial
+                if (this.game.isTutorialActive && this.game.tutorialStep !== 5) return;
+                
+                // Ignore selection if we just placed a tower (prevents tutorial skip)
+                if (Date.now() - this.lastPlacementTime < 400) return;
+
                 const tower = this.getTowerAt(worldPos.x, worldPos.y);
                 if (this.onTowerSelected) {
                     this.onTowerSelected(tower); // SIGNAL UI
@@ -119,7 +142,7 @@ export class TowerManager {
         if (GameStateManager.getInstance().credits >= upgradeCost) {
             if (tower.upgrade()) {
                 AudioManager.getInstance().playUiClick();
-                GameStateManager.getInstance().addCredits(-upgradeCost);
+                GameStateManager.getInstance().addCredits(-upgradeCost, 'kill' as any);
                 this.game.particleManager.spawnFloatingText(tower.container.x, tower.container.y - 20, "UPGRADED!");
                 this.recalculateLinks();
                 if (this.onTowerUpgraded) this.onTowerUpgraded();
@@ -129,6 +152,21 @@ export class TowerManager {
         return false;
     }
 
+    public getTowerCount(type: TowerType): number {
+        return this.towers.filter(t => t.type === type).length;
+    }
+
+    public getTotalFieldValuation(): number {
+        let total = 0;
+        this.towers.forEach(t => {
+            const baseCost = TOWER_CONFIGS[t.type].cost;
+            total += baseCost;
+            if (t.level >= 2) total += Math.floor(baseCost * 1.5);
+            if (t.level >= 3) total += Math.floor(baseCost * 2.0);
+        });
+        return total;
+    }
+
     public sellTower(tower: Tower) {
         const baseCost = TOWER_CONFIGS[tower.type].cost;
         let towerValue = baseCost;
@@ -136,11 +174,9 @@ export class TowerManager {
         if (tower.level >= 3) towerValue += Math.floor(baseCost * 2.0);
         
         const state = GameStateManager.getInstance();
-        if (state.gameMode === 'HARDCORE') towerValue = Math.floor(towerValue * 1.5);
-        if (state.integrity < 10 && state.gameMode !== 'SUDDEN_DEATH') towerValue = Math.floor(towerValue * 0.85);
-        
-        const refund = Math.floor(towerValue * 0.75);
-        state.addCredits(refund, 'refund');
+        const refundMult = 0.75 + (state.upgrades.scrapReclamation * 0.05);
+        const refund = Math.floor(towerValue * refundMult);
+        state.addCredits(refund, 'scrap' as any);
         AudioManager.getInstance().playUiClick();
         
         this.game.towerLayer.removeChild(tower.container);
@@ -170,29 +206,46 @@ export class TowerManager {
 
     private recalculateLinks() {
         this.linkGraphics.clear();
-        this.towers.forEach(t => t.linkBonus = 0);
+        const gsm = GameStateManager.getInstance();
+        const stepBonus = 0.1 + (gsm.upgrades.linkAmplifier * 0.05);
+        const maxBonus = 0.3 + (gsm.upgrades.linkAmplifier * 0.1);
+        
+        this.towers.forEach(t => {
+            t.linkBonus = 0;
+            (t as any).synergySlow = false;
+            (t as any).synergySpeedBoost = 1.0;
+        });
+
         for (let i = 0; i < this.towers.length; i++) {
             for (let j = i + 1; j < this.towers.length; j++) {
                 const t1 = this.towers[i];
                 const t2 = this.towers[j];
-                if (t1.type === t2.type) {
-                    const dx = t1.container.x - t2.container.x;
-                    const dy = t1.container.y - t2.container.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < TILE_SIZE * 2.5) {
-                        t1.linkBonus = Math.min(0.3, t1.linkBonus + 0.1);
-                        t2.linkBonus = Math.min(0.3, t2.linkBonus + 0.1);
-                        this.linkGraphics.moveTo(t1.container.x, t1.container.y);
-                        this.linkGraphics.lineTo(t2.container.x, t2.container.y);
-                        this.linkGraphics.stroke({ width: 1, color: t1.config.color, alpha: 0.4 });
+                const dx = t1.container.x - t2.container.x;
+                const dy = t1.container.y - t2.container.y;
+                const distSq = dx*dx + dy*dy;
+                const linkDist = TILE_SIZE * 2.0;
+
+                if (distSq <= linkDist * linkDist) {
+                    this.linkGraphics.moveTo(t1.container.x, t1.container.y);
+                    this.linkGraphics.lineTo(t2.container.x, t2.container.y);
+                    this.linkGraphics.stroke({ width: 1, color: 0x00ffff, alpha: 0.3 });
+
+                    if (t1.type === t2.type) {
+                        t1.linkBonus = Math.min(maxBonus, t1.linkBonus + stepBonus);
+                        t2.linkBonus = Math.min(maxBonus, t2.linkBonus + stepBonus);
+                    }
+                    if ((t1.type === TowerType.FROST_RAY && t2.type === TowerType.PULSE_MG) ||
+                        (t2.type === TowerType.FROST_RAY && t1.type === TowerType.PULSE_MG)) {
+                        const mg = t1.type === TowerType.PULSE_MG ? t1 : t2;
+                        (mg as any).synergySlow = true;
+                    }
+                    if (t1.type === TowerType.TESLA_LINK || t2.type === TowerType.TESLA_LINK) {
+                        const target = t1.type === TowerType.TESLA_LINK ? t2 : t1;
+                        (target as any).synergySpeedBoost = 1.3;
                     }
                 }
             }
         }
-    }
-
-    public getTowerCount(type: TowerType): number {
-        return this.towers.filter(t => t.type === type).length;
     }
 
     private updatePreview(wx: number, wy: number) {
@@ -212,10 +265,6 @@ export class TowerManager {
         const config = TOWER_CONFIGS[this.selectedTurretType];
         if (!config) return;
 
-        this.previewGraphics.circle(sx + TILE_SIZE/2, sy + TILE_SIZE/2, config.range * TILE_SIZE);
-        this.previewGraphics.fill({ color: config.color, alpha: 0.1 });
-        this.previewGraphics.stroke({ width: 1, color: config.color, alpha: 0.3 });
-
         this.previewGraphics.rect(sx, sy, TILE_SIZE, TILE_SIZE);
         if (isBuildable) {
             const pulse = 0.2 + Math.abs(Math.sin(Date.now() / 200)) * 0.3;
@@ -228,6 +277,10 @@ export class TowerManager {
     }
 
     public update(delta: number) {
+        if (this.game.isTutorialActive) {
+            this.rangeGraphics.clear();
+        }
+        
         const enemies = this.game.waveManager.enemies;
         this.towers.forEach(t => t.update(delta, enemies));
         this.renderRanges();
@@ -235,31 +288,47 @@ export class TowerManager {
 
     private renderRanges() {
         this.rangeGraphics.clear();
+        
+        // ABSOLUTE TUTORIAL KILL-SWITCH: No ranges permitted until tutorial is complete
+        if (this.game.isTutorialActive) return;
+
+        const gsm = GameStateManager.getInstance();
+        const boost = 1 + (gsm.upgrades.signalBoost * 0.02);
+
+        // 1. SELECTED TOWER: Always show radius for current selection
+        if (this.selectedTower && this.selectedTower.container.x > 0) {
+            const t = this.selectedTower;
+            const range = (t.config.range + (t.level === 3 ? 1 : 0)) * TILE_SIZE * boost;
+            this.rangeGraphics.circle(t.container.x, t.container.y, range);
+            this.rangeGraphics.stroke({ width: 2, color: t.config.color, alpha: 0.8 });
+            this.rangeGraphics.fill({ color: t.config.color, alpha: 0.05 });
+        }
+
         if (!this.showAllRanges) return;
 
         this.towers.forEach(t => {
-            const range = (t.config.range + (t.level === 3 ? 1 : 0)) * TILE_SIZE;
+            // Don't double-render if it's the selected tower
+            if (t === this.selectedTower) return;
+            
+            const range = (t.config.range + (t.level === 3 ? 1 : 0)) * TILE_SIZE * boost;
             this.rangeGraphics.circle(t.container.x, t.container.y, range);
             this.rangeGraphics.stroke({ width: 1, color: t.config.color, alpha: 0.2 });
         });
     }
 
     public clearTowers() {
-        let totalRefund = 0;
         this.towers.forEach(t => {
-            const baseCost = TOWER_CONFIGS[t.type].cost;
-            let towerValue = baseCost;
-            if (t.level >= 2) towerValue += Math.floor(baseCost * 1.5);
-            if (t.level >= 3) towerValue += Math.floor(baseCost * 2.0);
-            if (GameStateManager.getInstance().gameMode === 'HARDCORE') towerValue = Math.floor(towerValue * 1.5);
-            if (GameStateManager.getInstance().integrity < 10 && GameStateManager.getInstance().gameMode !== 'SUDDEN_DEATH') towerValue = Math.floor(towerValue * 0.85);
-            totalRefund += Math.floor(towerValue * 0.75);
             this.game.towerLayer.removeChild(t.container);
             t.container.destroy({ children: true });
         });
-        if (totalRefund > 0) GameStateManager.getInstance().addCredits(totalRefund, 'refund');
         this.towers = [];
+        this.selectedTower = null;
         this.linkGraphics.clear();
+        this.clearRanges();
+    }
+
+    public clearRanges() {
+        this.rangeGraphics.clear();
     }
 
     private getTowerAt(x: number, y: number): Tower | null {

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AudioManager } from '../game/systems/AudioManager';
 
 interface MainMenuProps {
-  isDistorted: boolean;
   hasSave: boolean;
   onStartGame: (mode: any) => void;
   onSetScreen: (screen: any) => void;
@@ -12,7 +12,6 @@ interface MainMenuProps {
   uptime: number;
   entropy: number;
   menuGlitchActive: boolean;
-  mousePos: { x: number, y: number };
 }
 
 interface VitalChar {
@@ -22,11 +21,11 @@ interface VitalChar {
 }
 
 interface VitalLine {
+  id: number;
   chars: VitalChar[];
 }
 
 const MainMenu: React.FC<MainMenuProps> = ({
-  isDistorted,
   hasSave,
   onStartGame,
   onSetScreen,
@@ -38,17 +37,12 @@ const MainMenu: React.FC<MainMenuProps> = ({
   entropy,
   menuGlitchActive
 }) => {
-  const [vitals, setVitals] = React.useState<VitalLine[]>([
-    { chars: "KERNEL_STABLE".split('').map(c => ({ char: c, originalChar: c, glitched: false })) },
-    { chars: "AUTH_ACTIVE".split('').map(c => ({ char: c, originalChar: c, glitched: false })) },
-    { chars: "LINK_SECURE".split('').map(c => ({ char: c, originalChar: c, glitched: false })) }
-  ]);
+  const [vitals, setVitals] = useState<VitalLine[]>([]);
+  const idRef = useRef(0);
+  const lastTextRef = useRef("");
 
-  const lastTextRef = React.useRef("");
-  const symbols = ["@", "#", "$", "%", "&", "*", "†", "‡", "§", "¶", "∑", "Ω", "≈", "∆", "√"];
-
-  // 1. DATA TICKER (No repeat logic)
-  React.useEffect(() => {
+  // 1. PERSISTENT TERMINAL FEED (Scrolling)
+  useEffect(() => {
     const lines = [
       "MEM_PTR: 0x8F2", "SYSCALL_OK", "DATA_SYNC: 100%", "PACKET_FLUX: 0.02", 
       "GUEST_LINK: EST", "TRACERT_HOP: 4", "BUFFER_SYNC: OK", "SOCKET_INIT",
@@ -57,51 +51,22 @@ const MainMenu: React.FC<MainMenuProps> = ({
     ];
 
     const itv = setInterval(() => {
-      setVitals(prev => {
-        let nextText = lines[Math.floor(Math.random() * lines.length)];
-        // PREVENT BACK-TO-BACK REPEATS
-        while (nextText === lastTextRef.current) {
-          nextText = lines[Math.floor(Math.random() * lines.length)];
-        }
-        lastTextRef.current = nextText;
+      let nextText = lines[Math.floor(Math.random() * lines.length)];
+      while (nextText === lastTextRef.current) {
+        nextText = lines[Math.floor(Math.random() * lines.length)];
+      }
+      lastTextRef.current = nextText;
 
-        const nextChars = nextText.split('').map(c => ({ char: c, originalChar: c, glitched: false }));
-        return [{ chars: nextChars }, ...prev].slice(0, 3);
-      });
-    }, 3000);
+      const newLine = {
+        id: idRef.current++,
+        chars: nextText.split('').map(c => ({ char: c, originalChar: c, glitched: false }))
+      };
+
+      setVitals(prev => [newLine, ...prev].slice(0, 8));
+    }, 2000);
 
     return () => clearInterval(itv);
   }, []);
-
-  // 2. SYNCED GLITCH EFFECT (Reacts to Title Flicker)
-  React.useEffect(() => {
-    if (menuGlitchActive) {
-      // Trigger temporary corruption on all visible lines
-      setVitals(current => {
-        return current.map(line => ({
-          chars: line.chars.map(vc => {
-            const willGlitch = Math.random() < 0.2;
-            return {
-              ...vc,
-              char: willGlitch ? symbols[Math.floor(Math.random() * symbols.length)] : vc.char,
-              glitched: willGlitch
-            };
-          })
-        }));
-      });
-    } else {
-      // Restore all characters to original state
-      setVitals(current => {
-        return current.map(line => ({
-          chars: line.chars.map(vc => ({
-            ...vc,
-            char: vc.originalChar,
-            glitched: false
-          }))
-        }));
-      });
-    }
-  }, [menuGlitchActive]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -111,12 +76,15 @@ const MainMenu: React.FC<MainMenuProps> = ({
   };
 
   const menuItems = [
-    { label: 'INITIALIZE STANDARD', id: 'INIT', log: 'EXE: LOAD_GAME_ENV.BIN', action: () => onStartGame('STANDARD'), primary: true, status: 'READY', size: '14.2kb', ext: 'EXE' },
-    { label: 'ADVANCED PROTOCOLS', id: 'MODES', log: 'ACCESS: DATA_MODES.CFG', action: () => onSetScreen('MODES'), status: 'SECURE', size: '08.5kb', ext: 'CFG' },
-    { label: 'RESTORE SESSION', id: 'RESTORE', log: 'BYPASS: SECURE_SAVE.DAT', action: onLoadGame, disabled: !hasSave, status: hasSave ? 'LINKED' : 'VOID', size: '32.1kb', ext: 'DAT' },
-    { label: 'SYSTEM INFO', id: 'INFO', log: 'EXTRACT: SYSTEM_LOGS.DB', action: () => onOpenArchive('LORE'), status: 'ARCHIVED', size: '128kb', ext: 'DB' },
-    { label: 'SYSTEM SETTINGS', id: 'SETTINGS', log: 'OVERWRITE: USER_PREFS.CFG', action: () => onSetScreen('SETTINGS'), status: 'ACTIVE', size: '04.2kb', ext: 'CFG' }
+    { label: 'INFILTRATE CORE', id: 'INIT', log: 'EXE: LOAD_GAME_ENV.BIN', action: () => onStartGame('STANDARD'), primary: true, status: 'READY', size: '14.2kb', ext: 'EXE', context: ["TARGET: CORE_ROOT", "STATUS: VULNERABLE"] },
+    { label: 'ADVANCED PROTOCOLS', id: 'MODES', log: 'ACCESS: DATA_MODES.CFG', action: () => onSetScreen('MODES'), status: 'SECURE', size: '08.5kb', ext: 'CFG', context: ["PERMISSIONS: ARCHITECT", "GATES: UNLOCKED"] },
+    { label: 'RESTORE SESSION', id: 'RESTORE', log: 'BYPASS: SECURE_SAVE.DAT', action: onLoadGame, disabled: !hasSave, status: hasSave ? 'LINKED' : 'VOID', size: '32.1kb', ext: 'DAT', context: ["SOURCE: SECURE_NVRAM", "INTEGRITY: VERIFIED"] },
+    { label: 'SYSTEM ARCHIVE', id: 'INFO', log: 'EXTRACT: SYSTEM_LOGS.DB', action: () => onOpenArchive('LORE'), status: 'ARCHIVED', size: '128kb', ext: 'DB', context: ["CATEGORIES: TACTICAL", "ACCESS: GRANTED"] },
+    { label: 'SYSTEM DIAGNOSTICS', id: 'SETTINGS', log: 'OVERWRITE: USER_PREFS.CFG', action: () => onSetScreen('SETTINGS'), status: 'ACTIVE', size: '04.2kb', ext: 'CFG', context: ["INTERFACE: STABLE", "SFX_ENGINE: LOADED"] }
   ];
+
+  // Map hover to specific context
+  const currentHoverItem = menuItems.find(item => item.log === hoveredNode);
 
   return (
     <div className="main-menu ui-layer">
@@ -126,25 +94,28 @@ const MainMenu: React.FC<MainMenuProps> = ({
       <div className="menu-breadcrumbs">ARCHITECT@SYNTAX_CORE:~/ROOT$</div>
 
       <div className="menu-diagnostics">
-        <div className="diag-line">UPTIME: {formatTime(uptime)}</div>
-        <div className="diag-line">ENTROPY: {entropy.toFixed(3)}%</div>
-        <div className="diag-line">PACKET_LOSS: 0.00%</div>
+        {currentHoverItem ? (
+            <>
+                <div className="diag-line" style={{ color: 'var(--neon-cyan)', fontWeight: 900 }}>{currentHoverItem.label}</div>
+                {currentHoverItem.context.map((line, i) => (
+                    <div key={i} className="diag-line" style={{ fontSize: '0.5rem' }}>{line}</div>
+                ))}
+            </>
+        ) : (
+            <>
+                <div className="diag-line">UPTIME: {formatTime(uptime)}</div>
+                <div className="diag-line">ENTROPY: {entropy.toFixed(3)}%</div>
+                <div className="diag-line">PACKET_LOSS: 0.00%</div>
+            </>
+        )}
       </div>
 
-      <div className="menu-content-centered terminal-shift-down">
-        {isDistorted ? (
-          <h1 className="system-error-msg" style={{ fontSize: '3rem', margin: '0 0 20px 0' }}>SYSTEM ERROR</h1>
-        ) : (
-          <h1 
-            className={`menu-title-static ${menuGlitchActive ? 'glitch-active' : ''}`}
-            data-glitch-text="CORE INTEGRITY COMPROMISED"
-          >
-            {menuGlitchActive ? 'SYNT@X D3FENSE' : 'SYNTAX DEFENSE'}
-          </h1>
-        )}
+      <div className="menu-content-centered">
+        <h1 className={`menu-title-static ${menuGlitchActive ? 'glitch-active' : ''}`}>
+          {menuGlitchActive ? 'SYNT@X D3FENSE' : 'SYNTAX DEFENSE'}
+        </h1>
 
         <div className={`terminal-menu-window ${menuGlitchActive ? 'glitch-active' : ''}`}>
-          <div className="terminal-window-scanline"></div>
           <div className="terminal-window-header">
             <span className="window-title">SYSTEM_EXECUTABLES_V2.7</span>
             <div className="window-dots">
@@ -160,11 +131,12 @@ const MainMenu: React.FC<MainMenuProps> = ({
                 className={`terminal-list-item item-reveal-${idx} ${item.primary ? 'primary-item' : ''}`}
                 disabled={item.disabled}
                 onClick={item.action}
-                onMouseEnter={() => setHoveredNode(item.log)}
+                onMouseEnter={() => {
+                    setHoveredNode(item.log);
+                    AudioManager.getInstance().playDataChatter();
+                }}
                 onMouseLeave={() => setHoveredNode(null)}
               >
-                <span className="selection-indicator"></span>
-                <span className="selection-pointer">{">>"}</span>
                 <span className="item-meta">{item.size}</span>
                 <div className="item-label-group">
                   <span className="item-label">
@@ -186,8 +158,8 @@ const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       <div className="menu-vitals-ticker">
-        {vitals.map((v, i) => (
-          <div key={i} className="vital-line">
+        {vitals.map((v) => (
+          <div key={v.id} className="vital-line">
             &gt; {v.chars.map((vc, ci) => (
               <span key={ci} className={vc.glitched ? 'vital-symbol-red' : ''}>
                 {vc.char}
