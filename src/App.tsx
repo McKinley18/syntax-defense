@@ -12,6 +12,7 @@ import { AudioManager } from './systems/AudioManager';
 
 function App() {
   const [state, setState] = useState<AppState>(StateManager.instance.currentState);
+  const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
 
   useEffect(() => {
     const handleInteraction = () => {
@@ -23,26 +24,40 @@ function App() {
     const unsubscribe = StateManager.instance.subscribe((newState) => {
       setState(newState);
     });
-    return () => unsubscribe();
+
+    const checkOrientation = () => {
+        const portrait = window.innerHeight > window.innerWidth;
+        setIsPortrait(portrait);
+
+        // AUTO-BOOT WITH SKIP LOGIC
+        if (!portrait && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
+            if (StateManager.instance.skipCinematics) {
+                console.log("[App] Bypassing Cinematics per Operator Preference.");
+                StateManager.instance.transitionTo(AppState.MAIN_MENU);
+            } else {
+                StateManager.instance.transitionTo(AppState.POWER_ON);
+            }
+        }
+    };
+
+    window.addEventListener('resize', checkOrientation);
+    checkOrientation(); 
+
+    return () => {
+        unsubscribe();
+        window.removeEventListener('resize', checkOrientation);
+    };
   }, []);
 
   return (
     <div className="game-wrapper" style={{ 
-        backgroundColor: '#000', 
-        width: '100vw', 
-        height: '100vh', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        margin: 0,
-        padding: 0,
-        overflow: 'hidden'
+        backgroundColor: '#000', width: '100vw', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center',
+        margin: 0, padding: 0, overflow: 'hidden'
     }}>
-      {/* ORIENTATION ENFORCEMENT */}
-      <div className="orientation-barrier">
+      <div className="orientation-barrier" style={{ display: isPortrait ? 'flex' : 'none' }}>
           <div className="rotation-icon-container">
               <svg viewBox="0 0 64 64" width="80" height="80">
-                  <rect x="20" y="8" width="24" height="48" rx="4" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" className="device-rect" />
+                  <rect x="20" y="8" width="24" height="48" rx="4" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" />
                   <circle cx="32" cy="50" r="2" fill="var(--neon-cyan)" />
                   <path d="M48 20 A 24 24 0 0 1 48 44" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" strokeLinecap="round" />
                   <path d="M44 40 L48 44 L52 40" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" strokeLinecap="round" />
@@ -56,10 +71,6 @@ function App() {
           </div>
       </div>
 
-      <div style={{ position: 'absolute', top: 10, left: 10, color: '#333', fontSize: '10px', zIndex: 9999, pointerEvents: 'none' }}>
-        SYSTEM_STATE: {AppState[state]}
-      </div>
-
       <div className="game-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
         <div className="crt-vignette"></div>
         {state === AppState.POWER_ON && <PowerOn />}
@@ -70,14 +81,10 @@ function App() {
         {state === AppState.ARCHIVE && <SystemArchive />}
         {state === AppState.DIAGNOSTICS && <SystemDiagnostics />}
         {(state === AppState.GAME_PREP || state === AppState.GAME_WAVE || state === AppState.WAVE_COMPLETED || state === AppState.WAVE_PREP) && <GameCanvas />}
-        
         {state === AppState.GAME_OVER && (
             <div style={{ color: 'red', textAlign: 'center', fontFamily: 'monospace', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' }}>
                 <h1>SYSTEM_TERMINATED</h1>
-                <button 
-                    onClick={() => StateManager.instance.transitionTo(AppState.MAIN_MENU)}
-                    style={{ backgroundColor: 'transparent', color: 'red', border: '1px solid red', padding: '10px 20px', cursor: 'pointer' }}
-                >
+                <button onClick={() => StateManager.instance.transitionTo(AppState.MAIN_MENU)} style={{ backgroundColor: 'transparent', color: 'red', border: '1px solid red', padding: '10px 20px', cursor: 'pointer' }}>
                     [ REBOOT ]
                 </button>
             </div>

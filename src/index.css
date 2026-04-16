@@ -9,7 +9,8 @@
 }
 
 html {
-  font-size: min(1.6vw, 3.2vh);
+  /* STABLE LANDSCAPE ANCHOR: Width is constant on mobile rotation vs dynamic vh */
+  font-size: clamp(10px, 1.6vw, 18px);
 }
 
 html, body, #root, .game-container, .game-wrapper {
@@ -153,5 +154,6 @@ body { font-family: var(--terminal-font); -webkit-font-smoothing: antialiased; t
 }
 
 .crt-vignette { position: absolute; inset: 0; background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.4) 100%); pointer-events: none; z-index: 2002; }
-::-webkit-scrollbar { height: 4px; background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 10px; }
+/* GLOBAL SCROLLBAR PURGE */
+::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
+* { -ms-overflow-style: none; scrollbar-width: none; }

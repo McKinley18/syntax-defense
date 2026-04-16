@@ -1,6 +1,7 @@
 import { TowerType } from '../entities/Tower';
 
 export enum AppState {
+    ORIENTATION_LOCK,
     POWER_ON,
     SYSTEM_CHECK,
     TERMINAL_BOOT,
@@ -19,8 +20,7 @@ export enum AppState {
 export class StateManager {
     private static _instance: StateManager | null = null;
     
-    // LAW: System must always initialize at POWER_ON for cinematic integrity
-    public currentState: AppState = AppState.POWER_ON;
+    public currentState: AppState = AppState.ORIENTATION_LOCK;
     public previousState: AppState | null = null;
     public credits: number = 500;
     public currentWave: number = 0;
@@ -28,9 +28,17 @@ export class StateManager {
     public isPaused: boolean = false;
     public isRedMode: boolean = false;
     
+    // PREFERENCES
+    public skipCinematics: boolean = false;
     public selectedTurretType: TowerType | null = null;
 
     private listeners: ((state: AppState) => void)[] = [];
+
+    private constructor() {
+        // Load preferences on init
+        const skip = localStorage.getItem('syndef_skip_cinematics');
+        this.skipCinematics = skip === 'true';
+    }
 
     public static get instance(): StateManager {
         if (!this._instance) this._instance = new StateManager();
@@ -49,6 +57,11 @@ export class StateManager {
         return () => {
             this.listeners = this.listeners.filter(l => l !== listener);
         };
+    }
+
+    public setSkipCinematics(val: boolean) {
+        this.skipCinematics = val;
+        localStorage.setItem('syndef_skip_cinematics', val ? 'true' : 'false');
     }
 
     public addCredits(amount: number) {
@@ -70,13 +83,11 @@ export class StateManager {
             timestamp: Date.now()
         };
         localStorage.setItem('syndef_save_data', JSON.stringify(saveData));
-        console.log("[StateManager] Progress Archived.");
     }
 
     public loadGame(): boolean {
         const raw = localStorage.getItem('syndef_save_data');
         if (!raw) return false;
-
         try {
             const data = JSON.parse(raw);
             this.credits = data.credits;
@@ -85,7 +96,6 @@ export class StateManager {
             this.transitionTo(AppState.WAVE_COMPLETED);
             return true;
         } catch (e) {
-            console.error("[StateManager] LOAD_FAILURE", e);
             return false;
         }
     }

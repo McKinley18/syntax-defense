@@ -2,8 +2,8 @@
 
 ## 1. SOURCE OF TRUTH: LAYOUT
 - Always refer to `SYNDEF_LAYOUT_BLUEPRINT.md` for environmental, grid, and HUD parameters.
-- Do not alter the scaling law `min(1.7vw, 3.4vh)` or the banner height `8.2rem` without explicit authorization.
-- The **Kernel Hub** must remain centered at `visibleRight - 80px`.
+- Do not alter the scaling law `clamp(10px, 1.6vw, 18px)` or the banner height `8.2rem` without explicit authorization.
+- The **Kernel Hub** must remain centered at `LogicalRight - 20px`.
 
 ## 2. HUD ARCHITECTURE
 - Maintain the **Island Architecture**: 3 modules centered in the banner with 5% side gutters.

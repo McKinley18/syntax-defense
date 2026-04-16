@@ -2,6 +2,132 @@ import React, { useState } from 'react';
 import { StateManager, AppState } from '../core/StateManager';
 import { MenuBackground } from './MenuBackground';
 import { AudioManager } from '../systems/AudioManager';
+import { VISUAL_REGISTRY, EnemyType } from '../VisualRegistry';
+import { TOWER_CONFIGS, TowerType } from '../entities/Tower';
+
+// --- SUB-COMPONENTS (Defined BEFORE SystemArchive to avoid ReferenceErrors) ---
+
+const LogicItem: React.FC<{ id: string, title: string, body: string, meta: string }> = ({ id, title, body, meta }) => (
+    <div style={{ borderLeft: '3px solid #00ffff33', paddingLeft: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+            <span style={{ color: '#00ffff', opacity: 0.3, fontWeight: 900, fontSize: '1.2rem' }}>{id}</span>
+            <span style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '1.1rem' }}>{title}</span>
+            <span style={{ marginLeft: 'auto', fontSize: '0.6rem', background: '#00ffff11', padding: '2px 6px', color: '#00ffff66' }}>{meta}</span>
+        </div>
+        <div style={{ fontSize: '0.9rem', color: '#888', lineHeight: '1.4' }}>{body}</div>
+    </div>
+);
+
+const TechItem: React.FC<{ label: string, value: string }> = ({ label, value }) => (
+    <div style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid #111', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+        <div style={{ color: '#00ffff66', fontSize: '0.6rem', letterSpacing: '1px' }}>{label}</div>
+        <div style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 'bold' }}>{value}</div>
+    </div>
+);
+
+const TopologySchematic = () => (
+    <svg viewBox="0 0 200 200" width="300" height="300" fill="none" stroke="#00ffff" strokeWidth="0.5">
+        <rect x="10" y="40" width="180" height="120" strokeDasharray="2 2" />
+        <rect x="10" y="40" width="180" height="20" fill="#00ffff05" />
+        <rect x="10" y="130" width="180" height="30" fill="#00ffff05" />
+    </svg>
+);
+
+const ThreatCard: React.FC<{ name: string, type: string, speed: string, armor: string, reward: number, visual: React.ReactNode, desc: string }> = ({ name, type, speed, armor, reward, visual, desc }) => (
+    <div style={{ border: '1px solid #00ffff22', padding: '1.2rem', background: 'rgba(0, 255, 255, 0.03)', borderRadius: '4px' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ width: '3.5rem', height: '3.5rem', border: '1px solid #00ffff33', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{visual}</div>
+            <div>
+                <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '1rem' }}>{name}</div>
+                <div style={{ fontSize: '0.65rem', color: '#ff3300', letterSpacing: '1px' }}>CLASS: {type}</div>
+            </div>
+        </div>
+        <div style={{ fontSize: '0.75rem', color: '#aaa', marginBottom: '1rem', height: '2.5rem', overflow: 'hidden' }}>{desc}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#666', borderTop: '1px solid #222', paddingTop: '0.5rem' }}>
+            <span>VEL: {speed}</span>
+            <span>STR: {armor}</span>
+            <span style={{ color: '#00ff66' }}>CR: {reward}</span>
+        </div>
+    </div>
+);
+
+const ProtocolItem: React.FC<{ name: string, cost: number, visual: React.ReactNode, desc: string, range: string }> = ({ name, cost, visual, desc, range }) => (
+    <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid #222', background: 'rgba(0, 255, 255, 0.02)' }}>
+        <div style={{ width: '6rem', height: '6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #00ffff33', background: '#000', borderRadius: '4px' }}>{visual}</div>
+        <div style={{ flex: 1 }}>
+            <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '1.2rem' }}>[{name}]</div>
+            <div style={{ fontSize: '0.9rem', color: '#aaa' }}>{desc}</div>
+        </div>
+        <div style={{ textAlign: 'right', width: '10rem' }}>
+            <div style={{ color: '#00ff66', fontSize: '1.1rem', fontWeight: 'bold' }}>{cost} CR</div>
+            <div style={{ color: '#00ffff', fontSize: '0.8rem', opacity: 0.6 }}>RANGE: {range}</div>
+        </div>
+    </div>
+);
+
+// --- VIRAL THREAT VISUALS ---
+const GliderVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#fff" strokeWidth="2"><path d="M20 5 L35 32 L20 25 L5 32 Z" fill="#00ffff" /></svg>;
+const StriderVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#fff" strokeWidth="2" strokeOpacity="0.5"><circle cx="20" cy="20" r="12" fill="#00ff66" /></svg>;
+const BehemothVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#fff" strokeWidth="2"><rect x="8" y="8" width="24" height="24" fill="#ff3300" /></svg>;
+const FractalVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#fff" strokeWidth="2" strokeOpacity="0.5"><circle cx="20" cy="20" r="12" fill="#ff00ff" /></svg>;
+const PhantomVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#fff" strokeWidth="2" strokeOpacity="0.5"><circle cx="20" cy="20" r="12" fill="#888888" /></svg>;
+const WormVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#fff" strokeWidth="2" strokeOpacity="0.5"><circle cx="20" cy="20" r="12" fill="#ffff00" /></svg>;
+
+// --- TOWER VISUALS ---
+const TankOctagonBase = (props: { color?: string }) => (
+    <g>
+        <path d="M12 4 L28 4 L36 12 V28 L28 36 L12 36 L4 28 V12 Z" fill="#0a0a0a" stroke="#333" strokeWidth="2" />
+        <rect x="15" y="15" width="10" height="10" stroke="#1a1a1a" strokeWidth="1" />
+    </g>
+);
+
+const PulseNodeTank = () => (
+    <svg viewBox="0 0 40 40">
+        <TankOctagonBase />
+        <rect x="12" y="2" width="4" height="18" fill="#1a1a1a" stroke="#00ffff" strokeWidth="1.5" />
+        <rect x="24" y="2" width="4" height="18" fill="#1a1a1a" stroke="#00ffff" strokeWidth="1.5" />
+        <rect x="11" y="2" width="6" height="3" fill="#00ffff" />
+        <rect x="23" y="2" width="6" height="3" fill="#00ffff" />
+        <circle cx="20" cy="20" r="6" fill="#111" stroke="#444" strokeWidth="2" />
+    </svg>
+);
+
+const SonicImpulseTank = () => (
+    <svg viewBox="0 0 40 40">
+        <TankOctagonBase />
+        <path d="M5 15 A 18 18 0 0 1 35 15" stroke="#00ff66" strokeWidth="4" fill="none" />
+        <circle cx="20" cy="15" r="4" fill="#00ff66" />
+        <path d="M10 20 L30 20 L20 10 Z" fill="#222" />
+    </svg>
+);
+
+const StasisFieldTank = () => (
+    <svg viewBox="0 0 40 40">
+        <TankOctagonBase />
+        <circle cx="20" cy="20" r="12" stroke="#00ffff" strokeWidth="2" strokeOpacity="0.6" fill="none" />
+        <circle cx="20" cy="20" r="8" stroke="#00ffff" strokeWidth="3" fill="none" />
+        <circle cx="20" cy="20" r="5" fill="#fff" stroke="#00ffff" strokeWidth="1" />
+    </svg>
+);
+
+const PrismBeamTank = () => (
+    <svg viewBox="0 0 40 40">
+        <TankOctagonBase />
+        <path d="M20 2 L32 20 L8 20 Z" fill="#1a1a1a" stroke="#ff3300" strokeWidth="2" />
+        <circle cx="20" cy="12" r="6" fill="#ff3300" fillOpacity="0.5" stroke="#fff" strokeWidth="1" />
+    </svg>
+);
+
+const RailCannonTank = () => (
+    <svg viewBox="0 0 40 40">
+        <TankOctagonBase />
+        <rect x="15" y="2" width="2" height="28" fill="#050505" stroke="#ff00ff" strokeWidth="2" />
+        <rect x="23" y="2" width="2" height="28" fill="#050505" stroke="#ff00ff" strokeWidth="2" />
+        <rect x="12" y="16" width="16" height="8" fill="#111" stroke="#444" strokeWidth="1" />
+    </svg>
+);
+
+// --- MAIN COMPONENT ---
 
 interface ArchiveFile {
     name: string;
@@ -23,35 +149,22 @@ export const SystemArchive: React.FC = () => {
         {
             name: "OPERATIONAL_BRIEF",
             files: [
-                { name: "HUD_LAYOUT", ext: "MAN", size: "18.4kb", content: (
-                    <div className="archive-content-anim">
-                        <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// INTERFACE_ANNOTATION</div>
-                        <div style={{ position: 'relative', width: '100%', height: '20rem', background: 'rgba(0,255,255,0.02)', border: '1px solid #00ffff22', marginBottom: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <DashboardDiagram />
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                            <ManualSection title="[01] RESOURCE_FEED" body="Located TOP-LEFT. Displays your current DATA_CR (Credits). Necessary for authorizing protocol deployments." />
-                            <ManualSection title="[02] INTEGRITY_BAR" body="Located TOP-RIGHT. Monitors KERNEL stability. If this gauge reaches zero, the session is terminated." />
-                            <ManualSection title="[03] PROTOCOL_DECK" body="Located BOTTOM-CENTER. Your active arsenal. Click an icon to select a turret for deployment." />
-                            <ManualSection title="[04] TACTICAL_GRID" body="The central workspace. All viral signatures travel along the designated high-intensity path." />
-                        </div>
-                    </div>
-                )},
                 { name: "DEPLOYMENT_MANUAL", ext: "MAN", size: "12.1kb", content: (
                     <div className="archive-content-anim">
                         <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// DEPLOYMENT_WORKFLOW</div>
-                        <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem' }}>
-                            <div style={{ flex: 1, padding: '1.5rem', border: '1px solid #00ffff33', background: 'rgba(0,255,255,0.05)' }}>
-                                <div style={{ color: '#00ffff', fontWeight: 'bold', marginBottom: '1rem' }}>STEP_01: SELECTION</div>
-                                <p style={{ fontSize: '0.9rem', color: '#888' }}>Identify the threat class. Select a matching protocol from the BOTTOM_DECK. Ensure you have sufficient DATA_CR.</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                            <div style={{ padding: '1.2rem', border: '1px solid #00ffff33', background: 'rgba(0,255,255,0.05)' }}>
+                                <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '0.5rem' }}>01: SELECTION</div>
+                                <p style={{ fontSize: '0.75rem', color: '#888', margin: 0 }}>Select a matching protocol from the HUD deck. Requires sufficient DATA_CR.</p>
                             </div>
-                            <div style={{ flex: 1, padding: '1.5rem', border: '1px solid #00ffff33', background: 'rgba(0,255,255,0.05)' }}>
-                                <div style={{ color: '#00ffff', fontWeight: 'bold', marginBottom: '1rem' }}>STEP_02: ANCHORING</div>
-                                <p style={{ fontSize: '0.9rem', color: '#888' }}>Hover over an open network node. A cyan preview will appear. Click to lock the protocol to that coordinate.</p>
+                            <div style={{ padding: '1.2rem', border: '1px solid #00ffff33', background: 'rgba(0,255,255,0.05)' }}>
+                                <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '0.5rem' }}>02: ANCHORING</div>
+                                <p style={{ fontSize: '0.75rem', color: '#888', margin: 0 }}>Click an empty node to lock the protocol. Turrets cannot overlap or block paths.</p>
                             </div>
-                        </div>
-                        <div style={{ position: 'relative', width: '100%', height: '15rem', background: '#000', border: '1px solid #00ffff33', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <DeploymentVisual />
+                            <div style={{ padding: '1.2rem', border: '1px solid #00ffff33', background: 'rgba(0,255,255,0.05)' }}>
+                                <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '0.5rem' }}>03: OPTIMIZE</div>
+                                <p style={{ fontSize: '0.75rem', color: '#888', margin: 0 }}>Click a deployed turret to authorize TIER_UP upgrades. Enhances Damage and Range.</p>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -64,10 +177,60 @@ export const SystemArchive: React.FC = () => {
                     <div className="archive-content-anim">
                         <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// THREAT_VECTORS_RECOGNIZED</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                            <ThreatCard name="GLIDER" type="INFECTOR" speed="2.2" armor="20" visual={<GliderVisual />} desc="High-velocity data packets. [Anim: SIGNAL_FLUTTER]" />
-                            <ThreatCard name="STRIDER" type="INFILTRATOR" speed="1.4" armor="45" visual={<StriderVisual />} desc="Tripod scanning units. [Anim: LOCOMOTION_PULSE]" />
-                            <ThreatCard name="BEHEMOTH" type="TANK" speed="0.6" armor="250" visual={<BehemothVisual />} desc="Massive armored clusters. [Anim: CORE_THROB]" />
-                            <ThreatCard name="FRACTAL" type="SPLITTER" speed="1.1" armor="80" visual={<FractalVisual />} desc="Complex entities that segment. [Anim: GEOMETRIC_ROTATION]" />
+                            <ThreatCard 
+                                name={VISUAL_REGISTRY[EnemyType.GLIDER].name} 
+                                type="INFECTOR" 
+                                speed={VISUAL_REGISTRY[EnemyType.GLIDER].speed.toString()} 
+                                armor={VISUAL_REGISTRY[EnemyType.GLIDER].hp.toString()} 
+                                reward={VISUAL_REGISTRY[EnemyType.GLIDER].reward}
+                                visual={<GliderVisual />} 
+                                desc="High-velocity data packets. Standard viral ingress unit." 
+                            />
+                            <ThreatCard 
+                                name={VISUAL_REGISTRY[EnemyType.STRIDER].name} 
+                                type="INFILTRATOR" 
+                                speed={VISUAL_REGISTRY[EnemyType.STRIDER].speed.toString()} 
+                                armor={VISUAL_REGISTRY[EnemyType.STRIDER].hp.toString()} 
+                                reward={VISUAL_REGISTRY[EnemyType.STRIDER].reward}
+                                visual={<StriderVisual />} 
+                                desc="Tripod scanning units with moderate integrity shielding." 
+                            />
+                            <ThreatCard 
+                                name={VISUAL_REGISTRY[EnemyType.BEHEMOTH].name} 
+                                type="TANK" 
+                                speed={VISUAL_REGISTRY[EnemyType.BEHEMOTH].speed.toString()} 
+                                armor={VISUAL_REGISTRY[EnemyType.BEHEMOTH].hp.toString()} 
+                                reward={VISUAL_REGISTRY[EnemyType.BEHEMOTH].reward}
+                                visual={<BehemothVisual />} 
+                                desc="Massive armored clusters. Extremely resilient to pulse fire." 
+                            />
+                            <ThreatCard 
+                                name={VISUAL_REGISTRY[EnemyType.FRACTAL].name} 
+                                type="GEOMETRIC" 
+                                speed={VISUAL_REGISTRY[EnemyType.FRACTAL].speed.toString()} 
+                                armor={VISUAL_REGISTRY[EnemyType.FRACTAL].hp.toString()} 
+                                reward={VISUAL_REGISTRY[EnemyType.FRACTAL].reward}
+                                visual={<FractalVisual />} 
+                                desc="Complex entities that oscillate between network layers." 
+                            />
+                            <ThreatCard 
+                                name={VISUAL_REGISTRY[EnemyType.PHANTOM].name} 
+                                type="SPECTER" 
+                                speed={VISUAL_REGISTRY[EnemyType.PHANTOM].speed.toString()} 
+                                armor={VISUAL_REGISTRY[EnemyType.PHANTOM].hp.toString()} 
+                                reward={VISUAL_REGISTRY[EnemyType.PHANTOM].reward}
+                                visual={<PhantomVisual />} 
+                                desc="Hyper-speed entities with low integrity but high evasion." 
+                            />
+                            <ThreatCard 
+                                name={VISUAL_REGISTRY[EnemyType.WORM].name} 
+                                type="CORRUPTOR" 
+                                speed={VISUAL_REGISTRY[EnemyType.WORM].speed.toString()} 
+                                armor={VISUAL_REGISTRY[EnemyType.WORM].hp.toString()} 
+                                reward={VISUAL_REGISTRY[EnemyType.WORM].reward}
+                                visual={<WormVisual />} 
+                                desc="Serpentine data strings designed for rapid kernel breach." 
+                            />
                         </div>
                     </div>
                 )},
@@ -75,9 +238,41 @@ export const SystemArchive: React.FC = () => {
                     <div className="archive-content-anim">
                         <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// DEPLOYMENT_ASSETS_ORDINANCE</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <ProtocolItem name="PULSE_NODE" visual={<PulseNodeTank />} desc="Tank-style rapid-fire pulse unit." range="4.0 Tiles" />
-                            <ProtocolItem name="STASIS_FIELD" visual={<StasisFieldTank />} desc="Temporal interference dish." range="3.0 Tiles" />
-                            <ProtocolItem name="RAIL_CANNON" visual={<RailCannonTank />} desc="Magnetic kinetic accelerator." range="8.0 Tiles" />
+                            <ProtocolItem 
+                                name={TOWER_CONFIGS[TowerType.PULSE_NODE].name} 
+                                cost={TOWER_CONFIGS[TowerType.PULSE_NODE].cost}
+                                visual={<PulseNodeTank />} 
+                                desc="Standard rapid-fire pulse unit. High reliability, moderate damage." 
+                                range={`${TOWER_CONFIGS[TowerType.PULSE_NODE].range.toFixed(1)} Tiles`} 
+                            />
+                            <ProtocolItem 
+                                name={TOWER_CONFIGS[TowerType.SONIC_IMPULSE].name} 
+                                cost={TOWER_CONFIGS[TowerType.SONIC_IMPULSE].cost}
+                                visual={<SonicImpulseTank />} 
+                                desc="Emits sonic waves that ripple through enemy clusters." 
+                                range={`${TOWER_CONFIGS[TowerType.SONIC_IMPULSE].range.toFixed(1)} Tiles`} 
+                            />
+                            <ProtocolItem 
+                                name={TOWER_CONFIGS[TowerType.STASIS_FIELD].name} 
+                                cost={TOWER_CONFIGS[TowerType.STASIS_FIELD].cost}
+                                visual={<StasisFieldTank />} 
+                                desc="Temporal interference dish. Slows data movement within its radius." 
+                                range={`${TOWER_CONFIGS[TowerType.STASIS_FIELD].range.toFixed(1)} Tiles`} 
+                            />
+                            <ProtocolItem 
+                                name={TOWER_CONFIGS[TowerType.PRISM_BEAM].name} 
+                                cost={TOWER_CONFIGS[TowerType.PRISM_BEAM].cost}
+                                visual={<PrismBeamTank />} 
+                                desc="Continuous thermal laser. Bypasses standard viral shielding." 
+                                range={`${TOWER_CONFIGS[TowerType.PRISM_BEAM].range.toFixed(1)} Tiles`} 
+                            />
+                            <ProtocolItem 
+                                name={TOWER_CONFIGS[TowerType.RAIL_CANNON].name} 
+                                cost={TOWER_CONFIGS[TowerType.RAIL_CANNON].cost}
+                                visual={<RailCannonTank />} 
+                                desc="Magnetic kinetic accelerator. Devastating long-range capability." 
+                                range={`${TOWER_CONFIGS[TowerType.RAIL_CANNON].range.toFixed(1)} Tiles`} 
+                            />
                         </div>
                     </div>
                 )}
@@ -94,8 +289,31 @@ export const SystemArchive: React.FC = () => {
                         <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// CORE_LOGIC_HANDBOOK</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             <LogicItem id="01" title="KERNEL_INTEGRITY" body="Health of your local partition. Reaching 0 results in termination." meta="STATUS: CRITICAL" />
-                            <LogicItem id="02" title="DATA_MINING" body="Neutralized viruses release credits for deployments." meta="REWARD: SCALE_VAR" />
+                            <LogicItem id="02" title="DATA_MINING" body="Neutralized viruses release credits for deployments. Bonuses awarded for wave completion." meta="REWARD: SCALE_VAR" />
                             <LogicItem id="03" title="TOPOLOGY_REGS" body="Anchor protocols to nodes. Avoid viral path and buffer zones." meta="GRID: 40PX_TILE" />
+                        </div>
+                    </div>
+                )}
+            ]
+        },
+        {
+            name: "SYSTEM_METADATA",
+            files: [
+                { name: "CREDITS", ext: "LOG", size: "1.2kb", content: (
+                    <div className="archive-content-anim">
+                        <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// ARCHITECT_ATTRIBUTION</div>
+                        <div style={{ padding: '2rem', border: '1px solid #00ffff33', background: 'rgba(0,255,255,0.05)', marginBottom: '2rem' }}>
+                            <div style={{ color: '#00ffff', fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '1rem' }}>PRIMARY ARCHITECT: C. McKinley</div>
+                            <p style={{ color: '#888', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                                Responsible for the core simulation logic, quantum grid architecture, and the visual restoration of the Syntax Defense Kernel.
+                            </p>
+                        </div>
+                        <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// CORE_TECH_STACK</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <TechItem label="ENGINE" value="PIXI.js v8.17.1" />
+                            <TechItem label="INTERFACE" value="React v19.0.0" />
+                            <TechItem label="RUNTIME" value="Vite v8.0.1" />
+                            <TechItem label="LANGUAGE" value="TypeScript v5.9.3" />
                         </div>
                     </div>
                 )}
@@ -177,102 +395,3 @@ export const SystemArchive: React.FC = () => {
         </div>
     );
 };
-
-const ManualSection: React.FC<{ title: string, body: string }> = ({ title, body }) => (
-    <div style={{ border: '1px solid #00ffff11', padding: '1rem', background: 'rgba(0,255,255,0.02)' }}>
-        <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{title}</div>
-        <div style={{ fontSize: '0.8rem', color: '#888', lineHeight: '1.4' }}>{body}</div>
-    </div>
-);
-
-const DashboardDiagram = () => (
-    <svg viewBox="0 0 400 200" width="100%" height="100%" fill="none" stroke="#00ffff" strokeWidth="1">
-        {/* HUD Frame */}
-        <rect x="10" y="10" width="380" height="180" strokeOpacity="0.2" rx="4" />
-        {/* Top Left: Credits */}
-        <rect x="20" y="20" width="80" height="30" strokeWidth="2" />
-        <text x="25" y="40" fill="#00ffff" fontSize="10" fontWeight="bold">CREDITS [01]</text>
-        <path d="M100 35 L120 35" strokeDasharray="2 2" strokeOpacity="0.5" />
-        {/* Top Right: Integrity */}
-        <rect x="300" y="20" width="80" height="30" strokeWidth="2" />
-        <text x="305" y="40" fill="#00ffff" fontSize="10" fontWeight="bold">INTEGRITY [02]</text>
-        <path d="M300 35 L280 35" strokeDasharray="2 2" strokeOpacity="0.5" />
-        {/* Bottom Center: Deck */}
-        <rect x="120" y="150" width="160" height="35" strokeWidth="2" />
-        <text x="155" y="172" fill="#00ffff" fontSize="10" fontWeight="bold">DECK [03]</text>
-        {/* Grid Preview */}
-        <rect x="120" y="60" width="160" height="80" strokeOpacity="0.1" strokeDasharray="2 2" />
-        <text x="165" y="105" fill="#00ffff" fontSize="8" opacity="0.3">GRID_WORKSPACE [04]</text>
-    </svg>
-);
-
-const DeploymentVisual = () => (
-    <svg viewBox="0 0 400 150" width="100%" height="100%" fill="none" stroke="#00ffff" strokeWidth="1">
-        <rect x="150" y="50" width="40" height="40" strokeDasharray="4 4" />
-        <path d="M170 130 V100" stroke="#00ffff" strokeWidth="2" />
-        <circle cx="170" cy="130" r="5" fill="#00ffff" />
-        <text x="185" y="135" fill="#00ffff" fontSize="10">USER_INTERACTION</text>
-        {/* Preview Ghost */}
-        <rect x="155" y="55" width="30" height="30" fill="#00ffff11" stroke="#00ffff33" />
-        <text x="200" y="75" fill="#00ffff" fontSize="8" opacity="0.5">PREVIEW_SIGNAL</text>
-    </svg>
-);
-
-const LogicItem: React.FC<{ id: string, title: string, body: string, meta: string }> = ({ id, title, body, meta }) => (
-    <div style={{ borderLeft: '3px solid #00ffff33', paddingLeft: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-            <span style={{ color: '#00ffff', opacity: 0.3, fontWeight: 900, fontSize: '1.2rem' }}>{id}</span>
-            <span style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '1.1rem' }}>{title}</span>
-            <span style={{ marginLeft: 'auto', fontSize: '0.6rem', background: '#00ffff11', padding: '2px 6px', color: '#00ffff66' }}>{meta}</span>
-        </div>
-        <div style={{ fontSize: '0.9rem', color: '#888', lineHeight: '1.4' }}>{body}</div>
-    </div>
-);
-
-const TopologySchematic = () => (
-    <svg viewBox="0 0 200 200" width="300" height="300" fill="none" stroke="#00ffff" strokeWidth="0.5">
-        <rect x="10" y="40" width="180" height="120" strokeDasharray="2 2" />
-        <rect x="10" y="40" width="180" height="20" fill="#00ffff05" />
-        <rect x="10" y="130" width="180" height="30" fill="#00ffff05" />
-    </svg>
-);
-
-const ThreatCard: React.FC<{ name: string, type: string, speed: string, armor: string, visual: React.ReactNode, desc: string }> = ({ name, type, speed, armor, visual, desc }) => (
-    <div style={{ border: '1px solid #00ffff22', padding: '1.2rem', background: 'rgba(0, 255, 255, 0.03)', borderRadius: '4px' }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ width: '3.5rem', height: '3.5rem', border: '1px solid #00ffff33', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{visual}</div>
-            <div>
-                <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '1rem' }}>{name}</div>
-                <div style={{ fontSize: '0.65rem', color: '#ff3300', letterSpacing: '1px' }}>CLASS: {type}</div>
-            </div>
-        </div>
-        <div style={{ fontSize: '0.75rem', color: '#aaa', marginBottom: '1rem', height: '2.5rem', overflow: 'hidden' }}>{desc}</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#666', borderTop: '1px solid #222', paddingTop: '0.5rem' }}>
-            <span>VEL: {speed}</span>
-            <span>STR: {armor}</span>
-        </div>
-    </div>
-);
-
-const ProtocolItem: React.FC<{ name: string, visual: React.ReactNode, desc: string, range: string }> = ({ name, visual, desc, range }) => (
-    <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid #222', background: 'rgba(0, 255, 255, 0.02)' }}>
-        <div style={{ width: '6rem', height: '6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #00ffff33', background: '#000', borderRadius: '4px' }}>{visual}</div>
-        <div style={{ flex: 1 }}>
-            <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '1.2rem' }}>[{name}]</div>
-            <div style={{ fontSize: '0.9rem', color: '#aaa' }}>{desc}</div>
-        </div>
-        <div style={{ color: '#00ff66', fontSize: '0.9rem', textAlign: 'right', width: '10rem' }}>{range}</div>
-    </div>
-);
-
-// --- VIRAL THREAT VISUALS ---
-const GliderVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#00ffff" strokeWidth="2"><path d="M20 5 L35 25 L20 20 L5 25 Z" fill="#00ffff33" /></svg>;
-const StriderVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#00ffff" strokeWidth="2"><circle cx="20" cy="15" r="8" fill="#00ffff11" /><path d="M12 25 L8 35 M28 25 L32 35 M20 23 V35" /></svg>;
-const BehemothVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#00ffff" strokeWidth="3"><rect x="8" y="8" width="24" height="24" rx="2" fill="#00ffff22" /></svg>;
-const FractalVisual = () => <svg viewBox="0 0 40 40" width="100%" height="100%" fill="none" stroke="#00ffff" strokeWidth="2"><path d="M20 5 L35 15 V25 L20 35 L5 25 V15 Z" /></svg>;
-
-// --- TOWER VISUALS ---
-const TankOctagonBase = () => <path d="M12 4 L28 4 L36 12 V28 L28 36 L12 36 L4 28 V12 Z" fill="#0a0a0a" stroke="#222" strokeWidth="2" />;
-const PulseNodeTank = () => <svg viewBox="0 0 40 40"><TankOctagonBase /><circle cx="20" cy="20" r="10" fill="#151515" stroke="#444" /><rect x="14" y="2" width="4" height="18" fill="#222" stroke="#00ffff" /><rect x="22" y="2" width="4" height="18" fill="#222" stroke="#00ffff" /></svg>;
-const StasisFieldTank = () => <svg viewBox="0 0 40 40"><TankOctagonBase /><circle cx="20" cy="20" r="10" fill="#151515" stroke="#444" /><path d="M10 15 A 12 12 0 0 1 30 15" stroke="#ffaa00" strokeWidth="4" /></svg>;
-const RailCannonTank = () => <svg viewBox="0 0 40 40"><TankOctagonBase /><circle cx="20" cy="20" r="10" fill="#151515" stroke="#444" /><rect x="12" y="2" width="4" height="28" fill="#111" stroke="#ff00ff" /><rect x="24" y="2" width="4" height="28" fill="#111" stroke="#ff00ff" /></svg>;

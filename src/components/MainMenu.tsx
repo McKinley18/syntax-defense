@@ -19,7 +19,6 @@ export const MainMenu: React.FC = () => {
     const [isTitleGlitched, setIsTitleGlitched] = useState(false);
     const [isThreatCritical, setIsThreatCritical] = useState(false);
     
-    // --- MANIFESTATION STATE ---
     const [showTitle, setShowTitle] = useState(false);
     const [showPlatform, setShowPlatform] = useState(false);
     const [showHud, setShowHud] = useState(false);
@@ -28,10 +27,11 @@ export const MainMenu: React.FC = () => {
     const lastTextRef = useRef("");
 
     useEffect(() => {
-        // --- CINEMATIC SEQUENCE ---
+        AudioManager.getInstance().startMusic();
+        
         const t1 = setTimeout(() => setShowTitle(true), 100);
-        const t2 = setTimeout(() => setShowPlatform(true), 1300); // Title ignites first
-        const t3 = setTimeout(() => setShowHud(true), 2000); // HUD follows
+        const t2 = setTimeout(() => setShowPlatform(true), 1300);
+        const t3 = setTimeout(() => setShowHud(true), 2000);
 
         const upTimer = setInterval(() => setUptime(prev => prev + 1), 1000);
         const entTimer = setInterval(() => setEntropy(0.14 + Math.random() * 0.05), 2000);
@@ -45,25 +45,33 @@ export const MainMenu: React.FC = () => {
             let nextText = lines[Math.floor(Math.random() * lines.length)];
             
             if (isAnomaly) {
+                // UNIFIED 125ms (1/8 SECOND) BURST
+                const duration = 125; 
                 const anomalyID = idRef.current++;
                 const breachText = `BREACH_DETECTED: 0x${Math.random().toString(16).substr(2, 3).toUpperCase()}`;
+                
                 setIsThreatCritical(true);
-                setTimeout(() => setIsThreatCritical(false), 1000);
-                const newLine = { id: anomalyID, text: breachText, isRed: true };
-                setVitals(prev => [newLine, ...prev].slice(0, 5));
-                setTimeout(() => {
-                    setVitals(prev => prev.filter(v => v.id !== anomalyID));
-                }, 2000);
                 setIsTitleGlitched(true);
+                
+                // Title Glitch Transformation
                 const original = "SYNTAX DEFENSE";
                 const chars = original.split("");
                 const index = Math.floor(Math.random() * chars.length);
                 if (chars[index] !== " ") chars[index] = symbols[Math.floor(Math.random() * symbols.length)];
                 setTitleText(chars.join(""));
+
+                // Vitals Glitch Line
+                const newLine = { id: anomalyID, text: breachText, isRed: true };
+                setVitals(prev => [newLine, ...prev].slice(0, 5));
+
+                // SYNCED RESTORE
                 setTimeout(() => {
+                    setIsThreatCritical(false);
                     setIsTitleGlitched(false);
                     setTitleText("SYNTAX DEFENSE");
-                }, 500);
+                    setVitals(prev => prev.filter(v => v.id !== anomalyID));
+                }, duration);
+
             } else {
                 const newLine = { id: idRef.current++, text: nextText, isRed: false };
                 setVitals(prev => [newLine, ...prev].slice(0, 5));
@@ -115,10 +123,10 @@ export const MainMenu: React.FC = () => {
             
             {showHud && (
                 <div style={{ animation: 'fade-in 0.5s forwards' }}>
-                    <div style={{ position: 'absolute', top: '2.5rem', left: '2.5rem', zIndex: 10, color: '#00ffff', fontSize: '0.85rem', fontWeight: 'bold', opacity: 0.4 }}>
+                    <div style={{ position: 'absolute', top: '1.2rem', left: '2.0rem', zIndex: 10, color: '#00ffff', fontSize: '0.85rem', fontWeight: 'bold', opacity: 0.4 }}>
                         ARCHITECT @ SYNTAX_CORE:~/ROOT$
                     </div>
-                    <div style={{ position: 'absolute', top: '2.5rem', right: '2.5rem', zIndex: 10, textAlign: 'right', opacity: 0.4, fontSize: '0.75rem' }}>
+                    <div style={{ position: 'absolute', top: '1.2rem', right: '2.0rem', zIndex: 10, textAlign: 'right', opacity: 0.4, fontSize: '0.75rem' }}>
                         <div>UPTIME: {formatTime(uptime)}</div>
                         <div>ENTROPY: {entropy.toFixed(3)}%</div>
                         <div>THREAT_LEVEL: <span style={{ color: isThreatCritical ? '#ff3300' : '#00ff66', opacity: 1, fontWeight: isThreatCritical ? 900 : 400 }}>{isThreatCritical ? 'CRITICAL' : 'NOMINAL'}</span></div>
@@ -126,12 +134,15 @@ export const MainMenu: React.FC = () => {
                 </div>
             )}
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, perspective: '60rem', paddingTop: 'min(18vh, 10rem)' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, perspective: '60rem', paddingTop: 'min(14vh, 9rem)' }}>
                 {showTitle && (
                     <h1 className={`menu-title-3d ${isTitleGlitched ? 'anomaly-glitch' : 'flicker-text'}`} style={{ 
                         fontSize: '4.5rem', 
                         letterSpacing: '0.8rem', 
-                        margin: '0 0 1.5rem 0', 
+                        marginTop: 0,
+                        marginRight: 0,
+                        marginBottom: '0.4rem',
+                        marginLeft: 0,
                         color: isTitleGlitched ? '#ff3300' : '#00ffff', 
                         transform: 'rotateX(20deg)', 
                         textShadow: isTitleGlitched ? '0 0 1rem #ff3300' : '0 0 0.8rem #00ffff, 0 0 1.5rem rgba(0, 255, 255, 0.6)',
@@ -143,16 +154,16 @@ export const MainMenu: React.FC = () => {
                 )}
 
                 {showPlatform && (
-                    <div className="terminal-platform" style={{ width: '34rem', border: '0.06rem solid #00ffff33', backgroundColor: 'rgba(0,0,0,0.9)', borderRadius: '0.3rem', animation: 'fade-in-up 0.6s forwards' }}>
-                        <div style={{ padding: '0.6rem 1.2rem', backgroundColor: '#151515', borderBottom: '0.06rem solid #00ffff33', fontSize: '0.65rem', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="terminal-platform" style={{ width: '30rem', border: '0.06rem solid #00ffff33', backgroundColor: 'rgba(0,0,0,0.9)', borderRadius: '0.3rem', animation: 'fade-in-up 0.6s forwards' }}>
+                        <div style={{ paddingTop: '0.5rem', paddingRight: '1rem', paddingBottom: '0.5rem', paddingLeft: '1rem', backgroundColor: '#151515', borderBottom: '0.06rem solid #00ffff33', fontSize: '0.6rem', opacity: 0.6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span>SYSTEM_EXECUTABLES_V2.7</span>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
                                 <div className="dot dot-red"></div>
                                 <div className="dot dot-yellow"></div>
                                 <div className="dot dot-green"></div>
                             </div>
                         </div>
-                        <div style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        <div style={{ paddingTop: '1rem', paddingRight: '1rem', paddingBottom: '1rem', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
                             {menuItems.map((item) => (
                                 <button
                                     key={item.id}
@@ -163,17 +174,21 @@ export const MainMenu: React.FC = () => {
                                     style={{
                                         display: 'flex', width: '100%', backgroundColor: 'transparent', border: 'none', 
                                         color: (item as any).disabled ? '#222' : (item as any).highlight ? '#00ffff' : '#00ffffcc',
-                                        padding: '0.5rem 0', cursor: (item as any).disabled ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: '1.1rem', textAlign: 'left', alignItems: 'center',
-                                        transition: 'all 0.2s', borderLeft: hoveredNode === item.log ? '0.25rem solid #00ffff' : '0.25rem solid transparent', paddingLeft: hoveredNode === item.log ? '1.2rem' : '0'
+                                        paddingTop: '0.4rem',
+                                        paddingRight: 0,
+                                        paddingBottom: '0.4rem',
+                                        paddingLeft: hoveredNode === item.log ? '1.0rem' : 0, 
+                                        cursor: (item as any).disabled ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: '1.0rem', textAlign: 'left', alignItems: 'center',
+                                        transition: 'all 0.2s', borderLeft: hoveredNode === item.log ? '0.25rem solid #00ffff' : '0.25rem solid transparent'
                                     }}
                                 >
-                                    <span style={{ width: '5rem', fontSize: '0.75rem', opacity: (item as any).disabled ? 0.2 : 0.6 }}>{item.size}</span>
-                                    <span style={{ flex: 1, fontWeight: (item as any).highlight ? 900 : 400 }}>{item.label}<span style={{ opacity: 0.4, marginLeft: '0.3rem', fontSize: '0.8rem' }}>.{item.ext}</span></span>
-                                    <span style={{ color: (item as any).disabled ? '#222' : '#00ff66', fontSize: '0.85rem' }}>[{item.status}]</span>
+                                    <span style={{ width: '4.5rem', fontSize: '0.7rem', opacity: (item as any).disabled ? 0.2 : 0.6 }}>{item.size}</span>
+                                    <span style={{ flex: 1, fontWeight: (item as any).highlight ? 900 : 400 }}>{item.label}<span style={{ opacity: 0.4, marginLeft: '0.3rem', fontSize: '0.75rem' }}>.{item.ext}</span></span>
+                                    <span style={{ color: (item as any).disabled ? '#222' : '#00ff66', fontSize: '0.8rem' }}>[{item.status}]</span>
                                 </button>
                             ))}
-                            <div style={{ marginTop: '1.5rem', paddingTop: '1.2rem', borderTop: '0.06rem solid #222', fontSize: '1rem', display: 'flex', alignItems: 'center' }}>
-                                <span style={{ color: '#00ff66', marginRight: '1rem' }}>&gt;</span>
+                            <div style={{ marginTop: '1.2rem', paddingTop: '1.0rem', borderTop: '0.06rem solid #222', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                                <span style={{ color: '#00ff66', marginRight: '0.8rem' }}>&gt;</span>
                                 <span style={{ color: '#00ffff' }}>{hoveredNode || 'AWAITING_INPUT...'}</span>
                                 <span className="terminal-cursor"></span>
                             </div>
@@ -193,14 +208,14 @@ export const MainMenu: React.FC = () => {
             )}
 
             <style>{`
-                .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; }
+                .dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; }
                 .dot-red { background-color: #ff5f56; box-shadow: 0 0 0.4rem rgba(255,95,86,0.5); }
                 .dot-yellow { background-color: #ffbd2e; box-shadow: 0 0 0.4rem rgba(255,189,46,0.5); }
                 .dot-green { background-color: #27c93f; box-shadow: 0 0 0.4rem rgba(39,201,63,0.5); }
 
                 .terminal-cursor {
-                    width: 0.6rem; height: 1.3rem; background-color: #00ffff;
-                    display: inline-block; margin-left: 0.6rem;
+                    width: 0.5rem; height: 1.1rem; background-color: #00ffff;
+                    display: inline-block; margin-left: 0.5rem;
                     animation: cursor-blink 1s step-end infinite;
                 }
                 @keyframes cursor-blink { 50% { opacity: 0; } }

@@ -16,16 +16,16 @@ export const StudioSplash: React.FC = () => {
         // Phase 3: Fade out Monolith & Logo (After 2s hold)
         const t3 = setTimeout(() => setPhase(3), 4500);
 
-        // Phase 4: PRESENTS approach starts (0.5s after fade out starts)
-        const t4 = setTimeout(() => setPhase(4), 5000);
+        // Phase 4: PRESENTS approach starts (Immediately after fade out starts)
+        const t4 = setTimeout(() => setPhase(4), 4600);
 
-        // Phase 5: Transition to Main Menu (2s hold after approach ends at 7.5s)
+        // Phase 5: Transition to Main Menu (2s hold after approach ends at 7.1s)
         const t5 = setTimeout(() => {
             if (!hasTransitioned.current) {
                 hasTransitioned.current = true;
                 StateManager.instance.transitionTo(AppState.MAIN_MENU);
             }
-        }, 10500);
+        }, 9000);
 
         return () => {
             [t1, t2, t3, t4, t5].forEach(clearTimeout);

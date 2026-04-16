@@ -37,6 +37,9 @@ export class AudioManager {
         if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
             await this.ctx.resume();
         }
+    }
+
+    public startMusic() {
         MusicManager.getInstance().start();
     }
 

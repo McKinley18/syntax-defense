@@ -4,188 +4,101 @@ import { MenuBackground } from './MenuBackground';
 import { MusicManager } from '../systems/MusicManager';
 
 export const SystemDiagnostics: React.FC = () => {
-    const [settings, setSettings] = useState({
-        crt: localStorage.getItem('syntax_crt_enabled') !== 'false',
-        glitch: localStorage.getItem('syntax_glitch_enabled') !== 'false',
-        autoPause: localStorage.getItem('syntax_auto_pause') === 'true',
-        showRanges: localStorage.getItem('syntax_show_ranges') === 'true',
-        skipIntro: localStorage.getItem('syntax_skip_intro') === 'true'
-    });
+    const [skipCine, setSkipCine] = useState(StateManager.instance.skipCinematics);
+    const [volume, setVolume] = useState(50);
+    const [performanceMode, setPerformanceMode] = useState(true);
 
-    const [enabledTracks, setEnabledTracks] = useState(MusicManager.getInstance().enabledTracks);
-
-    const toggle = (key: keyof typeof settings) => {
-        const newVal = !settings[key];
-        setSettings(prev => ({ ...prev, [key]: newVal }));
-        localStorage.setItem(`syntax_${key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)}`, String(newVal));
-    };
-
-    const toggleTrack = (id: number) => {
-        MusicManager.getInstance().toggleTrack(id);
-        setEnabledTracks([...MusicManager.getInstance().enabledTracks]);
-    };
-
-    const previewTrack = (id: number) => {
-        MusicManager.getInstance().previewTrack(id);
+    const toggleSkip = () => {
+        const newVal = !skipCine;
+        setSkipCine(newVal);
+        StateManager.instance.setSkipCinematics(newVal);
     };
 
     return (
-        <div className="system-diagnostics" style={{ 
-            backgroundColor: '#0a0a0a', 
-            color: '#00ffff', 
-            height: '100%', 
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            fontFamily: "'Courier New', Courier, monospace",
-            position: 'relative',
-            overflow: 'hidden'
+        <div className="system-diagnostics" style={{
+            position: 'absolute', inset: 0, zIndex: 100, backgroundColor: '#0a0a0a',
+            fontFamily: "'Courier New', Courier, monospace", color: '#00ffff',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden'
         }}>
             <MenuBackground />
             
-            <div style={{ 
-                width: 'min(95%, 65rem)', 
-                border: '1px solid #00ffff33', 
-                backgroundColor: 'rgba(0,0,0,0.95)',
-                display: 'flex',
-                flexDirection: 'column',
-                zIndex: 1,
-                borderRadius: '4px',
-                maxHeight: '90vh'
+            <div className="diagnostics-window" style={{
+                flex: 1, margin: '2rem', border: '1px solid #00ffff33',
+                backgroundColor: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', zIndex: 1
             }}>
                 {/* HEADER */}
                 <div style={{ padding: '1rem 2rem', borderBottom: '1px solid #00ffff33', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#111' }}>
                     <span style={{ fontWeight: 'bold', letterSpacing: '2px' }}>SYSTEM_DIAGNOSTICS_v2.7</span>
-                    <button 
-                        onClick={() => {
-                            if (StateManager.instance.previousState && (StateManager.instance.previousState === AppState.GAME_PREP || StateManager.instance.previousState === AppState.GAME_WAVE || StateManager.instance.previousState === AppState.WAVE_COMPLETED || StateManager.instance.previousState === AppState.WAVE_PREP)) {
-                                StateManager.instance.transitionTo(StateManager.instance.previousState);
-                            } else {
-                                StateManager.instance.transitionTo(AppState.MAIN_MENU);
-                            }
-                        }}
-                        style={{ background: 'transparent', border: '1px solid #00ffff', color: '#00ffff', padding: '0.5rem 1rem', cursor: 'pointer', fontFamily: 'inherit', marginRight: '10px' }}
-                    >
-                        [ BACK ]
-                    </button>
-                    <button 
-                        onClick={() => StateManager.instance.transitionTo(AppState.MAIN_MENU)}
-                        style={{ background: 'transparent', border: '1px solid #ff3300', color: '#ff3300', padding: '0.5rem 1rem', cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                        [ EXIT_TO_ROOT ]
-                    </button>
-                </div>
-
-                <div style={{ padding: '2rem 3rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', overflowY: 'auto' }}>
-                    {/* INTERFACE MODULE */}
-                    <div>
-                        <div style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '1rem', borderBottom: '1px solid #333', paddingBottom: '0.5rem' }}>// INTERFACE_PROTOCOLS</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                            <SettingsToggle label="CRT_SCANLINES" active={settings.crt} onToggle={() => toggle('crt')} />
-                            <SettingsToggle label="GLITCH_EFFECTS" active={settings.glitch} onToggle={() => toggle('glitch')} />
-                            <SettingsToggle label="AUTO_PAUSE" active={settings.autoPause} onToggle={() => toggle('autoPause')} />
-                            <SettingsToggle label="SHOW_RANGES" active={settings.showRanges} onToggle={() => toggle('showRanges')} />
-                            <SettingsToggle label="SKIP_CINEMATICS" active={settings.skipIntro} onToggle={() => toggle('skipIntro')} />
-                        </div>
-                    </div>
-
-                    {/* AUDIO MODULE */}
-                    <div>
-                        <div style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '1rem', borderBottom: '1px solid #333', paddingBottom: '0.5rem' }}>// AUDIO_SYNTHESIS_TRACKS</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                            <TrackToggle label="01_CORE_LOGIC" active={enabledTracks[0]} onToggle={() => toggleTrack(0)} onPreview={() => previewTrack(0)} />
-                            <TrackToggle label="02_NEON_BREACH" active={enabledTracks[1]} onToggle={() => toggleTrack(1)} onPreview={() => previewTrack(1)} />
-                            <TrackToggle label="03_LIQUID_DATA" active={enabledTracks[2]} onToggle={() => toggleTrack(2)} onPreview={() => previewTrack(2)} />
-                            <TrackToggle label="04_VOID_SIGNAL" active={enabledTracks[3]} onToggle={() => toggleTrack(3)} onPreview={() => previewTrack(3)} />
-                            <TrackToggle label="05_GRID_RUNNER" active={enabledTracks[4]} onToggle={() => toggleTrack(4)} onPreview={() => previewTrack(4)} />
-                        </div>
-                    </div>
-
-                    {/* SYSTEM DIAGNOSTICS */}
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <div style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '1rem', borderBottom: '1px solid #333', paddingBottom: '0.5rem' }}>// SYSTEM_HARDWARE_RESET</div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
                         <button 
-                            style={{ 
-                                width: '100%', padding: '1.2rem', 
-                                background: 'transparent', border: '1px solid #ff3300', 
-                                color: '#ff3300', cursor: 'pointer', 
-                                fontFamily: 'inherit', fontWeight: 'bold' 
-                            }}
                             onClick={() => {
-                                if(window.confirm("CRITICAL: THIS WILL PURGE ALL LOCAL DATA. PROCEED?")) {
-                                    localStorage.clear();
-                                    window.location.reload();
+                                if (StateManager.instance.previousState && (StateManager.instance.previousState === AppState.GAME_PREP || StateManager.instance.previousState === AppState.GAME_WAVE || StateManager.instance.previousState === AppState.WAVE_COMPLETED || StateManager.instance.previousState === AppState.WAVE_PREP || StateManager.instance.previousState === AppState.MAIN_MENU)) {
+                                    StateManager.instance.transitionTo(StateManager.instance.previousState);
+                                } else {
+                                    StateManager.instance.transitionTo(AppState.MAIN_MENU);
                                 }
                             }}
+                            style={{ background: 'transparent', border: '1px solid #00ffff', color: '#00ffff', padding: '0.5rem 1rem', cursor: 'pointer', fontFamily: 'inherit' }}
                         >
-                            [ PERFORM_TOTAL_PURGE ]
+                            [ BACK ]
                         </button>
                     </div>
+                </div>
+
+                {/* CONTENT */}
+                <div style={{ padding: '2rem', display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
+                    
+                    {/* BOOT PREFERENCES */}
+                    <div style={{ width: '22rem', border: '1px solid #222', padding: '1.5rem', background: '#0d0d0d' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>BOOT_PREFERENCES</div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <span>SKIP_CINEMATICS</span>
+                            <button 
+                                onClick={toggleSkip}
+                                style={{ background: skipCine ? '#00ffff' : '#222', color: skipCine ? '#000' : '#444', border: 'none', padding: '0.4rem 1rem', cursor: 'pointer', fontWeight: 900 }}
+                            >
+                                {skipCine ? 'ACTIVE' : 'OFF'}
+                            </button>
+                        </div>
+                        <div style={{ fontSize: '0.6rem', color: '#444', lineHeight: 1.4 }}>
+                            ENABLE TO BYPASS KERNEL POWER-ON AND SYSTEM CHECK SEQUENCES. DIRECT HANDOVER TO MAIN_MENU.
+                        </div>
+                    </div>
+
+                    {/* AUDIO ARCHITECTURE */}
+                    <div style={{ width: '22rem', border: '1px solid #222', padding: '1.5rem', background: '#0d0d0d' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>AUDIO_ARCHITECTURE</div>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <span>MASTER_VOLUME</span>
+                                <span>{volume}%</span>
+                            </div>
+                            <input type="range" min="0" max="100" value={volume} onChange={(e) => setVolume(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#00ffff' }} />
+                        </div>
+                    </div>
+
+                    {/* HARDWARE ACCELERATION */}
+                    <div style={{ width: '22rem', border: '1px solid #222', padding: '1.5rem', background: '#0d0d0d' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>HARDWARE_OPTIMIZATION</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>PERFORMANCE_MODE</span>
+                            <button 
+                                onClick={() => setPerformanceMode(!performanceMode)}
+                                style={{ background: performanceMode ? '#00ffff' : '#222', color: performanceMode ? '#000' : '#444', border: 'none', padding: '0.4rem 1rem', cursor: 'pointer', fontWeight: 900 }}
+                            >
+                                {performanceMode ? 'ENABLED' : 'STABLE'}
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* FOOTER */}
+                <div style={{ marginTop: 'auto', padding: '1rem 2rem', fontSize: '0.7rem', color: '#333', borderTop: '1px solid #222' }}>
+                    SYNDEF_KERNEL_DIAGNOSTIC // BUILD_VERSION: 1.0.4.STABLE // SYSTEM_INTEGRITY: NOMINAL
                 </div>
             </div>
         </div>
     );
 };
-
-const SettingsToggle: React.FC<{ label: string, active: boolean, onToggle: () => void }> = ({ label, active, onToggle }) => (
-    <button 
-        onClick={onToggle}
-        style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0.8rem 1.2rem',
-            background: active ? 'rgba(0, 255, 255, 0.1)' : 'transparent',
-            border: `1px solid ${active ? '#00ffff' : '#ff6600'}`,
-            color: active ? '#00ffff' : '#ff6600',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            transition: 'all 0.2s',
-            fontSize: '0.85rem'
-        }}
-    >
-        <span>{label}</span>
-        <span>{active ? 'DISABLE [ACTIVE]' : 'ENABLE [NULL]'}</span>
-    </button>
-);
-
-const TrackToggle: React.FC<{ label: string, active: boolean, onToggle: () => void, onPreview: () => void }> = ({ label, active, onToggle, onPreview }) => (
-    <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <button 
-            onClick={onToggle}
-            style={{
-                flex: 1,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '0.6rem 1rem',
-                background: active ? 'rgba(0, 255, 255, 0.1)' : 'transparent',
-                border: `1px solid ${active ? '#00ffff' : '#444'}`,
-                color: active ? '#00ffff' : '#444',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                fontSize: '0.8rem'
-            }}
-        >
-            <span>{label}</span>
-            <span>{active ? '[ENABLED]' : '[MUTED]'}</span>
-        </button>
-        <button 
-            onClick={onPreview}
-            style={{
-                padding: '0.6rem 1rem',
-                background: 'transparent',
-                border: '1px solid #333',
-                color: '#333',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                fontSize: '0.8rem'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#00ffff'; e.currentTarget.style.borderColor = '#00ffff'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = '#333'; e.currentTarget.style.borderColor = '#333'; }}
-        >
-            [PREVIEW]
-        </button>
-    </div>
-);
