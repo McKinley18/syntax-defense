@@ -104,7 +104,7 @@ body { font-family: var(--terminal-font); -webkit-font-smoothing: antialiased; t
 .orientation-barrier {
     position: fixed;
     inset: 0;
-    z-index: 100000; /* Absolute Top */
+    z-index: 100000;
     background-color: #050505;
     display: none;
     flex-direction: column;
@@ -114,12 +114,26 @@ body { font-family: var(--terminal-font); -webkit-font-smoothing: antialiased; t
     text-align: center;
     padding: 2rem;
     font-family: 'monospace';
+    backdrop-filter: blur(10px);
 }
 
 @media (orientation: portrait) {
     .orientation-barrier {
         display: flex;
     }
+}
+
+.rotation-icon-container {
+    margin-bottom: 2rem;
+    filter: drop-shadow(0 0 10px var(--neon-cyan));
+    animation: device-rotate 2s ease-in-out infinite;
+}
+
+@keyframes device-rotate {
+    0% { transform: rotate(0deg); }
+    30% { transform: rotate(0deg); }
+    70% { transform: rotate(-90deg); }
+    100% { transform: rotate(-90deg); }
 }
 
 .barrier-title {
@@ -135,6 +149,7 @@ body { font-family: var(--terminal-font); -webkit-font-smoothing: antialiased; t
     color: #fff;
     opacity: 0.6;
     line-height: 1.5;
+    max-width: 20rem;
 }
 
 .crt-vignette { position: absolute; inset: 0; background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.4) 100%); pointer-events: none; z-index: 2002; }

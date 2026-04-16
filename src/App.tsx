@@ -40,15 +40,22 @@ function App() {
     }}>
       {/* ORIENTATION ENFORCEMENT */}
       <div className="orientation-barrier">
+          <div className="rotation-icon-container">
+              <svg viewBox="0 0 64 64" width="80" height="80">
+                  <rect x="20" y="8" width="24" height="48" rx="4" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" className="device-rect" />
+                  <circle cx="32" cy="50" r="2" fill="var(--neon-cyan)" />
+                  <path d="M48 20 A 24 24 0 0 1 48 44" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M44 40 L48 44 L52 40" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+          </div>
           <div className="barrier-title">TACTICAL_ERROR: PORTRAIT_MODE</div>
           <div className="barrier-body">
-              Operator, the Syntax Defense Kernel requires 16:9 landscape orientation for full tactical deployment. 
+              Operator, the Syntax Defense Kernel requires landscape orientation for tactical deployment. 
               <br/><br/>
               [ PLEASE ROTATE DEVICE ]
           </div>
       </div>
 
-      {/* State Debugger (Will show in top left) */}
       <div style={{ position: 'absolute', top: 10, left: 10, color: '#333', fontSize: '10px', zIndex: 9999, pointerEvents: 'none' }}>
         SYSTEM_STATE: {AppState[state]}
       </div>
