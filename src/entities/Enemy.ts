@@ -1,0 +1,82 @@
+import * as PIXI from 'pixi.js';
+import { Engine } from '../core/Engine';
+import { StateManager } from '../core/StateManager';
+import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
+import { TextureGenerator } from '../utils/TextureGenerator';
+
+export class Enemy {
+    public container: PIXI.Container;
+    public sprite: PIXI.Sprite;
+    public type: EnemyType;
+    public hp: number;
+    public maxHp: number;
+    public speed: number;
+    public progress: number = 0;
+    public pathPoints: PIXI.Point[] = [];
+    public currentPointIndex: number = 0;
+    public isDead: boolean = false;
+    public isFinished: boolean = false;
+    
+    private readonly VIRUS_SIZE = 20;
+
+    constructor(type: EnemyType, path: PIXI.Point[], waveMult: number = 1) {
+        this.type = type;
+        const config = VISUAL_REGISTRY[type];
+        this.hp = config.hp * waveMult;
+        this.maxHp = this.hp;
+        this.speed = config.speed;
+        this.pathPoints = path;
+
+        this.container = new PIXI.Container();
+        this.sprite = new PIXI.Sprite(TextureGenerator.getInstance().getEnemyTexture(type));
+        this.sprite.anchor.set(0.5);
+        
+        this.sprite.width = this.VIRUS_SIZE;
+        this.sprite.height = this.VIRUS_SIZE;
+        
+        this.container.addChild(this.sprite);
+        
+        if (path.length > 0) {
+            this.container.position.copyFrom(path[0]);
+        }
+    }
+
+    public update(dt: number) {
+        if (this.isDead || this.isFinished || StateManager.instance.isPaused) return;
+
+        const target = this.pathPoints[this.currentPointIndex + 1];
+        if (!target) {
+            this.isFinished = true;
+            return;
+        }
+
+        const dx = target.x - this.container.x;
+        const dy = target.y - this.container.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        const moveDist = this.speed * dt;
+
+        if (dist <= moveDist) {
+            this.container.position.copyFrom(target);
+            this.currentPointIndex++;
+            if (this.currentPointIndex >= this.pathPoints.length - 1) {
+                this.isFinished = true;
+            }
+        } else {
+            this.container.x += (dx / dist) * moveDist;
+            this.container.y += (dy / dist) * moveDist;
+            this.container.rotation = Math.atan2(dy, dx) + Math.PI/2;
+        }
+
+        const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.04;
+        this.sprite.scale.set(pulse);
+    }
+
+    public takeDamage(amount: number) {
+        this.hp -= amount;
+        if (this.hp <= 0) {
+            this.isDead = true;
+            // LAW: Rewards are handled exclusively by WaveManager to ensure economic balance.
+        }
+    }
+}
