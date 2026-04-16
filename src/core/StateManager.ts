@@ -19,7 +19,8 @@ export enum AppState {
 export class StateManager {
     private static _instance: StateManager | null = null;
     
-    public currentState: AppState = AppState.GAME_PREP;
+    // LAW: System must always initialize at POWER_ON for cinematic integrity
+    public currentState: AppState = AppState.POWER_ON;
     public previousState: AppState | null = null;
     public credits: number = 500;
     public currentWave: number = 0;
@@ -81,11 +82,6 @@ export class StateManager {
             this.credits = data.credits;
             this.currentWave = data.currentWave;
             this.integrity = data.integrity;
-            
-            console.log(`[StateManager] Restored Wave ${this.currentWave}.`);
-            
-            // If they saved during a wave, we start them back at the Intel/Prep for that wave
-            // to avoid state conflicts with mid-combat spawning.
             this.transitionTo(AppState.WAVE_COMPLETED);
             return true;
         } catch (e) {
