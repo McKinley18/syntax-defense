@@ -136,7 +136,7 @@ export class Tower {
             this.chassis.rotation += 0.03 * delta;
         }
 
-        let target = null;
+        let target: Enemy | null = null;
         let bestMetric = -1;
 
         const inRange = enemies.filter(enemy => {
