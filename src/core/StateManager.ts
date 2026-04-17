@@ -27,9 +27,13 @@ export class StateManager {
     public integrity: number = 20;
     public isPaused: boolean = false;
     public isRedMode: boolean = false;
+    public gameSpeed: number = 1.0;
     
     // PREFERENCES
     public skipCinematics: boolean = false;
+    public hiResEnabled: boolean = true;
+    public uiScale: number = 1.0;
+    public gridOpacity: number = 0.6;
     public selectedTurretType: TowerType | null = null;
 
     private listeners: ((state: AppState) => void)[] = [];
@@ -38,6 +42,27 @@ export class StateManager {
         // Load preferences on init
         const skip = localStorage.getItem('syndef_skip_cinematics');
         this.skipCinematics = skip === 'true';
+        
+        const hires = localStorage.getItem('syndef_hi_res');
+        this.hiResEnabled = hires !== 'false'; // Default true
+        
+        const scale = localStorage.getItem('syndef_ui_scale');
+        if (scale) this.uiScale = parseFloat(scale);
+    }
+
+    public setHiRes(val: boolean) {
+        this.hiResEnabled = val;
+        localStorage.setItem('syndef_hi_res', val ? 'true' : 'false');
+    }
+
+    public setUiScale(val: number) {
+        this.uiScale = val;
+        localStorage.setItem('syndef_ui_scale', val.toString());
+        document.documentElement.style.fontSize = `clamp(10px, ${1.6 * val}vw, 18px)`;
+    }
+
+    public resetTutorial() {
+        localStorage.removeItem('syndef_tutorial_v19');
     }
 
     public static get instance(): StateManager {
@@ -70,33 +95,46 @@ export class StateManager {
 
     public takeDamage(amount: number) {
         this.integrity = Math.max(0, this.integrity - amount);
+        
+        // VISUAL BREACH FEEDBACK
+        this.isRedMode = true;
+        setTimeout(() => { this.isRedMode = false; }, 150);
+
         if (this.integrity <= 0) {
             this.transitionTo(AppState.GAME_OVER);
         }
     }
 
-    public saveGame() {
+    public saveGame(towers: any[] = []) {
+        const towerData = towers.map(t => ({
+            type: t.type,
+            x: t.container.x,
+            y: t.container.y,
+            tier: t.tier
+        }));
+
         const saveData = {
             credits: this.credits,
             currentWave: this.currentWave,
             integrity: this.integrity,
+            towers: towerData,
             timestamp: Date.now()
         };
         localStorage.setItem('syndef_save_data', JSON.stringify(saveData));
     }
 
-    public loadGame(): boolean {
+    public loadGame(): any {
         const raw = localStorage.getItem('syndef_save_data');
-        if (!raw) return false;
+        if (!raw) return null;
         try {
             const data = JSON.parse(raw);
             this.credits = data.credits;
             this.currentWave = data.currentWave;
             this.integrity = data.integrity;
             this.transitionTo(AppState.WAVE_COMPLETED);
-            return true;
+            return data;
         } catch (e) {
-            return false;
+            return null;
         }
     }
 

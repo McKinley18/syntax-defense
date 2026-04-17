@@ -7,7 +7,7 @@ import type { GridCoord } from './PathManager';
 export enum TileType { EMPTY, PATH, OCCUPIED }
 export const TILE_SIZE = 40;
 export const GRID_COLS = 40;
-export const GRID_ROWS = 14;
+export const GRID_ROWS = 18;
 
 export interface IMapManager {
     isBuildable(x: number, y: number): boolean;
@@ -78,7 +78,7 @@ export class MapManager implements IMapManager {
                 
                 if (!isPath) {
                     this.gridGraphics.rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                                     .stroke({ width: 1.5, color: 0x00ffff, alpha: 0.6 });
+                                     .stroke({ width: 1.5, color: 0x00ffff, alpha: StateManager.instance.gridOpacity });
                 }
             }
         }
@@ -87,7 +87,11 @@ export class MapManager implements IMapManager {
     public isBuildable(x: number, y: number): boolean {
         const gx = Math.floor(x / TILE_SIZE);
         const gy = Math.floor(y / TILE_SIZE);
+        
+        // Ensure coordinates are within tactical grid boundaries
         if (gx < 0 || gx >= GRID_COLS || gy < 0 || gy >= GRID_ROWS) return false;
+        
+        // LAW: Any grid square NOT occupied by the path is buildable
         return this.grid[gx][gy] === TileType.EMPTY;
     }
 

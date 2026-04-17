@@ -14,6 +14,12 @@ export enum TowerType {
     VOID_PROJECTOR
 }
 
+export enum TargetMode {
+    CLOSEST,
+    FIRST,
+    STRONGEST
+}
+
 export interface TowerConfig {
     name: string;
     cost: number;
@@ -38,6 +44,9 @@ export class Tower {
     public type: TowerType;
     public config: TowerConfig;
     public tier: number = 1;
+    public targetMode: TargetMode = TargetMode.CLOSEST;
+    public isOvercharged: boolean = false;
+    private overchargeTimer: number = 0;
     
     private base: PIXI.Sprite;
     private chassis: PIXI.Sprite;
@@ -74,6 +83,13 @@ export class Tower {
         return Math.floor(this.config.cost * (this.tier === 1 ? 0.8 : 1.5));
     }
 
+    public getRefundValue(): number {
+        let total = this.config.cost;
+        if (this.tier >= 2) total += Math.floor(this.config.cost * 0.8);
+        if (this.tier >= 3) total += Math.floor(this.config.cost * 1.5);
+        return Math.floor(total * 0.75);
+    }
+
     public upgrade() {
         if (this.tier < 3) {
             this.tier++;
@@ -91,8 +107,28 @@ export class Tower {
         return this.config.range * (1 + (this.tier - 1) * 0.2) * TILE_SIZE;
     }
 
+    public overcharge() {
+        if (!this.isOvercharged) {
+            this.isOvercharged = true;
+            this.overchargeTimer = 180; 
+            this.chassis.tint = 0x00ffff; 
+            AudioManager.getInstance().playTerminalCommand();
+            return true;
+        }
+        return false;
+    }
+
     public update(delta: number, enemies: any[], spawnProjectile: (p: Projectile) => void) {
-        if (this.cooldownTimer > 0) this.cooldownTimer -= delta;
+        if (this.overchargeTimer > 0) {
+            this.overchargeTimer -= delta;
+            if (this.overchargeTimer <= 0) {
+                this.isOvercharged = false;
+                this.chassis.tint = 0xffffff;
+            }
+        }
+
+        const fireSpeedMult = this.isOvercharged ? 3.0 : 1.0;
+        if (this.cooldownTimer > 0) this.cooldownTimer -= (delta * fireSpeedMult);
         this.animTimer += 0.05 * delta;
 
         if (this.type === TowerType.STASIS_FIELD) {
@@ -100,34 +136,69 @@ export class Tower {
         }
 
         let target = null;
-        let minDist = this.getEffectiveRange();
+        let bestMetric = -1;
 
-        for (const enemy of enemies) {
+        const inRange = enemies.filter(enemy => {
             const dx = enemy.container.x - this.container.x;
             const dy = enemy.container.y - this.container.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < minDist) {
-                minDist = dist;
-                target = enemy;
+            return Math.sqrt(dx * dx + dy * dy) < this.getEffectiveRange();
+        });
+
+        if (inRange.length > 0) {
+            if (this.targetMode === TargetMode.CLOSEST) {
+                let minSubDist = Infinity;
+                inRange.forEach(e => {
+                    const d = Math.sqrt(Math.pow(e.container.x-this.container.x, 2) + Math.pow(e.container.y-this.container.y, 2));
+                    if (d < minSubDist) { minSubDist = d; target = e; }
+                });
+            } else if (this.targetMode === TargetMode.FIRST) {
+                inRange.forEach(e => {
+                    const metric = e.currentPointIndex + (1 - (e.hp / e.maxHp)); 
+                    if (metric > bestMetric) { bestMetric = metric; target = e; }
+                });
+            } else if (this.targetMode === TargetMode.STRONGEST) {
+                inRange.forEach(e => {
+                    if (e.hp > bestMetric) { bestMetric = e.hp; target = e; }
+                });
             }
         }
 
         if (target) {
+            const vel = target.getVelocity();
+            const pSpeed = 8; 
+            
             const dx = target.container.x - this.container.x;
             const dy = target.container.y - this.container.y;
-            const targetRotation = Math.atan2(dy, dx) + Math.PI / 2;
+            
+            const a = (vel.vx * vel.vx + vel.vy * vel.vy) - (pSpeed * pSpeed);
+            const b = 2 * (dx * vel.vx + dy * vel.vy);
+            const c = dx * dx + dy * dy;
+            
+            const disc = b * b - 4 * a * c;
+            let t = 0;
+            if (disc >= 0) {
+                const t1 = (-b + Math.sqrt(disc)) / (2 * a);
+                const t2 = (-b - Math.sqrt(disc)) / (2 * a);
+                t = Math.max(t1, t2);
+                if (t < 0) t = Math.min(t1, t2);
+            }
+            
+            const aimX = target.container.x + (vel.vx * t);
+            const aimY = target.container.y + (vel.vy * t);
+            const aimDX = aimX - this.container.x;
+            const aimDY = aimY - this.container.y;
+            
+            const targetRotation = Math.atan2(aimDY, aimDX) + Math.PI / 2;
             const diff = targetRotation - this.chassis.rotation;
             const shortestDiff = Math.atan2(Math.sin(diff), Math.cos(diff));
             this.chassis.rotation += shortestDiff * 0.2 * delta;
 
             if (this.cooldownTimer <= 0) {
-                // TACTICAL SFX TRIGGER
                 AudioManager.getInstance().playFireSfx(this.type);
-
-                const p = new Projectile(this.type, this.container.x, this.container.y, target, this.getEffectiveDamage(), this.config.color);
+                // STRAIGHT-LINE COMBAT: Pass explicit aim point
+                const p = new Projectile(this.type, this.container.x, this.container.y, target, this.getEffectiveDamage(), this.config.color, { x: aimX, y: aimY });
                 spawnProjectile(p);
                 this.cooldownTimer = this.config.cooldown;
-                
                 this.chassis.y += 3;
                 setTimeout(() => { if(this.chassis) this.chassis.y = 0; }, 40);
             }

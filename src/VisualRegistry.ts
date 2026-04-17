@@ -1,4 +1,4 @@
-export enum EnemyType { GLIDER, STRIDER, BEHEMOTH, FRACTAL, PHANTOM, WORM }
+export enum EnemyType { GLIDER, STRIDER, BEHEMOTH, FRACTAL, PHANTOM, WORM, BOSS }
 
 export interface EnemyConfig {
     hp: number;
@@ -16,7 +16,7 @@ export const VISUAL_REGISTRY: Record<EnemyType, EnemyConfig> = {
         color: 0x00ffff,
         name: "GLIDER",
         threat: 10,
-        reward: 15 // Increased reward for momentum
+        reward: 15 
     },
     [EnemyType.STRIDER]: {
         hp: 50,
@@ -57,6 +57,14 @@ export const VISUAL_REGISTRY: Record<EnemyType, EnemyConfig> = {
         name: "WORM",
         threat: 60,
         reward: 50
+    },
+    [EnemyType.BOSS]: {
+        hp: 2500,
+        speed: 0.4,
+        color: 0xffffff,
+        name: "KERNEL_CRUSHER",
+        threat: 1000,
+        reward: 500
     }
 };
 

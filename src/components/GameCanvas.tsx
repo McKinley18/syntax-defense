@@ -55,13 +55,29 @@ export const GameCanvas = () => {
             
             systemsRef.current = { pathManager, mapManager, towerManager, waveManager };
 
-            // INITIAL BOOT TOPOGRAPHY
-            pathManager.generatePath(0);
-            mapManager.setPathFromCells(pathManager.pathCells);
+            // RECONSTRUCT FROM SAVE (If applicable)
+            if (StateManager.instance.previousState === AppState.MAIN_MENU) {
+                const saveData = StateManager.instance.loadGame();
+                if (saveData && saveData.towers) {
+                    console.log(`[GameCanvas] Restoring ${saveData.towers.length} defenses...`);
+                    // Update topology before towers
+                    pathManager.generatePath(saveData.currentWave);
+                    mapManager.setPathFromCells(pathManager.pathCells);
+                    towerManager.loadTowers(saveData.towers);
+                } else {
+                    // INITIAL BOOT TOPOGRAPHY
+                    pathManager.generatePath(0);
+                    mapManager.setPathFromCells(pathManager.pathCells);
+                }
+            } else {
+                // STANDARD TRANSITION TOPOGRAPHY
+                pathManager.generatePath(StateManager.instance.currentWave);
+                mapManager.setPathFromCells(pathManager.pathCells);
+            }
 
             app.ticker.add((ticker) => {
                 if (systemsRef.current) {
-                    const delta = ticker.deltaTime;
+                    const delta = ticker.deltaTime * StateManager.instance.gameSpeed;
                     const { towerManager, waveManager } = systemsRef.current;
                     
                     // SYSTEM HEARTBEAT
@@ -128,7 +144,10 @@ export const GameCanvas = () => {
 
                     {/* SYSTEM STATE LAYER */}
                     {isPaused && (
-                        <PauseMenu onResume={() => { StateManager.instance.isPaused = false; setIsPaused(false); }} />
+                        <PauseMenu 
+                            onResume={() => { StateManager.instance.isPaused = false; setIsPaused(false); }} 
+                            towerManager={systemsRef.current?.towerManager}
+                        />
                     )}
                 </>
             )}

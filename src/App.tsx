@@ -29,6 +29,9 @@ function App() {
         const portrait = window.innerHeight > window.innerWidth;
         setIsPortrait(portrait);
 
+        // RECOVERY: Attempt to resume audio context when orientation or size shifts
+        AudioManager.getInstance().resume();
+
         // AUTO-BOOT WITH SKIP LOGIC
         if (!portrait && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
             if (StateManager.instance.skipCinematics) {

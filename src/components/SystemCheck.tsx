@@ -51,7 +51,7 @@ export const SystemCheck: React.FC = () => {
             backgroundColor: '#000',
             width: '100%',
             height: '100%',
-            padding: '50px',
+            padding: '30px',
             boxSizing: 'border-box',
             fontFamily: "'Courier New', monospace",
             fontSize: '16px',

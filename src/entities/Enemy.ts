@@ -18,6 +18,7 @@ export class Enemy {
     public isFinished: boolean = false;
     
     private readonly VIRUS_SIZE = 20;
+    private healthBar: PIXI.Graphics;
 
     constructor(type: EnemyType, path: PIXI.Point[], waveMult: number = 1) {
         this.type = type;
@@ -33,12 +34,33 @@ export class Enemy {
         
         this.sprite.width = this.VIRUS_SIZE;
         this.sprite.height = this.VIRUS_SIZE;
-        
         this.container.addChild(this.sprite);
+
+        // Health Bar initialization
+        this.healthBar = new PIXI.Graphics();
+        this.healthBar.position.set(0, -15); // Above enemy
+        this.container.addChild(this.healthBar);
+        this.updateHealthBar();
         
         if (path.length > 0) {
             this.container.position.copyFrom(path[0]);
         }
+    }
+
+    public getVelocity(): { vx: number, vy: number } {
+        if (this.isDead || this.isFinished) return { vx: 0, vy: 0 };
+        const target = this.pathPoints[this.currentPointIndex + 1];
+        if (!target) return { vx: 0, vy: 0 };
+
+        const dx = target.x - this.container.x;
+        const dy = target.y - this.container.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist === 0) return { vx: 0, vy: 0 };
+
+        return {
+            vx: (dx / dist) * this.speed,
+            vy: (dy / dist) * this.speed
+        };
     }
 
     public update(dt: number) {
@@ -72,11 +94,19 @@ export class Enemy {
         this.sprite.scale.set(pulse);
     }
 
+    private updateHealthBar() {
+        this.healthBar.clear();
+        this.healthBar.rect(-10, 0, 20, 3).fill({ color: 0x333333, alpha: 0.5 });
+        const pct = Math.max(0, this.hp / this.maxHp);
+        const color = pct < 0.3 ? 0xff3300 : 0x00ffff;
+        this.healthBar.rect(-10, 0, 20 * pct, 3).fill({ color, alpha: 0.8 });
+    }
+
     public takeDamage(amount: number) {
         this.hp -= amount;
+        this.updateHealthBar();
         if (this.hp <= 0) {
             this.isDead = true;
-            // LAW: Rewards are handled exclusively by WaveManager to ensure economic balance.
         }
     }
 }

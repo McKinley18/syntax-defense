@@ -204,7 +204,7 @@ export const TutorialOverlay: React.FC<{ waveManager?: ITutorialWaveManager }> =
             pointerEvents: 'none'
         }}>
             <div className="terminal-box" style={{
-                width: '32rem', background: 'rgba(0, 10, 25, 0.98)',
+                width: '90%', maxWidth: '32rem', background: 'rgba(0, 10, 25, 0.98)',
                 border: '0.15rem solid var(--neon-cyan)', padding: '1.5rem',
                 boxShadow: '0 0 40px rgba(0, 255, 255, 0.3)',
                 display: 'flex', flexDirection: 'column', gap: '1rem',

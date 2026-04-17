@@ -1,9 +1,10 @@
 import { StateManager, AppState } from '../core/StateManager';
 import { PathManager } from './PathManager';
-import { MapManager, TILE_SIZE } from './MapManager';
+import { MapManager } from './MapManager';
 import { TowerManager } from './TowerManager';
 import { Enemy } from '../entities/Enemy';
 import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
+import { TOWER_CONFIGS, TowerType } from '../entities/Tower';
 import { Engine } from '../core/Engine';
 import * as PIXI from 'pixi.js';
 
@@ -32,14 +33,10 @@ export class WaveManager {
     public confirmIntel() {
         if (StateManager.instance.currentState === AppState.WAVE_COMPLETED) {
             const nextWave = StateManager.instance.currentWave;
-            
-            // LAW: Map shift only happens AFTER Intel acknowledgment
             this.pathManager.generatePath(nextWave);
             this.mapManager.setPathFromCells(this.pathManager.pathCells);
-            
             this.prepTimer = this.PREP_DURATION;
             StateManager.instance.currentState = AppState.WAVE_PREP;
-            console.log(`[WaveManager] Topology Shift Executed. Prep Timer Active.`);
         }
     }
 
@@ -47,9 +44,19 @@ export class WaveManager {
         this.enemies.forEach(e => this.container.removeChild(e.container));
         this.enemies = [];
         this.spawnQueue = [];
+
+        let currentDelay = 0;
+        const clusterSize = 5; 
+        
         this.nextWaveIntel.forEach((type, index) => {
-            this.spawnQueue.push({ type, delay: index === 0 ? 0 : 25 });
+            if (index > 0 && index % clusterSize === 0) {
+                currentDelay += 3000; 
+            } else if (index > 0) {
+                currentDelay += 400; 
+            }
+            this.spawnQueue.push({ type, delay: currentDelay });
         });
+
         this.nextSpawnTime = Date.now() + 300;
         StateManager.instance.currentState = AppState.GAME_WAVE;
     }
@@ -61,28 +68,78 @@ export class WaveManager {
             return;
         }
 
-        let budget = 100 + (wave * 40) * Math.pow(1.03, wave);
-        const integrity = StateManager.instance.integrity;
-        if (integrity >= 18) budget *= 1.2;
-        if (integrity <= 6) budget *= 0.8;
+        const playerTokens = StateManager.instance.credits;
+        const levelNumber = wave;
 
-        const availableTypes: EnemyType[] = [EnemyType.GLIDER];
-        if (wave >= 2) availableTypes.push(EnemyType.STRIDER);
-        if (wave >= 5) availableTypes.push(EnemyType.BEHEMOTH);
-        if (wave >= 8) availableTypes.push(EnemyType.FRACTAL);
-        if (wave >= 12) availableTypes.push(EnemyType.PHANTOM);
-        if (wave >= 15) availableTypes.push(EnemyType.WORM);
+        const unlockedTowers = Object.values(TOWER_CONFIGS).filter(t => levelNumber >= t.unlockWave);
+        const avgTurretCost = unlockedTowers.reduce((sum, t) => sum + t.cost, 0) / unlockedTowers.length;
+        const avgTurretDPS = unlockedTowers.reduce((sum, t) => {
+            const cooldownSec = (t.cooldown || 1) / 60;
+            return sum + (t.damage / cooldownSec);
+        }, 0) / unlockedTowers.length;
+
+        let difficultyMultiplier = 1.0 + (0.15 * levelNumber) + (0.02 * Math.pow(levelNumber, 2));
+        
+        const integrity = StateManager.instance.integrity;
+        if (integrity < 10) difficultyMultiplier *= 0.8;
+        if (integrity === 20) difficultyMultiplier *= 1.1;
+        
+        const budget = difficultyMultiplier * Math.max(playerTokens, 500);
+
+        const waveDuration = 20; 
+        const theoreticalMaxDamage = (budget / avgTurretCost) * avgTurretDPS * waveDuration;
+        const fairnessThreshold = theoreticalMaxDamage * 0.85;
+
+        const laneMultiplier = (wave === 0) ? 1 : 2;
+
+        // TACTICAL DIRECTIVE SELECTION
+        const directives = ["SWARM", "SHIELD", "GHOST", "BALANCED"];
+        const directive = (levelNumber > 0 && levelNumber % 10 === 0) ? "BOSS" : directives[Math.floor(Math.random() * directives.length)];
 
         let remainingBudget = budget;
-        while (remainingBudget > 5) {
-            const valid = availableTypes.filter(t => VISUAL_REGISTRY[t].threat <= remainingBudget);
+        let currentWaveHP = 0;
+
+        if (directive === "BOSS") {
+            const bossType = EnemyType.BOSS;
+            this.nextWaveIntel.push(bossType);
+            remainingBudget -= VISUAL_REGISTRY[bossType].threat * laneMultiplier;
+            currentWaveHP += VISUAL_REGISTRY[bossType].hp * (1 + levelNumber * 0.05) * laneMultiplier;
+        }
+
+        const availableTypes = (Object.keys(VISUAL_REGISTRY) as unknown as EnemyType[])
+            .filter(t => t !== EnemyType.BOSS && levelNumber >= (t === EnemyType.GLIDER ? 0 : t === EnemyType.STRIDER ? 2 : t === EnemyType.BEHEMOTH ? 5 : t === EnemyType.FRACTAL ? 8 : t === EnemyType.PHANTOM ? 12 : 15));
+
+        while (remainingBudget > 10 && currentWaveHP < fairnessThreshold) {
+            const valid = availableTypes.filter(t => (VISUAL_REGISTRY[t].threat * laneMultiplier) <= remainingBudget);
             if (valid.length === 0) break;
-            const type = valid[Math.floor(Math.random() * valid.length)];
-            this.nextWaveIntel.push(type);
-            remainingBudget -= VISUAL_REGISTRY[type].threat;
+
+            let selectedType = valid[0];
+            if (directive === "SWARM") {
+                const swarms = valid.filter(t => t === EnemyType.GLIDER || t === EnemyType.STRIDER);
+                selectedType = swarms.length > 0 ? swarms[Math.floor(Math.random() * swarms.length)] : valid[0];
+            } else if (directive === "SHIELD") {
+                const tanks = valid.filter(t => t === EnemyType.BEHEMOTH || t === EnemyType.WORM);
+                selectedType = tanks.length > 0 ? tanks[Math.floor(Math.random() * tanks.length)] : valid[0];
+            } else if (directive === "GHOST") {
+                const fast = valid.filter(t => t === EnemyType.PHANTOM || t === EnemyType.FRACTAL);
+                selectedType = fast.length > 0 ? fast[Math.floor(Math.random() * fast.length)] : valid[0];
+            } else {
+                const weights = valid.map(t => Math.pow(VISUAL_REGISTRY[t].threat, 1.2));
+                const totalWeight = weights.reduce((s, w) => s + w, 0);
+                let roll = Math.random() * totalWeight;
+                for (let i = 0; i < valid.length; i++) {
+                    roll -= weights[i];
+                    if (roll <= 0) { selectedType = valid[i]; break; }
+                }
+            }
+
+            this.nextWaveIntel.push(selectedType);
+            remainingBudget -= VISUAL_REGISTRY[selectedType].threat * laneMultiplier;
+            currentWaveHP += VISUAL_REGISTRY[selectedType].hp * (1 + levelNumber * 0.05) * laneMultiplier;
         }
 
         this.nextWaveIntel.sort((a, b) => VISUAL_REGISTRY[b].hp - VISUAL_REGISTRY[a].hp);
+        console.log(`[Wave Engine] Directive: ${directive} | Budget: ${Math.round(budget)} | Actual HP: ${Math.round(currentWaveHP)}`);
     }
 
     public update(dt: number) {
@@ -93,32 +150,42 @@ export class WaveManager {
         }
         if (state !== AppState.GAME_WAVE) return;
 
-        if (this.spawnQueue.length > 0 && Date.now() >= this.nextSpawnTime) {
-            const next = this.spawnQueue.shift()!;
-            const stage = Engine.instance.app.stage;
-            const scale = stage.scale.x;
-            const vL = (0 - stage.x) / scale;
-            const vR = (window.innerWidth - stage.x) / scale;
-            const lanes = StateManager.instance.currentWave === 0 ? [0] : [0, 1];
-            lanes.forEach(laneID => {
-                const lp = this.pathManager.getLanePoints(laneID as 0 | 1);
-                if (lp.length > 0) {
-                    const ingressPath = [new PIXI.Point(vL - 80, lp[0].y), ...lp, new PIXI.Point(vR + 40, lp[lp.length - 1].y)];
-                    // BALANCE: Reduced health scaling for early game
-                    const healthScale = 1 + StateManager.instance.currentWave * 0.05;
-                    const enemy = new Enemy(next.type, ingressPath, healthScale);
-                    this.enemies.push(enemy);
-                    this.container.addChild(enemy.container);
-                }
-            });
-            this.nextSpawnTime = Date.now() + (next.delay * 16.6); 
+        const now = Date.now();
+        if (this.spawnQueue.length > 0) {
+            if (!this.nextSpawnTime) this.nextSpawnTime = now; 
+            
+            const waveStartTime = this.nextSpawnTime - 300; 
+            const elapsed = (now - waveStartTime) * StateManager.instance.gameSpeed; 
+
+            if (elapsed >= this.spawnQueue[0].delay) {
+                const next = this.spawnQueue.shift()!;
+                const stage = Engine.instance.app.stage;
+                const scale = stage.scale.x;
+                const vL = (0 - stage.x) / scale;
+                const vR = (window.innerWidth - stage.x) / scale;
+                const lanes = StateManager.instance.currentWave === 0 ? [0] : [0, 1];
+                
+                lanes.forEach(laneID => {
+                    const lp = this.pathManager.getLanePoints(laneID as 0 | 1);
+                    if (lp.length > 0) {
+                        const ingressPath = [new PIXI.Point(vL - 80, lp[0].y), ...lp, new PIXI.Point(vR + 40, lp[lp.length - 1].y)];
+                        const healthScale = 1 + StateManager.instance.currentWave * 0.05;
+                        const enemy = new Enemy(next.type, ingressPath, healthScale);
+                        this.enemies.push(enemy);
+                        this.container.addChild(enemy.container);
+                    }
+                });
+            }
         }
 
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             enemy.update(dt);
             if (enemy.isDead) {
-                StateManager.instance.addCredits(VISUAL_REGISTRY[enemy.type].reward);
+                let reward = VISUAL_REGISTRY[enemy.type].reward;
+                if (StateManager.instance.credits > 5000) reward *= 0.7;
+                
+                StateManager.instance.addCredits(reward);
                 this.container.removeChild(enemy.container);
                 this.enemies.splice(i, 1);
             } else if (enemy.isFinished) {
@@ -130,11 +197,11 @@ export class WaveManager {
 
         if (this.spawnQueue.length === 0 && this.enemies.length === 0) {
             this.towerManager.clearAllTowers();
-            // HIGH BONUS FOR REBUILD
             StateManager.instance.addCredits(300 + (StateManager.instance.currentWave * 50));
             StateManager.instance.currentWave++;
             this.generateIntel(StateManager.instance.currentWave);
             StateManager.instance.currentState = AppState.WAVE_COMPLETED;
+            this.nextSpawnTime = 0; 
         }
     }
 

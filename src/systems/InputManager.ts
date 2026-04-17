@@ -7,6 +7,8 @@ import { StateManager, AppState } from '../core/StateManager';
 export class InputManager {
     private towerManager: TowerManager;
     private mapManager: IMapManager;
+    private lastTapTime: number = 0;
+    private lastTapTower: any = null;
 
     constructor(towerManager: TowerManager, mapManager: IMapManager) {
         this.towerManager = towerManager;
@@ -17,29 +19,51 @@ export class InputManager {
         Engine.instance.app.stage.hitArea = Engine.instance.app.screen;
 
         Engine.instance.app.stage.on('pointerdown', (e) => this.handleGlobalInput(e));
+        Engine.instance.app.stage.on('pointermove', (e) => this.handlePointerMove(e));
     }
 
-    private handleGlobalInput(e: PIXI.FederatedPointerEvent) {
-        // Convert to logical grid coordinates
+    private handlePointerMove(e: PIXI.FederatedPointerEvent) {
         const { x, y } = Engine.instance.screenToLogical(e.global.x, e.global.y);
         const selectedType = StateManager.instance.selectedTurretType;
 
-        // 1. TACTICAL BOUNDARY ENFORCEMENT
+        if (selectedType !== null) {
+            this.towerManager.showGhost(selectedType);
+            this.towerManager.updateGhost(x, y);
+        } else {
+            this.towerManager.hideGhost();
+        }
+    }
+
+    private handleGlobalInput(e: PIXI.FederatedPointerEvent) {
+        const { x, y } = Engine.instance.screenToLogical(e.global.x, e.global.y);
+        const selectedType = StateManager.instance.selectedTurretType;
+
         const isInsideGrid = y >= 0 && y < (GRID_ROWS * TILE_SIZE) && x >= 0 && x < (GRID_COLS * TILE_SIZE);
         
         if (!isInsideGrid) {
-            // Clicked over HUD -> Reset selections
             StateManager.instance.selectedTurretType = null;
             this.towerManager.deselectTower();
             return;
         }
 
-        // 2. SELECTION PRIORITY
         const wasTowerSelected = this.towerManager.attemptSelection(x, y);
-        if (wasTowerSelected) return;
+        
+        if (wasTowerSelected) {
+            const now = Date.now();
+            const selectedTower = this.towerManager.selectedTower;
+            
+            // DOUBLE-TAP DETECTION
+            if (this.lastTapTower === selectedTower && (now - this.lastTapTime) < 300) {
+                if (selectedTower) {
+                    (selectedTower as any).overcharge();
+                }
+            }
+            
+            this.lastTapTime = now;
+            this.lastTapTower = selectedTower;
+            return;
+        }
 
-        // 3. DEPLOYMENT ACTION
-        // ALLOW PLACEMENT DURING PREP OR ACTIVE WAVE
         const validState = StateManager.instance.currentState === AppState.GAME_WAVE || 
                            StateManager.instance.currentState === AppState.WAVE_PREP ||
                            StateManager.instance.currentState === AppState.GAME_PREP;
@@ -56,7 +80,6 @@ export class InputManager {
             return;
         }
 
-        // 4. DESELECTION (Empty space click with no active protocol)
         this.towerManager.deselectTower();
     }
 }

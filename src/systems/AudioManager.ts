@@ -33,9 +33,18 @@ export class AudioManager {
     }
 
     public async resume() {
-        if (!this.ctx) this.init();
-        if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
-            await this.ctx.resume();
+        if (!this.ctx) {
+            this.init();
+        } else {
+            if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
+                console.log("[AudioManager] Attempting to resume AudioContext...");
+                await this.ctx.resume();
+            }
+        }
+        
+        // RECOVERY LAW: Re-kick the scheduler if music was active
+        if (this.ctx && this.ctx.state === 'running') {
+            MusicManager.getInstance().start(); 
         }
     }
 

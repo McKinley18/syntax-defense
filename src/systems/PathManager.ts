@@ -15,7 +15,7 @@ export class PathManager {
     
     private readonly TILE_SIZE = 40;
     private readonly GRID_COLS = 40; // HARDENED
-    private readonly GRID_ROWS = 14; // HARDENED
+    private readonly GRID_ROWS = 18; // HARDENED
 
     constructor() {}
 
@@ -43,8 +43,12 @@ export class PathManager {
             macroPath.push({ x: currentX, y: currentY });
 
             while (currentX < macroCols - 1) {
-                // Horizontal Run
-                let stepX = 2 + Math.floor(Math.random() * 3);
+                // Horizontal Run: Length decreases as complexity increases with waves
+                // Wave 1: avg 4 steps, Wave 20: avg 2 steps (more turns)
+                const minRun = Math.max(1, 3 - Math.floor(waveNumber / 10));
+                const maxRun = Math.max(2, 5 - Math.floor(waveNumber / 8));
+                let stepX = minRun + Math.floor(Math.random() * (maxRun - minRun + 1));
+                
                 let nextX = Math.min(macroCols - 1, currentX + stepX);
                 for (let x = currentX + 1; x <= nextX; x++) macroPath.push({ x, y: currentY });
                 currentX = nextX;

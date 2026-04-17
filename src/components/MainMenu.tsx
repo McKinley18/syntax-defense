@@ -18,13 +18,13 @@ export const MainMenu: React.FC = () => {
     const [titleText, setTitleText] = useState("SYNTAX DEFENSE");
     const [isTitleGlitched, setIsTitleGlitched] = useState(false);
     const [isThreatCritical, setIsThreatCritical] = useState(false);
+    const [isGlobalFlickering, setIsGlobalFlickering] = useState(false);
     
     const [showTitle, setShowTitle] = useState(false);
     const [showPlatform, setShowPlatform] = useState(false);
     const [showHud, setShowHud] = useState(false);
 
     const idRef = useRef(0);
-    const lastTextRef = useRef("");
 
     useEffect(() => {
         AudioManager.getInstance().startMusic();
@@ -39,48 +39,57 @@ export const MainMenu: React.FC = () => {
         const lines = ["MEM_PTR: 0x8F2", "SYSCALL_OK", "DATA_SYNC: 100%", "SOCKET_INIT", "DAEMON_RESP", "FIREWALL: UP"];
         const symbols = ["Ω", "¥", "Σ", "Δ", "Ξ", "Ψ", "Ø"];
 
-        const vitalTimer = setInterval(() => {
+        // --- AUTHORITATIVE UNIFIED TIMER ---
+        // This timer handles both Red Anomalies and Subtle Power Flickers
+        const globalTimer = setInterval(() => {
             if (!showHud) return;
-            const isAnomaly = Math.random() < 0.08;
-            let nextText = lines[Math.floor(Math.random() * lines.length)];
+
+            const dice = Math.random();
             
-            if (isAnomaly) {
-                // UNIFIED 125ms (1/8 SECOND) BURST
-                const duration = 125; 
+            // 1. RED ANOMALY (4% chance)
+            if (dice < 0.04) {
+                const duration = 62.5; 
                 const anomalyID = idRef.current++;
                 const breachText = `BREACH_DETECTED: 0x${Math.random().toString(16).substr(2, 3).toUpperCase()}`;
                 
                 setIsThreatCritical(true);
                 setIsTitleGlitched(true);
+                setIsGlobalFlickering(true); // PERFECT SYNC
                 
-                // Title Glitch Transformation
                 const original = "SYNTAX DEFENSE";
                 const chars = original.split("");
-                const index = Math.floor(Math.random() * chars.length);
-                if (chars[index] !== " ") chars[index] = symbols[Math.floor(Math.random() * symbols.length)];
+                for (let i = 0; i < 3; i++) {
+                    const index = Math.floor(Math.random() * chars.length);
+                    if (chars[index] !== " ") chars[index] = symbols[Math.floor(Math.random() * symbols.length)];
+                }
                 setTitleText(chars.join(""));
+                setVitals(prev => [{ id: anomalyID, text: breachText, isRed: true }, ...prev].slice(0, 5));
 
-                // Vitals Glitch Line
-                const newLine = { id: anomalyID, text: breachText, isRed: true };
-                setVitals(prev => [newLine, ...prev].slice(0, 5));
-
-                // SYNCED RESTORE
                 setTimeout(() => {
                     setIsThreatCritical(false);
                     setIsTitleGlitched(false);
+                    setIsGlobalFlickering(false); // PERFECT RESTORE
                     setTitleText("SYNTAX DEFENSE");
                     setVitals(prev => prev.filter(v => v.id !== anomalyID));
                 }, duration);
-
-            } else {
-                const newLine = { id: idRef.current++, text: nextText, isRed: false };
-                setVitals(prev => [newLine, ...prev].slice(0, 5));
+            } 
+            // 2. SUBTLE POWER FLICKER (15% chance, if no anomaly)
+            else if (dice < 0.19) {
+                const duration = 50 + Math.random() * 50;
+                setIsGlobalFlickering(true); // PERFECT SYNC
+                setTimeout(() => setIsGlobalFlickering(false), duration);
             }
-        }, 2500);
+            // 3. NORMAL VITAL UPDATE (30% chance)
+            else if (dice < 0.5) {
+                const nextText = lines[Math.floor(Math.random() * lines.length)];
+                setVitals(prev => [{ id: idRef.current++, text: nextText, isRed: false }, ...prev].slice(0, 5));
+            }
+
+        }, 2000);
 
         return () => {
             clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
-            clearInterval(upTimer); clearInterval(entTimer); clearInterval(vitalTimer);
+            clearInterval(upTimer); clearInterval(entTimer); clearInterval(globalTimer);
         };
     }, [showHud]);
 
@@ -119,7 +128,7 @@ export const MainMenu: React.FC = () => {
 
     return (
         <div className="main-menu" style={{ backgroundColor: '#0a0a0a', color: '#00ffff', height: '100%', width: '100%', display: 'flex', flexDirection: 'column', fontFamily: "'Courier New', Courier, monospace", position: 'relative', overflow: 'hidden' }}>
-            <MenuBackground />
+            <MenuBackground isFlickering={isGlobalFlickering} />
             
             {showHud && (
                 <div style={{ animation: 'fade-in 0.5s forwards' }}>
@@ -134,19 +143,20 @@ export const MainMenu: React.FC = () => {
                 </div>
             )}
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, perspective: '60rem', paddingTop: 'min(14vh, 9rem)' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, perspective: '60rem', paddingTop: 'min(12vh, 7rem)' }}>
                 {showTitle && (
-                    <h1 className={`menu-title-3d ${isTitleGlitched ? 'anomaly-glitch' : 'flicker-text'}`} style={{ 
-                        fontSize: '4.5rem', 
-                        letterSpacing: '0.8rem', 
+                    <h1 className={`menu-title-3d ${isTitleGlitched ? 'anomaly-glitch' : ''}`} style={{ 
+                        fontSize: 'clamp(2.5rem, 8vw, 4.5rem)', 
+                        letterSpacing: '0.15rem', 
                         marginTop: 0,
                         marginRight: 0,
                         marginBottom: '0.4rem',
                         marginLeft: 0,
                         color: isTitleGlitched ? '#ff3300' : '#00ffff', 
+                        opacity: isGlobalFlickering ? 0.85 : 1.0,
                         transform: 'rotateX(20deg)', 
                         textShadow: isTitleGlitched ? '0 0 1rem #ff3300' : '0 0 0.8rem #00ffff, 0 0 1.5rem rgba(0, 255, 255, 0.6)',
-                        transition: 'color 0.05s',
+                        transition: 'color 0.05s, opacity 0.05s',
                         animation: 'title-ignition 0.8s ease-out forwards'
                     }}>
                         {titleText}
@@ -173,17 +183,18 @@ export const MainMenu: React.FC = () => {
                                     onMouseLeave={() => setHoveredNode(null)}
                                     style={{
                                         display: 'flex', width: '100%', backgroundColor: 'transparent', border: 'none', 
-                                        color: (item as any).disabled ? '#222' : (item as any).highlight ? '#00ffff' : '#00ffffcc',
+                                        color: (item as any).disabled ? '#222' : (item as any).highlight ? '#00ffff' : '#00ffff',
                                         paddingTop: '0.4rem',
                                         paddingRight: 0,
                                         paddingBottom: '0.4rem',
                                         paddingLeft: hoveredNode === item.log ? '1.0rem' : 0, 
-                                        cursor: (item as any).disabled ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: '1.0rem', textAlign: 'left', alignItems: 'center',
-                                        transition: 'all 0.2s', borderLeft: hoveredNode === item.log ? '0.25rem solid #00ffff' : '0.25rem solid transparent'
+                                        cursor: (item as any).disabled ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: '1.1rem', textAlign: 'left', alignItems: 'center',
+                                        transition: 'all 0.2s', borderLeft: hoveredNode === item.log ? '0.25rem solid #00ffff' : '0.25rem solid transparent',
+                                        opacity: (item as any).disabled ? 0.3 : 1.0 // Maximum visibility for active items
                                     }}
                                 >
-                                    <span style={{ width: '4.5rem', fontSize: '0.7rem', opacity: (item as any).disabled ? 0.2 : 0.6 }}>{item.size}</span>
-                                    <span style={{ flex: 1, fontWeight: (item as any).highlight ? 900 : 400 }}>{item.label}<span style={{ opacity: 0.4, marginLeft: '0.3rem', fontSize: '0.75rem' }}>.{item.ext}</span></span>
+                                    <span style={{ width: '4.5rem', fontSize: '0.8rem', opacity: (item as any).disabled ? 0.2 : 0.8 }}>{item.size}</span>
+                                    <span style={{ flex: 1, fontWeight: (item as any).highlight ? 900 : 700 }}>{item.label}<span style={{ opacity: 0.6, marginLeft: '0.3rem', fontSize: '0.75rem' }}>.{item.ext}</span></span>
                                     <span style={{ color: (item as any).disabled ? '#222' : '#00ff66', fontSize: '0.8rem' }}>[{item.status}]</span>
                                 </button>
                             ))}
@@ -220,12 +231,6 @@ export const MainMenu: React.FC = () => {
                 }
                 @keyframes cursor-blink { 50% { opacity: 0; } }
 
-                .flicker-text { animation: soft-flicker 8s linear infinite; }
-                @keyframes soft-flicker {
-                    0%, 4%, 19%, 21%, 60%, 62%, 80%, 82%, 100% { opacity: 1; }
-                    2%, 20%, 61%, 81% { opacity: 0.85; }
-                }
-
                 @keyframes title-ignition {
                     0% { opacity: 0; filter: blur(10px); text-shadow: 0 0 0 #fff; }
                     10% { opacity: 1; filter: blur(0); }
@@ -239,11 +244,12 @@ export const MainMenu: React.FC = () => {
                 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-                .anomaly-glitch { animation: title-jitter 0.05s infinite; }
+                .anomaly-glitch { animation: title-jitter 0.06s infinite; }
                 @keyframes title-jitter {
-                    0% { transform: rotateX(20deg) translateX(0); }
-                    50% { transform: rotateX(20deg) translateX(-3px); }
-                    100% { transform: rotateX(20deg) translateX(3px); }
+                    0% { transform: rotateX(20deg) skewX(0deg) scale(1); filter: hue-rotate(0deg); }
+                    25% { transform: rotateX(20deg) skewX(2deg) scale(1.01); filter: hue-rotate(90deg) contrast(1.2); }
+                    75% { transform: rotateX(20deg) skewX(-2deg) scale(0.99); filter: hue-rotate(-90deg) brightness(1.2); }
+                    100% { transform: rotateX(20deg) skewX(0deg) scale(1); filter: hue-rotate(0deg); }
                 }
             `}</style>
         </div>

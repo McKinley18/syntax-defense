@@ -5,9 +5,9 @@ export class Engine {
     public app: PIXI.Application;
     private _initialized: boolean = false;
 
-    // HARDENED 40x14 MATHEMATICAL WORKSPACE
+    // HARDENED 40x18 MATHEMATICAL WORKSPACE
     public readonly INTERNAL_WIDTH = 1600;  // 40 tiles * 40px
-    public readonly INTERNAL_HEIGHT = 560; // 14 tiles * 40px
+    public readonly INTERNAL_HEIGHT = 720; // 18 tiles * 40px
     public readonly TILE_SIZE = 40;
 
     private constructor() {

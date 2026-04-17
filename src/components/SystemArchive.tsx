@@ -152,7 +152,7 @@ export const SystemArchive: React.FC = () => {
                 { name: "DEPLOYMENT_MANUAL", ext: "MAN", size: "12.1kb", content: (
                     <div className="archive-content-anim">
                         <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// DEPLOYMENT_WORKFLOW</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(12rem, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                             <div style={{ padding: '1.2rem', border: '1px solid #00ffff33', background: 'rgba(0,255,255,0.05)' }}>
                                 <div style={{ color: '#00ffff', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '0.5rem' }}>01: SELECTION</div>
                                 <p style={{ fontSize: '0.75rem', color: '#888', margin: 0 }}>Select a matching protocol from the HUD deck. Requires sufficient DATA_CR.</p>
@@ -176,7 +176,7 @@ export const SystemArchive: React.FC = () => {
                 { name: "VIRAL_DB", ext: "LOG", size: "4.2kb", content: (
                     <div className="archive-content-anim">
                         <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// THREAT_VECTORS_RECOGNIZED</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))', gap: '1.5rem' }}>
                             <ThreatCard 
                                 name={VISUAL_REGISTRY[EnemyType.GLIDER].name} 
                                 type="INFECTOR" 
@@ -309,7 +309,7 @@ export const SystemArchive: React.FC = () => {
                             </p>
                         </div>
                         <div style={{ color: '#00ff66', fontSize: '1.2rem', marginBottom: '1.5rem', borderBottom: '1px solid #00ff6633', paddingBottom: '0.5rem' }}>// CORE_TECH_STACK</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(12rem, 1fr))', gap: '1rem' }}>
                             <TechItem label="ENGINE" value="PIXI.js v8.17.1" />
                             <TechItem label="INTERFACE" value="React v19.0.0" />
                             <TechItem label="RUNTIME" value="Vite v8.0.1" />
@@ -332,25 +332,25 @@ export const SystemArchive: React.FC = () => {
             <MenuBackground />
             <div className="full-screen-scan"></div>
             <div style={{ 
-                position: 'absolute', inset: '3rem', 
+                position: 'absolute', inset: '1.5rem', 
                 border: '1px solid #00ffff33', backgroundColor: 'rgba(0,0,0,0.92)',
                 display: 'flex', flexDirection: 'column', zIndex: 1, borderRadius: '4px', boxShadow: '0 0 50px rgba(0,0,0,0.8)'
             }}>
-                <div style={{ padding: '0.8rem 2rem', borderBottom: '1px solid #00ffff33', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#151515' }}>
+                <div style={{ padding: '0.8rem 1.5rem', borderBottom: '1px solid #00ffff33', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#151515' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span style={{ color: '#00ffff', opacity: 0.5 }}>SYSTEM_ARCHIVE_v2.7</span>
+                        <span style={{ color: '#00ffff', opacity: 0.5, fontSize: '0.7rem' }}>SYSTEM_ARCHIVE_v2.7</span>
                         <span style={{ color: '#444' }}>|</span>
-                        <span style={{ fontSize: '0.9rem' }}>{currentFolder.name} / {currentFile.name}.{currentFile.ext}</span>
+                        <span style={{ fontSize: '0.8rem' }}>{currentFolder.name} / {currentFile.name}</span>
                     </div>
                     <button 
                         onClick={() => StateManager.instance.transitionTo(AppState.MAIN_MENU)}
-                        style={{ background: 'transparent', border: '1px solid #ff3300', color: '#ff3300', padding: '0.4rem 1.2rem', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.8rem' }}
+                        style={{ background: 'transparent', border: '1px solid #ff3300', color: '#ff3300', padding: '0.3rem 1rem', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.75rem' }}
                     >
-                        [ EXIT_TO_ROOT ]
+                        [ EXIT ]
                     </button>
                 </div>
                 <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                    <div style={{ width: '22rem', borderRight: '1px solid #00ffff33', padding: '1.5rem', overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.3)' }}>
+                    <div style={{ width: '16rem', flexShrink: 0, borderRight: '1px solid #00ffff33', padding: '1rem', overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.3)' }}>
                         {archiveData.map((folder, fIdx) => (
                             <div key={folder.name} style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ color: '#555', fontSize: '0.7rem', marginBottom: '0.5rem', letterSpacing: '2px' }}>[FOLDER] {folder.name}</div>
