@@ -43,6 +43,13 @@ export class MusicManager {
 
     public start() { 
         if (this.isPlaying || !this.ctx) return; 
+        
+        // GESTURE ENFORCEMENT: Only start scheduler if context is active
+        if (this.ctx.state !== 'running') {
+            console.warn("[MusicManager] AudioContext SUSPENDED. Waiting for user gesture.");
+            return;
+        }
+
         console.log("[MusicManager] Starting Playback");
         this.isPlaying = true; 
         this.nextNoteTime = this.ctx.currentTime; 

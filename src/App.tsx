@@ -13,30 +13,23 @@ import { AudioManager } from './systems/AudioManager';
 function App() {
   const [state, setState] = useState<AppState>(StateManager.instance.currentState);
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
+  const [needsWake, setNeedsWake] = useState(false);
 
   useEffect(() => {
-    const handleInteraction = () => {
-        AudioManager.getInstance().resume();
-        window.removeEventListener('click', handleInteraction);
-    };
-    window.addEventListener('click', handleInteraction);
-
-    const unsubscribe = StateManager.instance.subscribe((newState) => {
+    // 1. Synchronize StateManager with Component State
+    const unbind = StateManager.instance.subscribe((newState) => {
       setState(newState);
     });
 
+    // 2. Orientation Logic
     const checkOrientation = () => {
         const portrait = window.innerHeight > window.innerWidth;
         setIsPortrait(portrait);
 
-        // RECOVERY: Attempt to resume audio context when orientation or size shifts
-        AudioManager.getInstance().resume();
-
         // AUTO-BOOT WITH SKIP LOGIC
         if (!portrait && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
             if (StateManager.instance.skipCinematics) {
-                console.log("[App] Bypassing Cinematics per Operator Preference.");
-                StateManager.instance.transitionTo(AppState.MAIN_MENU);
+                setNeedsWake(true); // Gate entry behind a user click to wake audio
             } else {
                 StateManager.instance.transitionTo(AppState.POWER_ON);
             }
@@ -44,21 +37,28 @@ function App() {
     };
 
     window.addEventListener('resize', checkOrientation);
-    checkOrientation(); 
+    checkOrientation();
 
     return () => {
-        unsubscribe();
+        unbind();
         window.removeEventListener('resize', checkOrientation);
     };
   }, []);
+
+  const handleWake = async () => {
+      await AudioManager.getInstance().resume();
+      setNeedsWake(false);
+      StateManager.instance.transitionTo(AppState.MAIN_MENU);
+  };
 
   return (
     <div className="game-wrapper" style={{ 
         backgroundColor: '#000', width: '100vw', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center',
         margin: 0, padding: 0, overflow: 'hidden'
     }}>
-      <div className="orientation-barrier" style={{ display: isPortrait ? 'flex' : 'none' }}>
-          <div className="rotation-icon-container">
+      {/* ORIENTATION BARRIER */}
+      <div className="orientation-barrier" style={{ display: isPortrait ? 'flex' : 'none', position: 'absolute', inset: 0, zIndex: 1000000, backgroundColor: '#000', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#00ffff', textAlign: 'center', fontFamily: 'monospace', padding: '2rem' }}>
+          <div className="rotation-icon-container" style={{ marginBottom: '2rem' }}>
               <svg viewBox="0 0 64 64" width="80" height="80">
                   <rect x="20" y="8" width="24" height="48" rx="4" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" />
                   <circle cx="32" cy="50" r="2" fill="var(--neon-cyan)" />
@@ -66,8 +66,8 @@ function App() {
                   <path d="M44 40 L48 44 L52 40" fill="none" stroke="var(--neon-cyan)" strokeWidth="2" strokeLinecap="round" />
               </svg>
           </div>
-          <div className="barrier-title">TACTICAL_ERROR: PORTRAIT_MODE</div>
-          <div className="barrier-body">
+          <div style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '1rem' }}>TACTICAL_ERROR: PORTRAIT_MODE</div>
+          <div style={{ opacity: 0.8, fontSize: '0.9rem' }}>
               Operator, the Syntax Defense Kernel requires landscape orientation for tactical deployment. 
               <br/><br/>
               [ PLEASE ROTATE DEVICE ]
@@ -75,6 +75,15 @@ function App() {
       </div>
 
       <div className="game-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
+        {/* INTERACTION GATES */}
+        {needsWake && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 100000, backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button onClick={handleWake} style={{ backgroundColor: 'transparent', color: '#00ffff', border: '1px solid #00ffff', padding: '20px 40px', cursor: 'pointer', fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: 900, boxShadow: '0 0 20px rgba(0,255,255,0.2)' }}>
+                    [ ESTABLISH SYSTEM LINK ]
+                </button>
+            </div>
+        )}
+
         <div className="crt-vignette"></div>
         {state === AppState.POWER_ON && <PowerOn />}
         {state === AppState.SYSTEM_CHECK && <SystemCheck />}

@@ -19,6 +19,7 @@ export const MainMenu: React.FC = () => {
     const [isTitleGlitched, setIsTitleGlitched] = useState(false);
     const [isThreatCritical, setIsThreatCritical] = useState(false);
     const [isGlobalFlickering, setIsGlobalFlickering] = useState(false);
+    const [audioActive, setAudioActive] = useState(false);
     
     const [showTitle, setShowTitle] = useState(false);
     const [showPlatform, setShowPlatform] = useState(false);
@@ -27,6 +28,7 @@ export const MainMenu: React.FC = () => {
     const idRef = useRef(0);
 
     useEffect(() => {
+        // Attempt to start music, but handle browser restriction silently
         AudioManager.getInstance().startMusic();
         
         const t1 = setTimeout(() => setShowTitle(true), 100);
@@ -39,23 +41,16 @@ export const MainMenu: React.FC = () => {
         const lines = ["MEM_PTR: 0x8F2", "SYSCALL_OK", "DATA_SYNC: 100%", "SOCKET_INIT", "DAEMON_RESP", "FIREWALL: UP"];
         const symbols = ["Ω", "¥", "Σ", "Δ", "Ξ", "Ψ", "Ø"];
 
-        // --- AUTHORITATIVE UNIFIED TIMER ---
-        // This timer handles both Red Anomalies and Subtle Power Flickers
         const globalTimer = setInterval(() => {
             if (!showHud) return;
-
             const dice = Math.random();
-            
-            // 1. RED ANOMALY (4% chance)
             if (dice < 0.04) {
                 const duration = 62.5; 
                 const anomalyID = idRef.current++;
                 const breachText = `BREACH_DETECTED: 0x${Math.random().toString(16).substr(2, 3).toUpperCase()}`;
-                
                 setIsThreatCritical(true);
                 setIsTitleGlitched(true);
-                setIsGlobalFlickering(true); // PERFECT SYNC
-                
+                setIsGlobalFlickering(true);
                 const original = "SYNTAX DEFENSE";
                 const chars = original.split("");
                 for (let i = 0; i < 3; i++) {
@@ -64,27 +59,23 @@ export const MainMenu: React.FC = () => {
                 }
                 setTitleText(chars.join(""));
                 setVitals(prev => [{ id: anomalyID, text: breachText, isRed: true }, ...prev].slice(0, 5));
-
                 setTimeout(() => {
                     setIsThreatCritical(false);
                     setIsTitleGlitched(false);
-                    setIsGlobalFlickering(false); // PERFECT RESTORE
+                    setIsGlobalFlickering(false);
                     setTitleText("SYNTAX DEFENSE");
                     setVitals(prev => prev.filter(v => v.id !== anomalyID));
                 }, duration);
             } 
-            // 2. SUBTLE POWER FLICKER (15% chance, if no anomaly)
             else if (dice < 0.19) {
                 const duration = 50 + Math.random() * 50;
-                setIsGlobalFlickering(true); // PERFECT SYNC
+                setIsGlobalFlickering(true);
                 setTimeout(() => setIsGlobalFlickering(false), duration);
             }
-            // 3. NORMAL VITAL UPDATE (30% chance)
             else if (dice < 0.5) {
                 const nextText = lines[Math.floor(Math.random() * lines.length)];
                 setVitals(prev => [{ id: idRef.current++, text: nextText, isRed: false }, ...prev].slice(0, 5));
             }
-
         }, 2000);
 
         return () => {
@@ -92,6 +83,11 @@ export const MainMenu: React.FC = () => {
             clearInterval(upTimer); clearInterval(entTimer); clearInterval(globalTimer);
         };
     }, [showHud]);
+
+    const handleInteraction = async () => {
+        await AudioManager.getInstance().resume();
+        setAudioActive(true);
+    };
 
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600);
@@ -106,6 +102,7 @@ export const MainMenu: React.FC = () => {
             id: 'INIT', 
             log: 'EXE: NEW_SESSION.BIN', 
             action: () => {
+                handleInteraction();
                 StateManager.instance.resetSession();
                 const hasSeenTutorial = localStorage.getItem('syndef_tutorial_v19');
                 if (hasSeenTutorial) {
@@ -119,11 +116,14 @@ export const MainMenu: React.FC = () => {
         },
         { 
             label: 'RESUME SESSION', id: 'RESUME', log: 'EXE: RESTORE_ARCHIVE.BIN', 
-            action: () => { if(hasSave) StateManager.instance.loadGame(); }, 
+            action: () => { 
+                handleInteraction();
+                if(hasSave) StateManager.instance.loadGame(); 
+            }, 
             status: hasSave ? 'READY' : 'NULL', size: '08.1kb', ext: 'BIN', disabled: !hasSave, highlight: hasSave 
         },
-        { label: 'SYSTEM ARCHIVE', id: 'INFO', log: 'EXTRACT: SYSTEM_LOGS.DB', action: () => StateManager.instance.transitionTo(AppState.ARCHIVE), status: 'ARCHIVED', size: '128kb', ext: 'DB' },
-        { label: 'SYSTEM DIAGNOSTICS', id: 'SETTINGS', log: 'OVERWRITE: USER_PREFS.JSON', action: () => StateManager.instance.transitionTo(AppState.DIAGNOSTICS), status: 'ACTIVE', size: '04.2kb', ext: 'JSON' }
+        { label: 'SYSTEM ARCHIVE', id: 'INFO', log: 'EXTRACT: SYSTEM_LOGS.DB', action: () => { handleInteraction(); StateManager.instance.transitionTo(AppState.ARCHIVE); }, status: 'ARCHIVED', size: '128kb', ext: 'DB' },
+        { label: 'SYSTEM DIAGNOSTICS', id: 'SETTINGS', log: 'OVERWRITE: USER_PREFS.JSON', action: () => { handleInteraction(); StateManager.instance.transitionTo(AppState.DIAGNOSTICS); }, status: 'ACTIVE', size: '04.2kb', ext: 'JSON' }
     ];
 
     return (
@@ -190,7 +190,7 @@ export const MainMenu: React.FC = () => {
                                         paddingLeft: hoveredNode === item.log ? '1.0rem' : 0, 
                                         cursor: (item as any).disabled ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: '1.1rem', textAlign: 'left', alignItems: 'center',
                                         transition: 'all 0.2s', borderLeft: hoveredNode === item.log ? '0.25rem solid #00ffff' : '0.25rem solid transparent',
-                                        opacity: (item as any).disabled ? 0.3 : 1.0 // Maximum visibility for active items
+                                        opacity: (item as any).disabled ? 0.3 : 1.0 
                                     }}
                                 >
                                     <span style={{ width: '4.5rem', fontSize: '0.8rem', opacity: (item as any).disabled ? 0.2 : 0.8 }}>{item.size}</span>
