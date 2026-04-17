@@ -23,6 +23,12 @@ export class AudioManager {
         try {
             const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
             this.ctx = new AudioContextClass();
+            
+            // Check if context starts suspended (standard browser behavior)
+            if (this.ctx.state === 'suspended') {
+                console.log("[AudioManager] AudioContext initialized in SUSPENDED state.");
+            }
+
             this.masterGain = this.ctx.createGain();
             this.masterGain.gain.value = 1.0;
             this.masterGain.connect(this.ctx.destination);
@@ -33,16 +39,13 @@ export class AudioManager {
     }
 
     public async resume() {
-        if (!this.ctx) {
-            this.init();
-        } else {
-            if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
-                console.log("[AudioManager] Attempting to resume AudioContext...");
-                await this.ctx.resume();
-            }
+        if (!this.ctx) this.init();
+        if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
+            console.log("[AudioManager] Resuming AudioContext via User Gesture...");
+            await this.ctx.resume();
         }
         
-        // RECOVERY LAW: Re-kick the scheduler if music was active
+        // Re-kick music scheduler if needed
         if (this.ctx && this.ctx.state === 'running') {
             MusicManager.getInstance().start(); 
         }

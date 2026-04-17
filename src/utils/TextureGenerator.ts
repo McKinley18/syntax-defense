@@ -32,12 +32,12 @@ export class TextureGenerator {
         this.basePlateTexture = app.renderer.generateTexture(bg);
 
         // --- 2. UNIQUE CHASSIS ASSEMBLIES ---
-        const types = [
+        const towerTypes = [
             TowerType.PULSE_NODE, TowerType.SONIC_IMPULSE, TowerType.STASIS_FIELD,
             TowerType.PRISM_BEAM, TowerType.RAIL_CANNON, TowerType.VOID_PROJECTOR
         ];
 
-        types.forEach(type => {
+        towerTypes.forEach(type => {
             const config = TOWER_CONFIGS[type];
             const g = new PIXI.Graphics();
             const color = config.color;
@@ -82,19 +82,73 @@ export class TextureGenerator {
             this.towerChassisTextures.set(type, app.renderer.generateTexture(g));
         });
 
-        // --- 3. ENEMY TEXTURES ---
-        [EnemyType.GLIDER, EnemyType.STRIDER, EnemyType.BEHEMOTH, EnemyType.FRACTAL, EnemyType.PHANTOM, EnemyType.WORM].forEach(type => {
+        // --- 3. ENEMY TEXTURES (High Character/Detail) ---
+        const enemyTypes = [
+            EnemyType.GLIDER, EnemyType.STRIDER, EnemyType.BEHEMOTH, 
+            EnemyType.FRACTAL, EnemyType.PHANTOM, EnemyType.WORM, EnemyType.BOSS
+        ];
+
+        enemyTypes.forEach(type => {
             const config = VISUAL_REGISTRY[type];
             const eg = new PIXI.Graphics();
             const es = 12;
             const color = config.color;
+
             switch(type) {
                 case EnemyType.GLIDER:
-                    eg.poly([{x:0, y:-es*1.2}, {x:es, y:es}, {x:0, y:es*0.5}, {x:-es, y:es}]).fill({ color, alpha: 0.8 }).stroke({ width: 2, color: 0xffffff });
+                    // Sleek Triangle Scout
+                    eg.poly([{x:0, y:-es*1.4}, {x:es, y:es}, {x:0, y:es*0.4}, {x:-es, y:es}]).fill({ color, alpha: 0.8 }).stroke({ width: 2, color: 0xffffff });
                     break;
+
+                case EnemyType.STRIDER:
+                    // Hexagonal Logic Hub
+                    eg.poly([
+                        {x:-es, y:-es*0.5}, {x:0, y:-es}, {x:es, y:-es*0.5},
+                        {x:es, y:es*0.5}, {x:0, y:es}, {x:-es, y:es*0.5}
+                    ]).fill({ color, alpha: 0.8 }).stroke({ width: 2, color: 0xffffff });
+                    eg.circle(0, 0, es*0.4).fill(0xffffff);
+                    break;
+
                 case EnemyType.BEHEMOTH:
-                    eg.rect(-es, -es, es*2, es*2).fill({ color, alpha: 0.9 }).stroke({ width: 2, color: 0xffffff });
+                    // Heavy Armored Fortress
+                    eg.rect(-es, -es, es*2, es*2).fill({ color, alpha: 0.9 }).stroke({ width: 3, color: 0xffffff });
+                    eg.rect(-es*0.5, -es*0.5, es, es).stroke({ width: 1, color: 0x000000 });
                     break;
+
+                case EnemyType.FRACTAL:
+                    // Recursive Starburst
+                    for(let i=0; i<4; i++) {
+                        const rot = (Math.PI/2) * i;
+                        eg.rect(Math.cos(rot)*es - 2, Math.sin(rot)*es - 2, 4, 14).fill(color);
+                    }
+                    eg.poly([{x:-es, y:0}, {x:0, y:-es}, {x:es, y:0}, {x:0, y:es}]).fill(0xffffff);
+                    break;
+
+                case EnemyType.PHANTOM:
+                    // Cloaked Ring Signature
+                    eg.circle(0, 0, es).stroke({ width: 2, color, alpha: 0.4 });
+                    eg.circle(0, 0, es*0.6).stroke({ width: 2, color, alpha: 0.7 });
+                    eg.circle(0, 0, 3).fill(0xffffff);
+                    break;
+
+                case EnemyType.WORM:
+                    // Segmented Parasite
+                    for(let x of [-es, 0, es]) {
+                        eg.circle(x, 0, es*0.6).fill(color).stroke({ width: 1, color: 0xffffff });
+                    }
+                    break;
+
+                case EnemyType.BOSS:
+                    // THE KERNEL CRUSHER
+                    const bs = es * 2;
+                    eg.poly([
+                        {x:-bs, y:-bs*0.5}, {x:-bs*0.5, y:-bs}, {x:bs*0.5, y:-bs}, {x:bs, y:-bs*0.5},
+                        {x:bs, y:bs*0.5}, {x:bs*0.5, y:bs}, {x:-bs*0.5, y:bs}, {x:-bs, y:bs*0.5}
+                    ]).fill({ color: 0xff3300 }).stroke({ width: 4, color: 0xffffff });
+                    eg.circle(0, 0, bs*0.6).fill(0x000000).stroke({ width: 2, color: 0xffffff });
+                    eg.circle(0, 0, bs*0.3).fill(0xffffff);
+                    break;
+
                 default:
                     eg.circle(0, 0, es).fill(color).stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
             }
@@ -106,9 +160,6 @@ export class TextureGenerator {
     public getTowerChassisTexture(type: TowerType): PIXI.Texture { return this.towerChassisTextures.get(type)!; }
     public getEnemyTexture(type: EnemyType): PIXI.Texture { return this.enemyTextures.get(type)!; }
     
-    /**
-     * RESTORED: Grid Texture Utility for Menu Background
-     */
     public getGridTexture(app: PIXI.Application): PIXI.Texture {
         const g = new PIXI.Graphics();
         g.rect(0, 0, TILE_SIZE, TILE_SIZE).fill({ color: 0x000000, alpha: 0 });

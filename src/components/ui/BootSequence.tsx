@@ -87,7 +87,9 @@ export const BootSequence: React.FC = () => {
     const startSequence = () => {
         if (hasStarted.current) return;
         hasStarted.current = true;
+        // GESTURE LOCK: Force resume upon first user click
         AudioManager.getInstance().resume().then(() => {
+            console.log("[BootSequence] Audio Engine Active.");
             setCurrentIdx(0);
         });
     };
