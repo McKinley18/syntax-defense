@@ -31,9 +31,11 @@ export class WaveManager {
         this.towerManager = towerManager;
         this.pathManager = pathManager;
         this.container = new PIXI.Container();
-        Engine.instance.app.stage.addChild(this.container);
+        // REMOVED: Direct stage addition (managed by GameCanvas)
         this.generateIntel(StateManager.instance.currentWave);
     }
+
+    public getContainer() { return this.container; }
 
     public confirmIntel() {
         if (StateManager.instance.currentState === AppState.WAVE_COMPLETED) {
@@ -91,7 +93,7 @@ export class WaveManager {
             return sum + (t.damage / cooldownSec);
         }, 0) / unlockedTowers.length : 15;
 
-        // LAW: Difficulty curve is constant per wave, not randomized by Brain
+        // LAW: Difficulty curve is constant per wave
         let difficultyMultiplier = 1.0 + (0.15 * levelNumber) + (0.02 * Math.pow(levelNumber, 2));
         
         const integrity = StateManager.instance.integrity;
@@ -106,7 +108,6 @@ export class WaveManager {
         const directives = ["SWARM", "SHIELD", "GHOST", "BALANCED"];
         let selectedDirective = directives[Math.floor(Math.random() * directives.length)];
         
-        // Brain influences WAVE COMPOSITION (Directives) only
         if (profile?.theme === SimulationTheme.VOLATILE) selectedDirective = "SWARM";
         if (profile?.theme === SimulationTheme.SHIELDED) selectedDirective = "SHIELD";
         
@@ -193,7 +194,6 @@ export class WaveManager {
                 if (lp.length > 0) {
                     const ingressPath = [new PIXI.Point(vL - 80, lp[0].y), ...lp, new PIXI.Point(vR + 40, lp[lp.length - 1].y)];
                     
-                    // LAW: HP scales ONLY by wave number (Predictable progression)
                     const healthScale = 1 + StateManager.instance.currentWave * 0.05;
                     const enemy = new Enemy(next.type, ingressPath, healthScale);
                     this.enemies.push(enemy);
@@ -212,7 +212,6 @@ export class WaveManager {
             }
 
             if (enemy.isDead) {
-                // LAW: Rewards are absolute constants per enemy type
                 let reward = VISUAL_REGISTRY[enemy.type].reward;
                 if (StateManager.instance.credits > 5000) reward *= 0.7;
                 
@@ -231,7 +230,6 @@ export class WaveManager {
 
         if (this.waveInProgress && this.spawnQueue.length === 0 && this.enemies.length === 0) {
             this.waveInProgress = false;
-            // LAW: Level completion rewards are absolute constants
             StateManager.instance.addCredits(300 + (StateManager.instance.currentWave * 25));
             StateManager.instance.currentWave++;
             this.generateIntel(StateManager.instance.currentWave);

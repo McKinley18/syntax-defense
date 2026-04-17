@@ -46,11 +46,14 @@ export const GameCanvas = () => {
             const mapManager = new MapManager();
             const towerManager = new TowerManager(mapManager);
             
-            // SYSTEM MOUNTING
-            app.stage.addChild(towerManager.getContainer());
-            app.stage.addChild(towerManager.getProjectileContainer());
-
+            // SYSTEM MOUNTING: Order matters for Z-index
+            app.stage.addChild(mapManager.getContainer()); // MOUNT MAP
+            app.stage.addChild(towerManager.getContainer()); // MOUNT TOWERS
+            
             const waveManager = new WaveManager(mapManager, towerManager, pathManager);
+            app.stage.addChild(waveManager.getContainer()); // MOUNT ENEMIES
+            
+            app.stage.addChild(towerManager.getProjectileContainer()); // MOUNT PROJECTILES (Top Layer)
             new InputManager(app, mapManager, towerManager);
             
             systemsRef.current = { pathManager, mapManager, towerManager, waveManager };

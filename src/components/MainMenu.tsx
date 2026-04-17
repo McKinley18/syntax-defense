@@ -45,6 +45,9 @@ export const MainMenu: React.FC = () => {
     }, [showUI]);
 
     const handleInteraction = () => {
+        // --- SEAMLESS AUDIO RESUMPTION ---
+        AudioManager.getInstance().resume();
+        
         AudioManager.getInstance().playUiClick();
         setGlobalFlickering(true);
         setTimeout(() => setGlobalFlickering(false), 80);

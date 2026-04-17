@@ -5,6 +5,7 @@ export class AudioManager {
     private static instance: AudioManager;
     private ctx: AudioContext | null = null;
     private masterGain: GainNode | null = null;
+    private noiseBuffer: AudioBuffer | null = null;
     
     public isSfxMuted: boolean = false;
     public sfxVolume: number = 0.5;
@@ -26,6 +27,13 @@ export class AudioManager {
             this.masterGain = this.ctx.createGain();
             this.masterGain.gain.value = 1.0;
             this.masterGain.connect(this.ctx.destination);
+            
+            // PRE-GENERATE NOISE FOR REALISTIC CLICKS
+            const bufferSize = this.ctx.sampleRate * 0.1; 
+            this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = this.noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
             MusicManager.getInstance().init(this.ctx, this.masterGain);
         } catch (e) {
             console.error("AUDIO_ENGINE_FAILURE", e);
@@ -37,48 +45,74 @@ export class AudioManager {
         if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
             await this.ctx.resume();
         }
+    }
+
+    public startMusic() { 
         if (this.ctx && this.ctx.state === 'running') {
             MusicManager.getInstance().start(); 
         }
     }
 
-    public startMusic() { MusicManager.getInstance().start(); }
+    // --- HIGH-FIDELITY MECHANICAL TYPING ---
+    public playTypeClick() {
+        if (!this.ctx || !this.noiseBuffer || this.isSfxMuted || this.ctx.state !== 'running') return;
+        const time = this.ctx.currentTime;
+        
+        // 1. High-End Snap (Mechanical Switch)
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = this.noiseBuffer;
+        const noiseGain = this.ctx.createGain();
+        const noiseFilter = this.ctx.createBiquadFilter();
+        
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.value = 2000 + Math.random() * 1000;
+        
+        noiseGain.gain.setValueAtTime(0.03 * this.sfxVolume, time);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+        
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.masterGain!);
+        noise.start(time);
+        noise.stop(time + 0.02);
+
+        // 2. Low-End Thud (Key Bottoming Out)
+        const thud = this.ctx.createOscillator();
+        const thudGain = this.ctx.createGain();
+        thud.type = 'triangle';
+        thud.frequency.setValueAtTime(100 + Math.random() * 50, time);
+        thudGain.gain.setValueAtTime(0.05 * this.sfxVolume, time);
+        thudGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+        
+        thud.connect(thudGain);
+        thudGain.connect(this.masterGain!);
+        thud.start(time);
+        thud.stop(time + 0.04);
+    }
+
+    // AUTOMATED COMPUTER CHATTER
+    public playDataChatter() {
+        this.triggerTonedBlip(2400 + Math.random() * 800, 2000, 0.015, 0.02, 'sine', 2000);
+    }
 
     public playUiClick() {
         this.triggerTonedBlip(880, 1200, 0.05, 0.08, 'sine');
-    }
-
-    // MECHANICAL KEYBOARD CLICK (Filtered for ear-fatigue)
-    public playTypeClick() {
-        this.triggerTonedBlip(1200 + Math.random() * 400, 1000, 0.03, 0.04, 'triangle', 2500);
-    }
-
-    // AUTOMATED COMPUTER CHATTER (Softened Transients)
-    public playDataChatter() {
-        this.triggerTonedBlip(2400 + Math.random() * 800, 2000, 0.015, 0.02, 'sine', 2000);
     }
 
     public playTerminalCommand() {
         this.triggerTonedBlip(140, 60, 0.12, 0.2, 'triangle');
     }
 
-    /**
-     * UNIVERSAL BLIP TRIGGER
-     * Includes optional Low-Pass Filter for ear-fatigue mitigation.
-     */
     private triggerTonedBlip(startF: number, endF: number, dur: number, vol: number, type: OscillatorType, filterF?: number) {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
         const time = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
-        
         osc.type = type;
         osc.frequency.setValueAtTime(startF, time);
         osc.frequency.exponentialRampToValueAtTime(endF, time + dur);
-        
         g.gain.setValueAtTime(vol * this.sfxVolume, time);
         g.gain.exponentialRampToValueAtTime(0.001, time + dur);
-
         if (filterF) {
             const filter = this.ctx.createBiquadFilter();
             filter.type = 'lowpass';
@@ -88,7 +122,6 @@ export class AudioManager {
         } else {
             osc.connect(g);
         }
-
         g.connect(this.masterGain!);
         osc.start(time);
         osc.stop(time + dur);

@@ -23,6 +23,7 @@ export const BootSequence: React.FC = () => {
     // --- STAGE CONTROL ---
     const [isIgnited, setIsIgnited] = useState(false);
     const [isExpanding, setIsExpanding] = useState(false);
+    const [isSplitting, setIsSplitting] = useState(false);
     const [terminalReady, setTerminalReady] = useState(false);
     const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
     
@@ -41,22 +42,23 @@ export const BootSequence: React.FC = () => {
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const rowsRef = useRef<TerminalRow[]>([]);
+    const hasStarted = useRef(false);
     
-    // LAW: Fluidity window (Count of ROWS)
     const MAX_ROWS = 6;
-
     const lineCompletionResolvers = useRef<Record<string, () => void>>({});
 
-    // 1. CRT INITIALIZATION SEQUENCE
+    // 1. KINETIC CRT IGNITION: Splits and reveals UI
     useEffect(() => {
         const boot = async () => {
             await new Promise(r => setTimeout(r, 400));
-            setIsIgnited(true);
+            setIsIgnited(true); // Dot manifests
             await new Promise(r => setTimeout(r, 600));
-            setIsExpanding(true);
-            await new Promise(r => setTimeout(r, 700));
-            setTerminalReady(true);
-            runTerminalBoot();
+            setIsExpanding(true); // Expands horizontally
+            await new Promise(r => setTimeout(r, 500));
+            setIsSplitting(true); // Splits vertically
+            await new Promise(r => setTimeout(r, 600));
+            setTerminalReady(true); // Lock final state
+            setShowInitializeGate(true);
         };
         boot();
 
@@ -65,14 +67,10 @@ export const BootSequence: React.FC = () => {
         return () => window.removeEventListener('resize', check);
     }, []);
 
-    // 2. AUTO-SCROLL LOGIC
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, [rows, internalProgress, showInitializeGate, showFinalExit]);
 
-    // 3. VITAL SIMULATION
     useEffect(() => {
         const itv = setInterval(() => {
             setSignalStr(prev => Math.min(100, Math.max(80, prev + (Math.random()*4 - 2))));
@@ -80,14 +78,12 @@ export const BootSequence: React.FC = () => {
         return () => clearInterval(itv);
     }, []);
 
-    // 4. SEQUENTIAL ROW/LINE HELPER
     const addLineAndWait = async (line: Omit<TerminalLine, 'id'>) => {
         const id = Math.random().toString(36).substr(2, 9);
         const newLine = { ...line, id };
         
         return new Promise<void>((resolve) => {
             lineCompletionResolvers.current[id] = resolve;
-            
             let newRows = [...rowsRef.current];
             if (newLine.isAppend && newRows.length > 0) {
                 const lastRow = newRows[newRows.length - 1];
@@ -97,7 +93,6 @@ export const BootSequence: React.FC = () => {
                 newRows.push(newRow);
                 if (newRows.length > MAX_ROWS) newRows.shift();
             }
-            
             rowsRef.current = newRows;
             setRows([...newRows]);
         });
@@ -110,7 +105,12 @@ export const BootSequence: React.FC = () => {
         }
     };
 
-    const runTerminalBoot = async () => {
+    const authorizeSystem = async () => {
+        if (hasStarted.current) return;
+        hasStarted.current = true;
+        setShowInitializeGate(false);
+        await AudioManager.getInstance().resume();
+        
         await addLineAndWait({ text: "SYNTAX_KERNEL_BOOT_V1.0.4", color: "rgba(255,255,255,0.5)", speed: 40 });
         await new Promise(r => setTimeout(r, 400));
         
@@ -137,19 +137,14 @@ export const BootSequence: React.FC = () => {
             await addLineAndWait({ text: log, color: "#00ff66", speed: 10 });
         }
         
-        await new Promise(r => setTimeout(r, 1500)); 
-        await addLineAndWait({ text: "READY_FOR_USER_AUTHORIZATION", color: "#00ff66", speed: 30 });
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 1000)); 
+        await addLineAndWait({ text: "READY_FOR_OPERATOR_COMMANDS", color: "#00ff66", speed: 30 });
+        await new Promise(r => setTimeout(r, 800));
         
-        setShowInitializeGate(true);
+        runBreachSequence();
     };
 
-    const startBreachSequence = async () => {
-        setShowInitializeGate(false);
-        rowsRef.current = [];
-        setRows([]);
-        await AudioManager.getInstance().resume();
-        
+    const runBreachSequence = async () => {
         const breachPhases = [
             { text: "auth --request-access --identity=ARCHITECT", color: "#fff", speed: 40, delay: 500, isUser: true, isCommand: true },
             { text: "ACCESS_REQUEST_RECEIVED... SCANNING_BIOMETRICS...", color: "#00ff66", speed: 20, delay: 400 },
@@ -210,109 +205,106 @@ export const BootSequence: React.FC = () => {
     return (
         <div style={{ backgroundColor: '#000', width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
             
-            {!terminalReady && (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, background: '#000' }}>
-                    <div style={{
-                        position: 'absolute',
-                        width: isExpanding ? '100%' : (isIgnited ? '10px' : '0px'),
-                        height: isExpanding ? (terminalReady ? '100%' : '1px') : (isIgnited ? '10px' : '0px'),
-                        backgroundColor: '#00ffff',
-                        boxShadow: '0 0 30px #00ffff',
-                        opacity: isIgnited ? 0.3 : 0,
-                        transform: 'translateX(2px)',
-                        transition: 'width 0.4s cubic-bezier(0.1, 0, 0.1, 1), height 0.4s cubic-bezier(0.1, 0, 0.1, 1)'
-                    }} />
-                    <div style={{
-                        position: 'absolute',
-                        width: isExpanding ? '100%' : (isIgnited ? '10px' : '0px'),
-                        height: isExpanding ? (terminalReady ? '100%' : '1px') : (isIgnited ? '10px' : '0px'),
-                        backgroundColor: '#ff3300',
-                        boxShadow: '0 0 30px #ff3300',
-                        opacity: isIgnited ? 0.3 : 0,
-                        transform: 'translateX(-2px)',
-                        transition: 'width 0.4s cubic-bezier(0.1, 0, 0.1, 1), height 0.4s cubic-bezier(0.1, 0, 0.1, 1)'
-                    }} />
-                    <div className={isExpanding ? 'crt-flicker' : ''} style={{
-                        position: 'absolute',
-                        width: isExpanding ? '100%' : (isIgnited ? '6px' : '0px'),
-                        height: isExpanding ? (terminalReady ? '100%' : '2px') : (isIgnited ? '6px' : '0px'),
-                        backgroundColor: '#fff',
-                        boxShadow: '0 0 10px #fff, 0 0 40px #fff',
-                        transition: 'width 0.4s cubic-bezier(0.1, 0, 0.1, 1), height 0.4s cubic-bezier(0.1, 0, 0.1, 1)'
-                    }} />
-                </div>
-            )}
-
-            {terminalReady && (
-                <div style={{ 
-                    width: '100%', height: '100%', padding: '2.5rem', boxSizing: 'border-box',
-                    display: 'flex', flexDirection: 'column', 
-                    animation: isGlitching ? 'glitch-distortion 0.4s' : 'none',
-                    fontFamily: "'Courier New', monospace",
-                    color: themeColor
-                }}>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', borderBottom: `1px solid ${themeColor}44`, paddingBottom: '0.8rem' }}>
-                        <div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '2px' }}>[ SYNTAX_TACTICAL_TERMINAL ]</div>
-                            <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{isRedMode ? `CRITICAL_FAILURE@${chaosText}` : 'ARCHITECT@SYNTAX_CORE:~/BOOT$'}</div>
-                        </div>
-                        <div style={{ textAlign: 'right', fontSize: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                            <div>SEC_LEVEL: <span style={{ color: isRedMode ? '#ff3300' : '#fff' }}>[{isRedMode ? 'CRITICAL' : 'STABLE'}]</span></div>
-                            <div style={{ opacity: 0.8 }}>SIGNAL: {Math.floor(signalStr)}%</div>
-                        </div>
+            {/* 1. TERMINAL CONTENT LAYER (Pre-loaded) */}
+            <div style={{ 
+                width: '100%', height: '100%', padding: '2.5rem', boxSizing: 'border-box',
+                display: 'flex', flexDirection: 'column', 
+                animation: isGlitching ? 'glitch-distortion 0.4s' : 'none',
+                fontFamily: "'Courier New', monospace",
+                color: themeColor,
+                opacity: terminalReady ? 1 : 0
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', borderBottom: `1px solid ${themeColor}44`, paddingBottom: '0.8rem' }}>
+                    <div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '2px' }}>[ SYNTAX_TACTICAL_TERMINAL ]</div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{isRedMode ? `CRITICAL_FAILURE@${chaosText}` : 'ARCHITECT@SYNTAX_CORE:~/BOOT$'}</div>
                     </div>
+                    <div style={{ textAlign: 'right', fontSize: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                        <div>SEC_LEVEL: <span style={{ color: isRedMode ? '#ff3300' : '#fff' }}>[{isRedMode ? 'CRITICAL' : 'STABLE'}]</span></div>
+                        <div style={{ opacity: 0.8 }}>SIGNAL: {Math.floor(signalStr)}%</div>
+                    </div>
+                </div>
 
-                    <div ref={scrollRef} style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '14px' }}>
-                        {rows.map((row) => (
-                            <div key={row.id} style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                                <span style={{ marginRight: '0.5rem', opacity: 0.5, color: themeColor }}>&gt;</span>
-                                {row.lines.map((line) => (
-                                    <span key={line.id} style={{ 
-                                        color: isRedMode ? '#ff3300' : (line.color || themeColor),
-                                        marginLeft: line.isAppend ? '0.5rem' : '0'
-                                    }}>
-                                        <TerminalText 
-                                            text={line.text} 
-                                            speed={line.speed || 20} 
-                                            humanTyping={line.isUser} 
-                                            isCommand={line.isCommand} 
-                                            isGlitched={isRedMode}
-                                            permanentGlitch={true}
-                                            onComplete={() => handleLineComplete(line.id)}
-                                        />
-                                    </span>
-                                ))}
-                            </div>
-                        ))}
+                <div ref={scrollRef} style={{ flex: 1, overflowY: 'hidden', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '14px' }}>
+                    {showInitializeGate && (
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <button onClick={authorizeSystem} style={{ backgroundColor: 'transparent', color: '#00ff66', border: '2px solid #00ff66', padding: '15px 50px', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 900, fontFamily: 'inherit', letterSpacing: '2px', boxShadow: '0 0 20px rgba(0,255,102,0.2)' }}>
+                                [ INITIALIZE SYSTEM ]
+                            </button>
+                        </div>
+                    )}
 
-                        {showRecovery && (
-                            <div style={{ margin: '1rem 0' }}>
-                                <div style={{ width: '22rem', height: '1.5rem', border: `1px solid ${themeColor}`, position: 'relative', overflow: 'hidden', background: 'rgba(0,0,0,0.5)' }}>
-                                    <div style={{ height: '100%', background: themeColor, width: `${internalProgress}%` }} />
-                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: internalProgress > 50 ? '#000' : themeColor, fontWeight: 900 }}>
-                                        RECOVERY_SYNC: {internalProgress}%
-                                    </div>
+                    {rows.map((row) => (
+                        <div key={row.id} style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                            <span style={{ marginRight: '0.5rem', opacity: 0.5, color: themeColor }}>&gt;</span>
+                            {row.lines.map((line) => (
+                                <span key={line.id} style={{ 
+                                    color: isRedMode ? '#ff3300' : (line.color || themeColor),
+                                    marginLeft: line.isAppend ? '0.5rem' : '0'
+                                }}>
+                                    <TerminalText text={line.text} speed={line.speed || 20} humanTyping={line.isUser} isCommand={line.isCommand} isGlitched={isRedMode} permanentGlitch={true} onComplete={() => handleLineComplete(line.id)} />
+                                </span>
+                            ))}
+                        </div>
+                    ))}
+
+                    {showRecovery && (
+                        <div style={{ margin: '1rem 0' }}>
+                            <div style={{ width: '22rem', height: '1.5rem', border: `1px solid ${themeColor}`, position: 'relative', overflow: 'hidden', background: 'rgba(0,0,0,0.5)' }}>
+                                <div style={{ height: '100%', background: themeColor, width: `${internalProgress}%` }} />
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: internalProgress > 50 ? '#000' : themeColor, fontWeight: 900 }}>
+                                    RECOVERY_SYNC: {internalProgress}%
                                 </div>
                             </div>
-                        )}
+                        </div>
+                    )}
 
-                        {showInitializeGate && (
-                            <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'center' }}>
-                                <button onClick={startBreachSequence} style={{ backgroundColor: 'transparent', color: '#00ff66', border: '2px solid #00ff66', padding: '15px 50px', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 900, fontFamily: 'inherit', letterSpacing: '2px', boxShadow: '0 0 20px rgba(0,255,102,0.2)' }}>
-                                    [ INITIALIZE SYSTEM ]
-                                </button>
-                            </div>
-                        )}
+                    {showFinalExit && (
+                        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                            <button onClick={() => StateManager.instance.transitionTo(AppState.STUDIO_SPLASH)} style={{ backgroundColor: 'transparent', border: '2px solid #ff3300', color: '#ff3300', padding: '1.2rem 3rem', fontSize: '1.3rem', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '3px', boxShadow: '0 0 20px rgba(255,51,0,0.3)', animation: 'blink 0.8s infinite alternate' }}>
+                                [ ACCESS SYSTEM ROOT ]
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
 
-                        {showFinalExit && (
-                            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
-                                <button onClick={() => StateManager.instance.transitionTo(AppState.STUDIO_SPLASH)} style={{ backgroundColor: 'transparent', border: '2px solid #ff3300', color: '#ff3300', padding: '1.2rem 3rem', fontSize: '1.3rem', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 900, letterSpacing: '3px', boxShadow: '0 0 20px rgba(255,51,0,0.3)', animation: 'blink 0.8s infinite alternate' }}>
-                                    [ ACCESS SYSTEM ROOT ]
-                                </button>
-                            </div>
-                        )}
-                    </div>
+            {/* 2. KINETIC SPLIT OVERLAY (Hardware Layer) */}
+            {!terminalReady && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 1000, pointerEvents: 'none', overflow: 'hidden' }}>
+                    {/* Top Mask */}
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, height: '50%', background: '#000',
+                        transformOrigin: 'top', transform: isSplitting ? 'scaleY(0)' : 'scaleY(1)',
+                        transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }} />
+                    {/* Bottom Mask */}
+                    <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: '#000',
+                        transformOrigin: 'bottom', transform: isSplitting ? 'scaleY(0)' : 'scaleY(1)',
+                        transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }} />
+
+                    {isIgnited && (
+                        <>
+                            {/* Top Kinetic Line */}
+                            <div className="crt-flicker" style={{
+                                position: 'absolute', left: '50%', top: '50%',
+                                width: isExpanding ? '100%' : '10px', height: '2px',
+                                backgroundColor: '#fff', boxShadow: '0 0 15px #fff, 0 0 40px #00ffff',
+                                transform: `translate(-50%, -50%) translateY(${isSplitting ? '-50vh' : '0'})`,
+                                transition: 'width 0.4s ease-out, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                            }} />
+                            {/* Bottom Kinetic Line */}
+                            <div className="crt-flicker" style={{
+                                position: 'absolute', left: '50%', top: '50%',
+                                width: isExpanding ? '100%' : '10px', height: '2px',
+                                backgroundColor: '#fff', boxShadow: '0 0 15px #fff, 0 0 40px #ff3300',
+                                transform: `translate(-50%, -50%) translateY(${isSplitting ? '50vh' : '0'})`,
+                                transition: 'width 0.4s ease-out, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                            }} />
+                        </>
+                    )}
                 </div>
             )}
 

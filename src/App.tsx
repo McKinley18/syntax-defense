@@ -24,11 +24,13 @@ function App() {
         const portrait = window.innerHeight > window.innerWidth;
         setIsPortrait(portrait);
 
-        // AUTO-BOOT LOGIC
+        // SEAMLESS AUTO-SKIP PROTOCOL
         if (!portrait && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
             if (StateManager.instance.skipCinematics) {
-                setNeedsWake(true);
+                // Subsequent Load: Jump straight to Menu automatically
+                StateManager.instance.transitionTo(AppState.MAIN_MENU);
             } else {
+                // First Load: Play full unified sequence
                 StateManager.instance.transitionTo(AppState.TERMINAL_BOOT);
             }
         }
@@ -39,8 +41,8 @@ function App() {
 
     // Force transition if already landscape on mount
     if (window.innerWidth > window.innerHeight && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
-         if (StateManager.instance.skipCinematics) {
-            setNeedsWake(true);
+        if (StateManager.instance.skipCinematics) {
+            StateManager.instance.transitionTo(AppState.MAIN_MENU);
         } else {
             StateManager.instance.transitionTo(AppState.TERMINAL_BOOT);
         }
@@ -85,7 +87,7 @@ function App() {
       </div>
 
       <div className="game-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
-        {/* INTERACTION GATE */}
+        {/* INTERACTION GATE (Only for first-time intro users) */}
         {needsWake && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 100000, backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <button onClick={handleWake} style={{ backgroundColor: 'transparent', color: '#00ffff', border: '1px solid #00ffff', padding: '20px 40px', cursor: 'pointer', fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: 900, boxShadow: '0 0 20px rgba(0,255,255,0.2)' }}>
