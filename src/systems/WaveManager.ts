@@ -107,8 +107,8 @@ export class WaveManager {
             currentWaveHP += VISUAL_REGISTRY[bossType].hp * (1 + levelNumber * 0.05) * laneMultiplier;
         }
 
-        // FIXED: Explicitly cast keys to Number for reliable comparison
-        const allEnemyTypes = Object.keys(VISUAL_REGISTRY).map(Number).filter(n => !isNaN(n));
+        // FIXED: Explicitly cast keys to EnemyType for reliable indexing
+        const allEnemyTypes = (Object.keys(VISUAL_REGISTRY).map(Number).filter(n => !isNaN(n)) as unknown) as EnemyType[];
         const availableTypes = allEnemyTypes.filter(t => {
             if (t === EnemyType.BOSS) return false;
             const unlock = (t === EnemyType.GLIDER ? 0 : t === EnemyType.STRIDER ? 2 : t === EnemyType.BEHEMOTH ? 5 : t === EnemyType.FRACTAL ? 8 : t === EnemyType.PHANTOM ? 12 : 15);
