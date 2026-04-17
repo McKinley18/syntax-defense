@@ -16,6 +16,7 @@ export class Enemy {
     public currentPointIndex: number = 0;
     public isDead: boolean = false;
     public isFinished: boolean = false;
+    public velocity: { x: number, y: number } = { x: 0, y: 0 };
     
     private readonly VIRUS_SIZE = 20;
     private healthBar: PIXI.Graphics;
@@ -81,12 +82,16 @@ export class Enemy {
         if (dist <= moveDist) {
             this.container.position.copyFrom(target);
             this.currentPointIndex++;
+            this.velocity = { x: 0, y: 0 };
             if (this.currentPointIndex >= this.pathPoints.length - 1) {
                 this.isFinished = true;
             }
         } else {
-            this.container.x += (dx / dist) * moveDist;
-            this.container.y += (dy / dist) * moveDist;
+            const vx = (dx / dist) * this.speed;
+            const vy = (dy / dist) * this.speed;
+            this.velocity = { x: vx, y: vy };
+            this.container.x += vx * dt;
+            this.container.y += vy * dt;
             this.container.rotation = Math.atan2(dy, dx) + Math.PI/2;
         }
 

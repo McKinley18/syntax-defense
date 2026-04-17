@@ -124,7 +124,6 @@ export const GameCanvas = () => {
                     {/* HUD LAYER */}
                     <TacticalHUD 
                         onStartWave={startWave} 
-                        towerCount={towerCount} 
                         waveManager={systemsRef.current?.waveManager} 
                         towerManager={systemsRef.current?.towerManager}
                     />

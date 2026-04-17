@@ -25,12 +25,20 @@ export const SystemDiagnostics: React.FC = () => {
 
     const toggleIntro = (val: boolean) => {
         setSkipIntro(val);
-        StateManager.instance.setSkipCinematics(val);
+        // Direct Preference Update
+        StateManager.instance.skipCinematics = val;
+        localStorage.setItem('syndef_skip_cinematics', val ? 'true' : 'false');
     };
 
     const toggleTutorial = (val: boolean) => {
         setTutEnabled(val);
-        StateManager.instance.setTutorialEnabled(val);
+        // Logic match with recordTutorialSeen
+        StateManager.instance.hasSeenTutorial = !val;
+        if (val) {
+            localStorage.removeItem('syndef_tutorial_v19');
+        } else {
+            localStorage.setItem('syndef_tutorial_v19', 'true');
+        }
     };
 
     return (
@@ -49,19 +57,16 @@ export const SystemDiagnostics: React.FC = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     
-                    {/* AUDIO */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>AUDIO_LEVEL: {volume}%</span>
                         <input type="range" min="0" max="100" value={volume} onChange={(e) => updateVolume(Number(e.target.value))} style={{ width: '12rem' }} />
                     </div>
 
-                    {/* UI SCALE */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>INTERFACE_SCALE: {uiScale.toFixed(1)}x</span>
                         <input type="range" min="0.8" max="1.5" step="0.1" value={uiScale} onChange={(e) => updateScale(Number(e.target.value))} style={{ width: '12rem' }} />
                     </div>
 
-                    {/* INTRO TOGGLE */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>INTRO_CINEMATIC:</span>
                         <button onClick={() => toggleIntro(!skipIntro)} style={{
@@ -73,7 +78,6 @@ export const SystemDiagnostics: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* TUTORIAL TOGGLE */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>TACTICAL_TUTORIAL:</span>
                         <button onClick={() => toggleTutorial(!tutEnabled)} style={{

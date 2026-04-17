@@ -66,8 +66,12 @@ export class TowerManager {
         if (!canvas) return;
 
         const rect = canvas.getBoundingClientRect();
-        const sc = this.container.parent.scale.x;
-        const offsetX = this.container.parent.x;
+        const parent = this.container.parent;
+        if (!parent) return;
+
+        const sc = parent.scale.x;
+        const offsetX = parent.x;
+        const offsetY = parent.y;
         
         const rawX = (e.clientX - rect.left - offsetX) / sc;
         const rawY = (e.clientY - rect.top) / sc;
@@ -87,8 +91,8 @@ export class TowerManager {
         });
 
         const valid = isAvailable && !alreadyOccupied;
-        this.ghostBox!.tint = valid ? 0x00ff66 : 0xff3300;
-        this.ghostRange!.alpha = valid ? 1.0 : 0.3;
+        if (this.ghostBox) this.ghostBox.tint = valid ? 0x00ff66 : 0xff3300;
+        if (this.ghostRange) this.ghostRange.alpha = valid ? 1.0 : 0.3;
     }
 
     private executePlacement(e: PointerEvent) {

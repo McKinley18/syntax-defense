@@ -1,86 +1,53 @@
 import * as PIXI from 'pixi.js';
-import { Engine } from '../core/Engine';
+import { MapManager } from './MapManager';
 import { TowerManager } from './TowerManager';
-import { IMapManager, TILE_SIZE, GRID_ROWS, GRID_COLS } from './MapManager';
 import { StateManager, AppState } from '../core/StateManager';
 
+/**
+ * INPUT MANAGER: Interaction Orchestrator
+ * Manages tactical selection and deployment inputs.
+ */
 export class InputManager {
+    private mapManager: MapManager;
     private towerManager: TowerManager;
-    private mapManager: IMapManager;
-    private lastTapTime: number = 0;
-    private lastTapTower: any = null;
+    private app: PIXI.Application;
 
-    constructor(towerManager: TowerManager, mapManager: IMapManager) {
-        this.towerManager = towerManager;
+    constructor(app: PIXI.Application, mapManager: MapManager, towerManager: TowerManager) {
+        this.app = app;
         this.mapManager = mapManager;
-        
-        // Unified Authoritative Stage Interaction
-        Engine.instance.app.stage.eventMode = 'static';
-        Engine.instance.app.stage.hitArea = Engine.instance.app.screen;
+        this.towerManager = towerManager;
 
-        Engine.instance.app.stage.on('pointerdown', (e) => this.handleGlobalInput(e));
-        Engine.instance.app.stage.on('pointermove', (e) => this.handlePointerMove(e));
+        // Interaction is now primarily handled via TowerManager's Drag-and-Place protocol
+        // but we maintain global stage clicks for selection.
+        this.app.stage.eventMode = 'static';
+        this.app.stage.on('pointerdown', this.onStageDown.bind(this));
     }
 
-    private handlePointerMove(e: PIXI.FederatedPointerEvent) {
-        const { x, y } = Engine.instance.screenToLogical(e.global.x, e.global.y);
-        const selectedType = StateManager.instance.selectedTurretType;
+    private onStageDown(e: PIXI.FederatedPointerEvent) {
+        const state = StateManager.instance.currentState;
+        if (state !== AppState.GAME_PREP && state !== AppState.GAME_WAVE && state !== AppState.WAVE_PREP) return;
 
-        if (selectedType !== null) {
-            this.towerManager.showGhost(selectedType);
-            this.towerManager.updateGhost(x, y);
+        const pos = this.app.stage.toLocal(e.global);
+        
+        // --- SELECTION PROTOCOL ---
+        // Identify if a tower exists at this node
+        const gridX = Math.floor(pos.x / 40);
+        const gridY = Math.floor(pos.y / 40);
+
+        const found = this.towerManager.towers.find(t => {
+            const tx = Math.floor(t.container.x / 40);
+            const ty = Math.floor(t.container.y / 40);
+            return tx === gridX && ty === gridY;
+        });
+
+        if (found) {
+            this.towerManager.selectTower(found);
         } else {
-            this.towerManager.hideGhost();
+            this.towerManager.deselectTower();
         }
     }
 
-    private handleGlobalInput(e: PIXI.FederatedPointerEvent) {
-        const { x, y } = Engine.instance.screenToLogical(e.global.x, e.global.y);
-        
-        // --- EMERGENCY CALIBRATION: RAW LOGGING ---
-        console.warn(`CRITICAL_CALIBRATION: [${Math.round(x)}, ${Math.round(y)}]`);
-        
-        // DIRECT STAGE ADDITION (Bypassing containers)
-        const marker = new PIXI.Graphics();
-        marker.circle(0, 0, 15).fill({ color: 0xffffff }).stroke({ width: 4, color: 0x00ffff });
-        marker.position.set(x, y);
-        Engine.instance.app.stage.addChild(marker);
-        setTimeout(() => marker.destroy(), 5000);
-
-        const selectedType = StateManager.instance.selectedTurretType;
-        const isInsideGrid = y >= 0 && y < (GRID_ROWS * TILE_SIZE) && x >= 0 && x < (GRID_COLS * TILE_SIZE);
-        
-        if (!isInsideGrid) {
-            StateManager.instance.selectedTurretType = null;
-            this.towerManager.deselectTower();
-            return;
-        }
-
-        const wasTowerSelected = this.towerManager.attemptSelection(x, y);
-        
-        if (wasTowerSelected) {
-            const now = Date.now();
-            const selectedTower = this.towerManager.selectedTower;
-            if (this.lastTapTower === selectedTower && (now - this.lastTapTime) < 300) {
-                if (selectedTower) (selectedTower as any).overcharge();
-            }
-            this.lastTapTime = now;
-            this.lastTapTower = selectedTower;
-            return;
-        }
-
-        const validState = StateManager.instance.currentState === AppState.GAME_WAVE || 
-                           StateManager.instance.currentState === AppState.WAVE_PREP ||
-                           StateManager.instance.currentState === AppState.GAME_PREP;
-
-        if (selectedType !== null && validState) {
-            const gx = Math.floor(x / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
-            const gy = Math.floor(y / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
-            const success = this.towerManager.placeTower(selectedType, gx, gy);
-            if (success) StateManager.instance.selectedTurretType = null;
-            return;
-        }
-
-        this.towerManager.deselectTower();
+    public destroy() {
+        this.app.stage.off('pointerdown');
     }
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StateManager, AppState } from '../core/StateManager';
 import { MenuBackground } from './MenuBackground';
 import { AudioManager } from '../systems/AudioManager';
+import { NeuralBrain } from '../systems/NeuralBrain';
 
 export const MainMenu: React.FC = () => {
     const [isInitialized, setIsInitialized] = useState(false);

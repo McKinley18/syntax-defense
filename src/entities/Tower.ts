@@ -163,6 +163,7 @@ export class Tower {
     }
 
     public getEffectiveDamage() { return this.config.damage * (1 + (this.tier - 1) * 0.5); }
+    public getEffectiveRange() { return this.config.range * 40; }
     public getUpgradeCost() { return Math.round(this.config.cost * 0.8 * this.tier); }
     public getRefundValue() { return Math.round(this.config.cost * 0.75 + (this.tier - 1) * this.config.cost * 0.4); }
 
