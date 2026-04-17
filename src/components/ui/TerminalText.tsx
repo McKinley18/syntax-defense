@@ -111,9 +111,20 @@ const TerminalText = ({
   }, [isGlitched, isFinished, text, permanentGlitch]);
 
   return (
-    <span style={{ position: 'relative' }}>
+    <span style={{ 
+        position: 'relative',
+        display: 'inline-block',
+        animation: 'text-grow 0.4s ease-out forwards',
+        transformOrigin: 'left center'
+    }}>
       {displayedText}
       {(!isFinished || isTyping) && <span className="terminal-cursor-active"></span>}
+      <style>{`
+          @keyframes text-grow {
+              0% { transform: scale(0.6); opacity: 0; filter: blur(4px); }
+              100% { transform: scale(1); opacity: 1; filter: blur(0); }
+          }
+      `}</style>
     </span>
   );
 };

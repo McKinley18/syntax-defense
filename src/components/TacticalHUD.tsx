@@ -44,6 +44,7 @@ export const TacticalHUD: React.FC<{
     const [gameState, setGameState] = useState(StateManager.instance.currentState);
     const [prepTime, setPrepTime] = useState(waveManager?.prepTimer || 0);
     const [isBreaching, setIsBreaching] = useState(false);
+    const [gameSpeed, setGameSpeed] = useState(StateManager.instance.gameSpeed);
 
     useEffect(() => {
         const itv = setInterval(() => {
@@ -53,6 +54,7 @@ export const TacticalHUD: React.FC<{
             setCurrentWave(StateManager.instance.currentWave);
             setGameState(StateManager.instance.currentState);
             setIsBreaching(StateManager.instance.isRedMode);
+            setGameSpeed(StateManager.instance.gameSpeed);
             if (waveManager) setPrepTime(waveManager.prepTimer);
         }, 50); 
         return () => clearInterval(itv);
@@ -112,9 +114,9 @@ export const TacticalHUD: React.FC<{
                                         StateManager.instance.gameSpeed = current === 1.0 ? 2.0 : 1.0;
                                         AudioManager.getInstance().playUiClick();
                                     }}
-                                    style={{ fontSize: '0.8rem', height: '2.0rem', flex: 1, color: StateManager.instance.gameSpeed > 1 ? '#00ff66' : '#00ffff' }}
+                                    style={{ fontSize: '0.8rem', height: '2.0rem', flex: 1, color: gameSpeed > 1 ? '#00ff66' : '#00ffff' }}
                                 >
-                                    {StateManager.instance.gameSpeed}X
+                                    {gameSpeed}X
                                 </button>
                             </div>
                             <button 

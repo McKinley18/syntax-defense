@@ -16,10 +16,12 @@ export class WaveManager {
     private spawnQueue: { type: EnemyType, delay: number }[] = []; 
     private nextSpawnTime: number = 0;
     private container: PIXI.Container;
+    private waveInProgress: boolean = false;
 
     public nextWaveIntel: EnemyType[] = [];
     public prepTimer: number = 0;
     private readonly PREP_DURATION = 15; 
+    private readonly MAX_ENEMIES_PER_WAVE = 50; 
 
     constructor(mapManager: MapManager, towerManager: TowerManager, pathManager: PathManager) {
         this.mapManager = mapManager;
@@ -57,7 +59,8 @@ export class WaveManager {
             this.spawnQueue.push({ type, delay: currentDelay });
         });
 
-        this.nextSpawnTime = Date.now() + 300;
+        this.nextSpawnTime = Date.now();
+        this.waveInProgress = true;
         StateManager.instance.currentState = AppState.GAME_WAVE;
     }
 
@@ -72,25 +75,23 @@ export class WaveManager {
         const levelNumber = wave;
 
         const unlockedTowers = Object.values(TOWER_CONFIGS).filter(t => levelNumber >= t.unlockWave);
-        const avgTurretCost = unlockedTowers.reduce((sum, t) => sum + t.cost, 0) / unlockedTowers.length;
-        const avgTurretDPS = unlockedTowers.reduce((sum, t) => {
+        const avgTurretCost = unlockedTowers.length > 0 ? unlockedTowers.reduce((sum, t) => sum + t.cost, 0) / unlockedTowers.length : 100;
+        const avgTurretDPS = unlockedTowers.length > 0 ? unlockedTowers.reduce((sum, t) => {
             const cooldownSec = (t.cooldown || 1) / 60;
             return sum + (t.damage / cooldownSec);
-        }, 0) / unlockedTowers.length;
+        }, 0) / unlockedTowers.length : 10;
 
         let difficultyMultiplier = 1.0 + (0.15 * levelNumber) + (0.02 * Math.pow(levelNumber, 2));
-        
         const integrity = StateManager.instance.integrity;
         if (integrity < 10) difficultyMultiplier *= 0.8;
         if (integrity === 20) difficultyMultiplier *= 1.1;
         
         const budget = difficultyMultiplier * Math.max(playerTokens, 500);
-
         const waveDuration = 20; 
         const theoreticalMaxDamage = (budget / avgTurretCost) * avgTurretDPS * waveDuration;
         const fairnessThreshold = theoreticalMaxDamage * 0.85;
 
-        const laneMultiplier = (wave === 0) ? 1 : 2;
+        const laneMultiplier = 2;
 
         // TACTICAL DIRECTIVE SELECTION
         const directives = ["SWARM", "SHIELD", "GHOST", "BALANCED"];
@@ -106,23 +107,28 @@ export class WaveManager {
             currentWaveHP += VISUAL_REGISTRY[bossType].hp * (1 + levelNumber * 0.05) * laneMultiplier;
         }
 
-        const availableTypes = (Object.keys(VISUAL_REGISTRY) as unknown as EnemyType[])
-            .filter(t => t !== EnemyType.BOSS && levelNumber >= (t === EnemyType.GLIDER ? 0 : t === EnemyType.STRIDER ? 2 : t === EnemyType.BEHEMOTH ? 5 : t === EnemyType.FRACTAL ? 8 : t === EnemyType.PHANTOM ? 12 : 15));
+        // FIXED: Explicitly cast keys to Number for reliable comparison
+        const allEnemyTypes = Object.keys(VISUAL_REGISTRY).map(Number).filter(n => !isNaN(n));
+        const availableTypes = allEnemyTypes.filter(t => {
+            if (t === EnemyType.BOSS) return false;
+            const unlock = (t === EnemyType.GLIDER ? 0 : t === EnemyType.STRIDER ? 2 : t === EnemyType.BEHEMOTH ? 5 : t === EnemyType.FRACTAL ? 8 : t === EnemyType.PHANTOM ? 12 : 15);
+            return levelNumber >= unlock;
+        });
 
-        while (remainingBudget > 10 && currentWaveHP < fairnessThreshold) {
+        while (remainingBudget > 10 && currentWaveHP < fairnessThreshold && this.nextWaveIntel.length < this.MAX_ENEMIES_PER_WAVE) {
             const valid = availableTypes.filter(t => (VISUAL_REGISTRY[t].threat * laneMultiplier) <= remainingBudget);
             if (valid.length === 0) break;
 
             let selectedType = valid[0];
             if (directive === "SWARM") {
                 const swarms = valid.filter(t => t === EnemyType.GLIDER || t === EnemyType.STRIDER);
-                selectedType = swarms.length > 0 ? swarms[Math.floor(Math.random() * swarms.length)] : valid[0];
+                selectedType = swarms.length > 0 ? swarms[Math.floor(Math.random() * swarms.length)] : valid[Math.floor(Math.random() * valid.length)];
             } else if (directive === "SHIELD") {
                 const tanks = valid.filter(t => t === EnemyType.BEHEMOTH || t === EnemyType.WORM);
-                selectedType = tanks.length > 0 ? tanks[Math.floor(Math.random() * tanks.length)] : valid[0];
+                selectedType = tanks.length > 0 ? tanks[Math.floor(Math.random() * tanks.length)] : valid[Math.floor(Math.random() * valid.length)];
             } else if (directive === "GHOST") {
                 const fast = valid.filter(t => t === EnemyType.PHANTOM || t === EnemyType.FRACTAL);
-                selectedType = fast.length > 0 ? fast[Math.floor(Math.random() * fast.length)] : valid[0];
+                selectedType = fast.length > 0 ? fast[Math.floor(Math.random() * fast.length)] : valid[Math.floor(Math.random() * valid.length)];
             } else {
                 const weights = valid.map(t => Math.pow(VISUAL_REGISTRY[t].threat, 1.2));
                 const totalWeight = weights.reduce((s, w) => s + w, 0);
@@ -139,7 +145,7 @@ export class WaveManager {
         }
 
         this.nextWaveIntel.sort((a, b) => VISUAL_REGISTRY[b].hp - VISUAL_REGISTRY[a].hp);
-        console.log(`[Wave Engine] Directive: ${directive} | Budget: ${Math.round(budget)} | Actual HP: ${Math.round(currentWaveHP)}`);
+        console.log(`[Wave Engine] Directive: ${directive} | HP: ${Math.round(currentWaveHP)} | Budget: ${Math.round(budget)}`);
     }
 
     public update(dt: number) {
@@ -154,8 +160,7 @@ export class WaveManager {
         if (this.spawnQueue.length > 0) {
             if (!this.nextSpawnTime) this.nextSpawnTime = now; 
             
-            const waveStartTime = this.nextSpawnTime - 300; 
-            const elapsed = (now - waveStartTime) * StateManager.instance.gameSpeed; 
+            const elapsed = (now - this.nextSpawnTime) * StateManager.instance.gameSpeed; 
 
             if (elapsed >= this.spawnQueue[0].delay) {
                 const next = this.spawnQueue.shift()!;
@@ -184,7 +189,6 @@ export class WaveManager {
             if (enemy.isDead) {
                 let reward = VISUAL_REGISTRY[enemy.type].reward;
                 if (StateManager.instance.credits > 5000) reward *= 0.7;
-                
                 StateManager.instance.addCredits(reward);
                 this.container.removeChild(enemy.container);
                 this.enemies.splice(i, 1);
@@ -195,7 +199,9 @@ export class WaveManager {
             }
         }
 
-        if (this.spawnQueue.length === 0 && this.enemies.length === 0) {
+        // Safeguard: Only finish if the wave has actually been processed
+        if (this.waveInProgress && this.spawnQueue.length === 0 && this.enemies.length === 0) {
+            this.waveInProgress = false;
             this.towerManager.clearAllTowers();
             StateManager.instance.addCredits(300 + (StateManager.instance.currentWave * 50));
             StateManager.instance.currentWave++;
