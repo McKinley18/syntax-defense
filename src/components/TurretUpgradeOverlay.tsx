@@ -7,9 +7,10 @@ import { AudioManager } from '../systems/AudioManager';
 interface TurretUpgradeOverlayProps {
     tower: Tower;
     towerManager: TowerManager;
+    onClose?: () => void;
 }
 
-export const TurretUpgradeOverlay: React.FC<TurretUpgradeOverlayProps> = ({ tower, towerManager }) => {
+export const TurretUpgradeOverlay: React.FC<TurretUpgradeOverlayProps> = ({ tower, towerManager, onClose }) => {
     const [credits, setCredits] = useState(StateManager.instance.credits);
     const [tier, setTier] = useState(tower.tier);
     const [targetMode, setTargetMode] = useState(tower.targetMode);
@@ -33,6 +34,7 @@ export const TurretUpgradeOverlay: React.FC<TurretUpgradeOverlayProps> = ({ towe
     const handleSell = () => {
         towerManager.sellSelectedTower();
         AudioManager.getInstance().playUiClick();
+        if (onClose) onClose();
     };
 
     const rotateTargetMode = () => {
@@ -52,8 +54,11 @@ export const TurretUpgradeOverlay: React.FC<TurretUpgradeOverlayProps> = ({ towe
             padding: '1.2rem', color: '#fff', fontFamily: 'monospace', zIndex: 1000,
             boxShadow: '0 0 40px rgba(0,0,0,0.8)'
         }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: '0.8rem', borderBottom: '1px solid #333', paddingBottom: '0.4rem', color: 'var(--neon-cyan)' }}>
-                {tower.config.name}_OPTIMIZATION
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', borderBottom: '1px solid #333', paddingBottom: '0.4rem' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--neon-cyan)' }}>
+                    {tower.config.name}_OPTIMIZATION
+                </div>
+                <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', opacity: 0.5 }}>[X]</button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
