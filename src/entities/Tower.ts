@@ -148,19 +148,19 @@ export class Tower {
         if (inRange.length > 0) {
             if (this.targetMode === TargetMode.CLOSEST) {
                 let minSubDist = Infinity;
-                inRange.forEach(e => {
+                for (const e of inRange) {
                     const d = Math.sqrt(Math.pow(e.container.x-this.container.x, 2) + Math.pow(e.container.y-this.container.y, 2));
                     if (d < minSubDist) { minSubDist = d; target = e; }
-                });
+                }
             } else if (this.targetMode === TargetMode.FIRST) {
-                inRange.forEach(e => {
+                for (const e of inRange) {
                     const metric = e.currentPointIndex + (1 - (e.hp / e.maxHp)); 
                     if (metric > bestMetric) { bestMetric = metric; target = e; }
-                });
+                }
             } else if (this.targetMode === TargetMode.STRONGEST) {
-                inRange.forEach(e => {
+                for (const e of inRange) {
                     if (e.hp > bestMetric) { bestMetric = e.hp; target = e; }
-                });
+                }
             }
         }
 
@@ -196,7 +196,6 @@ export class Tower {
 
             if (this.cooldownTimer <= 0) {
                 AudioManager.getInstance().playFireSfx(this.type);
-                // STRAIGHT-LINE COMBAT: Pass explicit aim point
                 const p = new Projectile(this.type, this.container.x, this.container.y, target, this.getEffectiveDamage(), this.config.color, { x: aimX, y: aimY });
                 spawnProjectile(p);
                 this.cooldownTimer = this.config.cooldown;
