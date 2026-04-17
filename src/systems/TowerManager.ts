@@ -2,8 +2,10 @@ import * as PIXI from 'pixi.js';
 import { Tower, TowerType, TOWER_CONFIGS } from '../entities/Tower';
 import { IMapManager, TileType } from './MapManager';
 import { Projectile } from '../entities/Projectile';
+import { Enemy } from '../entities/Enemy';
 import { StateManager } from '../core/StateManager';
 import { AudioManager } from './AudioManager';
+import { Engine } from '../core/Engine';
 
 export class TowerManager {
     public towers: Tower[] = [];
@@ -160,7 +162,7 @@ export class TowerManager {
         });
     }
 
-    public update(delta: number, enemies: any[]) {
+    public update(delta: number, enemies: Enemy[]) {
         const TILE_SIZE = 40;
         const SECTOR_SIZE = TILE_SIZE * 4; // 4x4 Tiles per sector
 

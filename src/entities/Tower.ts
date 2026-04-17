@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Engine } from '../core/Engine';
 import { TextureGenerator } from '../utils/TextureGenerator';
 import { Projectile } from './Projectile';
+import { Enemy } from './Enemy';
 import { TILE_SIZE } from '../systems/MapManager';
 import { AudioManager } from '../systems/AudioManager';
 
@@ -118,7 +119,7 @@ export class Tower {
         return false;
     }
 
-    public update(delta: number, enemies: any[], spawnProjectile: (p: Projectile) => void) {
+    public update(delta: number, enemies: Enemy[], spawnProjectile: (p: Projectile) => void) {
         if (this.overchargeTimer > 0) {
             this.overchargeTimer -= delta;
             if (this.overchargeTimer <= 0) {
