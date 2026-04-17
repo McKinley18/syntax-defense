@@ -51,7 +51,7 @@ export const GameCanvas = () => {
             app.stage.addChild(towerManager.getProjectileContainer());
 
             const waveManager = new WaveManager(mapManager, towerManager, pathManager);
-            new InputManager(towerManager, mapManager);
+            new InputManager(app, mapManager, towerManager);
             
             systemsRef.current = { pathManager, mapManager, towerManager, waveManager };
 
@@ -133,10 +133,10 @@ export const GameCanvas = () => {
                     {systemsRef.current && <WaveIntelOverlay waveManager={systemsRef.current.waveManager} />}
                     
                     {/* MAINTENANCE LAYER */}
-                    {activeSelectedTower && (
+                    {activeSelectedTower && systemsRef.current && (
                         <TurretUpgradeOverlay 
                             tower={activeSelectedTower} 
-                            towerManager={systemsRef.current?.towerManager}
+                            towerManager={systemsRef.current.towerManager}
                             onClose={() => systemsRef.current?.towerManager.deselectTower()}
                         />
                     )}
