@@ -4,10 +4,11 @@ export class Engine {
     private static _instance: Engine | null = null;
     public app: PIXI.Application;
     private _initialized: boolean = false;
+    private resizeListeners: (() => void)[] = [];
 
-    // HARDENED 40x18 MATHEMATICAL WORKSPACE
-    public readonly INTERNAL_WIDTH = 1600;  // 40 tiles * 40px
-    public readonly INTERNAL_HEIGHT = 720; // 18 tiles * 40px
+    // HARDENED 40x18 MATHEMATICAL WORKSPACE (1600x720)
+    public readonly INTERNAL_WIDTH = 1600;  
+    public readonly INTERNAL_HEIGHT = 720; 
     public readonly TILE_SIZE = 40;
 
     private constructor() {
@@ -19,6 +20,10 @@ export class Engine {
             this._instance = new Engine();
         }
         return this._instance;
+    }
+
+    public onResize(cb: () => void) {
+        this.resizeListeners.push(cb);
     }
 
     public async init(container: HTMLElement) {
@@ -43,17 +48,25 @@ export class Engine {
             const handleResize = () => {
                 const vw = window.innerWidth;
                 const vh = window.innerHeight;
+                
                 this.app.renderer.resize(vw, vh);
 
-                // Scaling Law: Account for Grid + HUD Space
-                const scale = vh / (this.INTERNAL_HEIGHT + 160);
+                // LAW: Vertical scaling fills the absolute viewport height.
+                const scale = vh / this.INTERNAL_HEIGHT;
                 this.app.stage.scale.set(scale);
                 
-                // QUANTUM SNAP: Integer Tile Alignment
-                const rawX = (vw - (this.INTERNAL_WIDTH * scale)) / 2;
-                const sTile = this.TILE_SIZE * scale;
-                this.app.stage.x = Math.floor(rawX / sTile) * sTile;
-                this.app.stage.y = 0;
+                // QUANTUM TILE SNAP
+                // We calculate the center, but snap X to ensure NO partial tiles.
+                const scaledTile = this.TILE_SIZE * scale;
+                const idealX = (vw - (this.INTERNAL_WIDTH * scale)) / 2;
+                
+                // Absolute Snapping: stage.x must be a multiple of scaledTile
+                this.app.stage.x = Math.floor(idealX / scaledTile) * scaledTile;
+                
+                // Anchor to absolute top to maximize vertical space
+                this.app.stage.y = 0; 
+
+                this.resizeListeners.forEach(cb => cb());
             };
 
             window.addEventListener('resize', handleResize);

@@ -36,8 +36,18 @@ export class InputManager {
 
     private handleGlobalInput(e: PIXI.FederatedPointerEvent) {
         const { x, y } = Engine.instance.screenToLogical(e.global.x, e.global.y);
-        const selectedType = StateManager.instance.selectedTurretType;
+        
+        // --- EMERGENCY CALIBRATION: RAW LOGGING ---
+        console.warn(`CRITICAL_CALIBRATION: [${Math.round(x)}, ${Math.round(y)}]`);
+        
+        // DIRECT STAGE ADDITION (Bypassing containers)
+        const marker = new PIXI.Graphics();
+        marker.circle(0, 0, 15).fill({ color: 0xffffff }).stroke({ width: 4, color: 0x00ffff });
+        marker.position.set(x, y);
+        Engine.instance.app.stage.addChild(marker);
+        setTimeout(() => marker.destroy(), 5000);
 
+        const selectedType = StateManager.instance.selectedTurretType;
         const isInsideGrid = y >= 0 && y < (GRID_ROWS * TILE_SIZE) && x >= 0 && x < (GRID_COLS * TILE_SIZE);
         
         if (!isInsideGrid) {
@@ -51,14 +61,9 @@ export class InputManager {
         if (wasTowerSelected) {
             const now = Date.now();
             const selectedTower = this.towerManager.selectedTower;
-            
-            // DOUBLE-TAP DETECTION
             if (this.lastTapTower === selectedTower && (now - this.lastTapTime) < 300) {
-                if (selectedTower) {
-                    (selectedTower as any).overcharge();
-                }
+                if (selectedTower) (selectedTower as any).overcharge();
             }
-            
             this.lastTapTime = now;
             this.lastTapTower = selectedTower;
             return;
@@ -71,12 +76,8 @@ export class InputManager {
         if (selectedType !== null && validState) {
             const gx = Math.floor(x / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
             const gy = Math.floor(y / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
-            
             const success = this.towerManager.placeTower(selectedType, gx, gy);
-            
-            if (success) {
-                StateManager.instance.selectedTurretType = null;
-            }
+            if (success) StateManager.instance.selectedTurretType = null;
             return;
         }
 

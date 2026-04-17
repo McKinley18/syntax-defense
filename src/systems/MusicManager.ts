@@ -96,7 +96,7 @@ export class MusicManager {
     private advanceNote() {
         const secondsPerBeat = 60.0 / 126.0 / 4; 
         this.nextNoteTime += secondsPerBeat;
-        this.beatIndex = (this.beatIndex + 1) % 128; 
+        this.beatIndex = (this.beatIndex + 1) % 512; 
         if (this.beatIndex === 0) this.pickNextTrack();
     }
 

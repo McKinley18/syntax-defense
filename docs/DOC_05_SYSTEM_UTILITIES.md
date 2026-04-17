@@ -1,20 +1,16 @@
-# [05] SYSTEM_UTILITIES: ARCHIVE_&_AUDIO
+# [05] SYSTEM_UTILITIES: OPERATOR_INTERFACE
 
-## I. `SystemArchive.tsx` (DATABASE)
-- **Content:** Technical specifications for all Turrets and Viral enemies.
-- **Attribution:** Project architectural design by C. McKinley.
-- **Visuals:** Grid-based technical readout with high-alpha highlights.
+## I. SYSTEM_DIAGNOSTICS
+- **Controls:** Master Volume, UI Scale.
+- **Journey Overrides:**
+  - `INTRO_CINEMATIC`: [ ENABLED | BYPASS ]
+  - `TACTICAL_TUTORIAL`: [ ACTIVE | SUPPRESSED ]
 
-## II. `SystemDiagnostics.tsx` (SETTINGS)
-- **Controls:** Performance monitoring and audio toggles.
-- **Logic:** Direct state-hook to `AudioManager` levels.
+## II. PERSISTENCE_PROTOCOLS
+- **Discovery:** Neural Archive records neutralized viral strains in `localStorage`.
+- **Save_State:** Local storage maintains Data Credits, Waves, Core Integrity, and all deployed Turret positions/tiers.
+- **Once-Per-Device:** Intro and Tutorial default to "Seen" after first successful completion.
 
-## III. `AudioManager.ts` (SOUNDSCAPE)
-- **Decoupled Logic:** `resume()` handles AudioContext; `startMusic()` handles playback.
-- **Music Trigger:** Only upon Main Menu mounting.
-- **Profiles:** Custom EQ profiles for typing, glitches, and system blips.
-
-## IV. `TutorialOverlay.tsx` (ONBOARDING)
-- **Forced Protocol:** Mandatory for 0-wave users.
-- **Sequence:** 8-step highlight-driven instruction.
-- **Target:** Row 6, Col 10 highlight for primary building demonstration.
+## III. AUDIO_ENGINE
+- **MusicManager:** Randomized rotation of "Neural Tracks."
+- **AudioManager:** Procedurally generated technical SFX (Oscillator-based).

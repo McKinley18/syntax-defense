@@ -1,11 +1,12 @@
 import { StateManager, AppState } from '../core/StateManager';
 import { PathManager } from './PathManager';
-import { MapManager } from './MapManager';
+import { MapManager, TILE_SIZE } from './MapManager';
 import { TowerManager } from './TowerManager';
 import { Enemy } from '../entities/Enemy';
 import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
 import { TOWER_CONFIGS, TowerType } from '../entities/Tower';
 import { Engine } from '../core/Engine';
+import { NeuralBrain, SimulationTheme } from './NeuralBrain';
 import * as PIXI from 'pixi.js';
 
 export class WaveManager {
@@ -19,6 +20,8 @@ export class WaveManager {
     private waveInProgress: boolean = false;
 
     public nextWaveIntel: EnemyType[] = [];
+    public currentDirective: string = "BALANCED";
+    public totalWaveUnits: number = 0;
     public prepTimer: number = 0;
     private readonly PREP_DURATION = 15; 
     private readonly MAX_ENEMIES_PER_WAVE = 60; 
@@ -29,7 +32,7 @@ export class WaveManager {
         this.pathManager = pathManager;
         this.container = new PIXI.Container();
         Engine.instance.app.stage.addChild(this.container);
-        this.generateIntel(0);
+        this.generateIntel(StateManager.instance.currentWave);
     }
 
     public confirmIntel() {
@@ -49,14 +52,10 @@ export class WaveManager {
 
         let currentDelay = 0;
         const clusterSize = 5; 
-        
-        // DISTRIBUTE INTEL ACROSS LANES
         const numLanes = StateManager.instance.currentWave === 0 ? 1 : 2;
         
         this.nextWaveIntel.forEach((type, index) => {
-            // Logic: Alternate lanes for every enemy in the intel list
             const lane = index % numLanes;
-            
             if (index > 0 && index % clusterSize === 0) {
                 currentDelay += 3000; 
             } else if (index > 0) {
@@ -72,9 +71,13 @@ export class WaveManager {
 
     public generateIntel(wave: number) {
         this.nextWaveIntel = [];
-        // GUARANTEE: Never produce an empty wave intel if wave > 0
+        const brain = NeuralBrain.getInstance();
+        const profile = brain.currentProfile;
+
         if (wave === 0) {
             this.nextWaveIntel = [EnemyType.GLIDER];
+            this.currentDirective = "INITIAL_BOOT";
+            this.totalWaveUnits = 1;
             return;
         }
 
@@ -88,8 +91,9 @@ export class WaveManager {
             return sum + (t.damage / cooldownSec);
         }, 0) / unlockedTowers.length : 15;
 
-        // NON-LINEAR BUDGET SCALING
+        // LAW: Difficulty curve is constant per wave, not randomized by Brain
         let difficultyMultiplier = 1.0 + (0.15 * levelNumber) + (0.02 * Math.pow(levelNumber, 2));
+        
         const integrity = StateManager.instance.integrity;
         if (integrity < 10) difficultyMultiplier *= 0.8;
         if (integrity === 20) difficultyMultiplier *= 1.1;
@@ -100,7 +104,14 @@ export class WaveManager {
         const fairnessThreshold = theoreticalMaxDamage * 0.85;
 
         const directives = ["SWARM", "SHIELD", "GHOST", "BALANCED"];
-        const directive = (levelNumber % 10 === 0) ? "BOSS" : directives[Math.floor(Math.random() * directives.length)];
+        let selectedDirective = directives[Math.floor(Math.random() * directives.length)];
+        
+        // Brain influences WAVE COMPOSITION (Directives) only
+        if (profile?.theme === SimulationTheme.VOLATILE) selectedDirective = "SWARM";
+        if (profile?.theme === SimulationTheme.SHIELDED) selectedDirective = "SHIELD";
+        
+        const directive = (levelNumber > 0 && levelNumber % 10 === 0) ? "BOSS" : selectedDirective;
+        this.currentDirective = directive;
 
         let remainingBudget = budget;
         let currentWaveHP = 0;
@@ -118,7 +129,6 @@ export class WaveManager {
             return levelNumber >= unlock;
         });
 
-        // Loop fills nextWaveIntel with individual units based on budget and HP threshold
         while (remainingBudget > 5 && currentWaveHP < fairnessThreshold && this.nextWaveIntel.length < this.MAX_ENEMIES_PER_WAVE) {
             const valid = availableTypes.filter(t => VISUAL_REGISTRY[t].threat <= remainingBudget);
             if (valid.length === 0) break;
@@ -148,13 +158,9 @@ export class WaveManager {
             currentWaveHP += VISUAL_REGISTRY[selectedType].hp * (1 + levelNumber * 0.05);
         }
 
-        // FALLBACK: Ensure at least 1 unit if wave intel ended up empty
-        if (this.nextWaveIntel.length === 0) {
-            this.nextWaveIntel = [EnemyType.GLIDER];
-        }
-
+        if (this.nextWaveIntel.length === 0) this.nextWaveIntel = [EnemyType.GLIDER];
         this.nextWaveIntel.sort((a, b) => VISUAL_REGISTRY[b].hp - VISUAL_REGISTRY[a].hp);
-        console.log(`[Wave Engine] Directive: ${directive} | Units: ${this.nextWaveIntel.length} | HP: ${Math.round(currentWaveHP)}`);
+        this.totalWaveUnits = this.nextWaveIntel.length;
     }
 
     public update(dt: number) {
@@ -163,9 +169,14 @@ export class WaveManager {
             this.prepTimer -= (dt / 60);
             if (this.prepTimer <= 0) this.startWave();
         }
-        if (state !== AppState.GAME_WAVE) return;
+        if (state !== AppState.GAME_WAVE) {
+            StateManager.instance.nearKernelAlert = false;
+            return;
+        }
 
         const now = Date.now();
+        let anyNearKernel = false;
+
         if (this.spawnQueue.length > 0) {
             if (!this.nextSpawnTime) this.nextSpawnTime = now; 
             const waveStartTime = this.nextSpawnTime; 
@@ -181,10 +192,13 @@ export class WaveManager {
                 const lp = this.pathManager.getLanePoints(next.lane as 0 | 1);
                 if (lp.length > 0) {
                     const ingressPath = [new PIXI.Point(vL - 80, lp[0].y), ...lp, new PIXI.Point(vR + 40, lp[lp.length - 1].y)];
+                    
+                    // LAW: HP scales ONLY by wave number (Predictable progression)
                     const healthScale = 1 + StateManager.instance.currentWave * 0.05;
                     const enemy = new Enemy(next.type, ingressPath, healthScale);
                     this.enemies.push(enemy);
                     this.container.addChild(enemy.container);
+                    StateManager.instance.discoverEnemy(next.type);
                 }
             }
         }
@@ -192,10 +206,18 @@ export class WaveManager {
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             enemy.update(dt);
+            
+            if (!enemy.isFinished && enemy.container.x > (36 * TILE_SIZE)) {
+                anyNearKernel = true;
+            }
+
             if (enemy.isDead) {
+                // LAW: Rewards are absolute constants per enemy type
                 let reward = VISUAL_REGISTRY[enemy.type].reward;
                 if (StateManager.instance.credits > 5000) reward *= 0.7;
+                
                 StateManager.instance.addCredits(reward);
+                StateManager.instance.totalPurged++; 
                 this.container.removeChild(enemy.container);
                 this.enemies.splice(i, 1);
             } else if (enemy.isFinished) {
@@ -205,9 +227,11 @@ export class WaveManager {
             }
         }
 
+        StateManager.instance.nearKernelAlert = anyNearKernel;
+
         if (this.waveInProgress && this.spawnQueue.length === 0 && this.enemies.length === 0) {
             this.waveInProgress = false;
-            // Removed automatic tower clearing for persistence logic
+            // LAW: Level completion rewards are absolute constants
             StateManager.instance.addCredits(300 + (StateManager.instance.currentWave * 25));
             StateManager.instance.currentWave++;
             this.generateIntel(StateManager.instance.currentWave);

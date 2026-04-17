@@ -1,209 +1,335 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StateManager, AppState } from '../core/StateManager';
-import { TOWER_CONFIGS, TowerType, Tower } from '../entities/Tower';
+import { TOWER_CONFIGS, TowerType, Tower, TargetMode } from '../entities/Tower';
 import { AudioManager } from '../systems/AudioManager';
+import { WaveManager } from '../systems/WaveManager';
+import { TowerManager } from '../systems/TowerManager';
+import { Engine } from '../core/Engine';
+import { NeuralBrain } from '../systems/NeuralBrain';
 
-export interface ITacticalWaveManager {
-    prepTimer: number;
-}
+// --- QUANTUM SEGMENTED BAR COMPONENT ---
+const SegmentedBar: React.FC<{ progress: number, segments: number, color: string, height?: string }> = ({ progress, segments, color, height = "100%" }) => {
+    return (
+        <div style={{ display: 'flex', gap: '2px', width: '100%', height: height }}>
+            {Array.from({ length: segments }).map((_, i) => {
+                const isActive = (i / segments) < progress;
+                return (
+                    <div key={i} style={{
+                        flex: 1, height: '100%', 
+                        background: isActive ? color : '#222',
+                        boxShadow: isActive ? `0 0 8px ${color}66` : 'none',
+                        transition: 'background 0.2s'
+                    }} />
+                );
+            })}
+        </div>
+    );
+};
 
-// --- HARDENED ASSET BLOCK ---
-const OctagonBase = ({ color, isLocked }: { color: string, isLocked: boolean }) => (
-    <path d="M12 4 L28 4 L36 12 V28 L28 36 L12 36 L4 28 V12 Z" fill="#0a0a0a" stroke={isLocked ? "#222" : "#333"} strokeWidth="2" />
-);
+// --- NEURAL CREDIT STREAM ANIMATION ---
+const CreditStream: React.FC<{ value: number }> = ({ value }) => {
+    const [display, setDisplay] = useState(value);
+    const lastValue = useRef(value);
 
-const TechnicalTurretIcon: React.FC<{ type: TowerType, color: number, isLocked: boolean }> = ({ type, color, isLocked }) => {
-    const c = isLocked ? "#333" : `#${color.toString(16).padStart(6, '0')}`;
+    useEffect(() => {
+        if (value !== lastValue.current) {
+            const diff = value - lastValue.current;
+            const steps = 15;
+            let currentStep = 0;
+            const start = lastValue.current;
+            const timer = setInterval(() => {
+                currentStep++;
+                const progress = currentStep / steps;
+                setDisplay(Math.round(start + diff * progress));
+                if (currentStep >= steps) {
+                    setDisplay(value);
+                    lastValue.current = value;
+                    clearInterval(timer);
+                }
+            }, 30);
+            return () => clearInterval(timer);
+        }
+    }, [value]);
+
+    return <span>{display}</span>;
+};
+
+// --- HIGH-FIDELITY SVG TURRET ICONS ---
+const HudTurretIcon: React.FC<{ type: TowerType, color: string, size?: number }> = ({ type, color, size = 38 }) => {
+    const s = size; 
     switch(type) {
-        case TowerType.PULSE_NODE: 
-            return <svg viewBox="0 0 40 40" fill="none"><OctagonBase color={c} isLocked={isLocked} /><rect x="14" y="2" width="4" height="18" fill="#1a1a1a" stroke={c} strokeWidth="1.5" /><rect x="22" y="2" width="4" height="18" fill="#1a1a1a" stroke={c} strokeWidth="1.5" /><rect x="13" y="2" width="6" height="3" fill={c} /><rect x="21" y="2" width="6" height="3" fill={c} /></svg>;
-        case TowerType.SONIC_IMPULSE: 
-            return <svg viewBox="0 0 40 40" fill="none"><OctagonBase color={c} isLocked={isLocked} /><path d="M10 15 A 15 15 0 0 1 30 15" stroke={c} strokeWidth="4" strokeLinecap="round" /><circle cx="20" cy="12" r="3" fill={c} /><path d="M15 25 L25 25 L20 15 Z" fill="#222" /></svg>;
-        case TowerType.STASIS_FIELD: 
-            return <svg viewBox="0 0 40 40" fill="none"><OctagonBase color={c} isLocked={isLocked} /><circle cx="20" cy="20" r="12" stroke={c} strokeWidth="2" strokeOpacity={isLocked ? 0.2 : 0.6} /><circle cx="20" cy="20" r="8" stroke={c} strokeWidth="3" /><circle cx="20" cy="20" r="4" fill={isLocked ? "#222" : "#fff"} /></svg>;
-        case TowerType.PRISM_BEAM: 
-            return <svg viewBox="0 0 40 40" fill="none"><OctagonBase color={c} isLocked={isLocked} /><path d="M20 5 L32 25 L8 25 Z" fill="#1a1a1a" stroke={c} strokeWidth="2" /><circle cx="20" cy="18" r="6" fill={c} fillOpacity={isLocked ? 0.1 : 0.5} stroke={isLocked ? "#333" : "#fff"} /></svg>;
-        case TowerType.RAIL_CANNON: 
-            return <svg viewBox="0 0 40 40" fill="none"><OctagonBase color={c} isLocked={isLocked} /><rect x="16" y="2" width="2" height="30" fill="#050505" stroke={c} strokeWidth="2" /><rect x="22" y="2" width="2" height="30" fill="#050505" stroke={c} strokeWidth="2" /><rect x="14" y="10" width="12" height="2" fill={c} fillOpacity={isLocked ? 0.1 : 0.6} /></svg>;
-        case TowerType.VOID_PROJECTOR: 
-            return <svg viewBox="0 0 40 40" fill="none"><OctagonBase color={c} isLocked={isLocked} /><path d="M10 10 L15 15 M30 10 L25 15 M10 30 L15 25 M30 30 L25 25" stroke={c} strokeWidth="3" /><circle cx="20" cy="20" r="8" fill="#000" stroke={c} strokeWidth="2" /><circle cx="20" cy="20" r="4" fill={c} /></svg>;
+        case TowerType.PULSE_NODE: return (
+            <svg viewBox="0 0 40 40" width={s} height={s}>
+                <rect x="12" y="10" width="4" height="20" fill={color} />
+                <rect x="24" y="10" width="4" height="20" fill={color} />
+                <circle cx="20" cy="20" r="6" fill="#000" stroke="#444" strokeWidth="2" />
+            </svg>
+        );
+        case TowerType.SONIC_IMPULSE: return (
+            <svg viewBox="0 0 40 40" width={s} height={s}>
+                <path d="M20 10 A 15 15 0 0 1 35 25" fill="none" stroke={color} strokeWidth="3" />
+                <path d="M20 15 A 10 10 0 0 1 30 25" fill="none" stroke={color} strokeWidth="2" />
+                <circle cx="20" cy="25" r="4" fill={color} />
+            </svg>
+        );
+        case TowerType.STASIS_FIELD: return (
+            <svg viewBox="0 0 40 40" width={s} height={s}>
+                <circle cx="20" cy="20" r="15" fill="none" stroke={color} strokeWidth="2" strokeDasharray="3 3" />
+                <circle cx="20" cy="20" r="8" fill="none" stroke={color} strokeWidth="3" />
+                <circle cx="20" cy="20" r="4" fill="#fff" />
+            </svg>
+        );
+        case TowerType.PRISM_BEAM: return (
+            <svg viewBox="0 0 40 40" width={s} height={s}>
+                <path d="M20 5 L32 30 H8 Z" fill="#1a1a1a" stroke={color} strokeWidth="2" />
+                <circle cx="20" cy="18" r="5" fill={color} opacity="0.6" />
+            </svg>
+        );
+        case TowerType.RAIL_CANNON: return (
+            <svg viewBox="0 0 40 40" width={s} height={s}>
+                <rect x="16" y="5" width="2" height="30" fill={color} />
+                <rect x="22" y="5" width="2" height="30" fill={color} />
+                <rect x="12" y="20" width="16" height="6" fill="#111" stroke="#444" strokeWidth="1" />
+            </svg>
+        );
+        case TowerType.VOID_PROJECTOR: return (
+            <svg viewBox="0 0 40 40" width={s} height={s}>
+                <path d="M20 5 L35 20 L20 35 L5 20 Z" fill="none" stroke={color} strokeWidth="2" />
+                <circle cx="20" cy="20" r="6" fill="#000" stroke={color} strokeWidth="2" />
+                <circle cx="20" cy="20" r="3" fill={color} />
+            </svg>
+        );
         default: return null;
     }
 };
 
-export const TacticalHUD: React.FC<{ 
-    onStartWave: () => void, 
-    towerCount?: Record<TowerType, number>,
-    waveManager?: ITacticalWaveManager,
-    towerManager?: any
-}> = ({ onStartWave, towerCount = {}, waveManager, towerManager }) => {
+export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: WaveManager, towerManager?: TowerManager }> = ({ onStartWave, waveManager, towerManager }) => {
     const [credits, setCredits] = useState(StateManager.instance.credits);
     const [integrity, setIntegrity] = useState(StateManager.instance.integrity);
-    const [selectedType, setSelectedType] = useState<TowerType | null>(StateManager.instance.selectedTurretType);
     const [currentWave, setCurrentWave] = useState(StateManager.instance.currentWave);
     const [gameState, setGameState] = useState(StateManager.instance.currentState);
-    const [prepTime, setPrepTime] = useState(waveManager?.prepTimer || 0);
     const [isBreaching, setIsBreaching] = useState(false);
     const [gameSpeed, setGameSpeed] = useState(StateManager.instance.gameSpeed);
+    const [totalPurged, setTotalPurged] = useState(StateManager.instance.totalPurged);
+    const [selectedTower, setSelectedTower] = useState<Tower | null>(null);
+    const [waveProgress, setWaveProgress] = useState(0);
+    const [isAlert, setIsAlert] = useState(false);
+    const [sessionTheme, setSessionTheme] = useState(NeuralBrain.getInstance().themeName);
+    const [sessionSeed, setSessionSeed] = useState(NeuralBrain.getInstance().currentProfile?.seed || "NONE");
+
+    // CALIBRATED QUANTUM DIMENSIONS
+    const [leftBuffer, setLeftBuffer] = useState("0px");
+    const [rightBuffer, setRightBuffer] = useState("0px");
+    const [hudHeight, setHudHeight] = useState("0px");
+    const [sideSectionWidth, setSideSectionWidth] = useState("0px");
+    const [centerSectionWidth, setCenterSectionWidth] = useState("0px");
+    const [tileGap, setTileGap] = useState("0px");
 
     useEffect(() => {
-        const itv = setInterval(() => {
-            setCredits(StateManager.instance.credits);
-            setIntegrity(StateManager.instance.integrity);
-            setSelectedType(StateManager.instance.selectedTurretType);
-            setCurrentWave(StateManager.instance.currentWave);
-            setGameState(StateManager.instance.currentState);
-            setIsBreaching(StateManager.instance.isRedMode);
+        // --- EVENT-DRIVEN SUBSCRIPTIONS ---
+        const unsubs = [
+            StateManager.instance.subscribe('credits', (v) => setCredits(v)),
+            StateManager.instance.subscribe('integrity', (v) => setIntegrity(v)),
+            StateManager.instance.subscribe('state', (v) => setGameState(v)),
+            StateManager.instance.subscribe('breach', (v) => setIsBreaching(v))
+        ];
+
+        const updateRootScaling = () => {
+            const vh = window.innerHeight;
+            const vw = window.innerWidth;
+            const userScale = StateManager.instance.uiScale;
+            document.documentElement.style.fontSize = `clamp(10px, ${1.8 * userScale}vh, 26px)`;
+            const h = (vh / 18) * 4;
+            setHudHeight(`${h}px`);
+            const stageX = Engine.instance.app.stage.x;
+            const tileWidth = (vh / 18);
+            setSideSectionWidth(`${9 * tileWidth}px`);
+            setCenterSectionWidth(`${17 * tileWidth}px`);
+            setTileGap(`${tileWidth}px`);
+            setLeftBuffer(`${stageX + (2 * tileWidth)}px`);
+            setRightBuffer(`${vw - (stageX + (39 * tileWidth))}px`);
+        };
+
+        const heartbeat = setInterval(() => {
+            if (waveManager) {
+                const total = waveManager.totalWaveUnits;
+                const active = waveManager.enemies.length;
+                setWaveProgress(total > 0 ? (total - active) / total : 0);
+            }
+            if (towerManager) setSelectedTower(towerManager.selectedTower);
+            setSessionTheme(NeuralBrain.getInstance().themeName);
+            setSessionSeed(NeuralBrain.getInstance().currentProfile?.seed || "NONE");
+            setIsAlert(StateManager.instance.nearKernelAlert);
             setGameSpeed(StateManager.instance.gameSpeed);
-            if (waveManager) setPrepTime(waveManager.prepTimer);
-        }, 50); 
-        return () => clearInterval(itv);
-    }, [waveManager]);
+            setCurrentWave(StateManager.instance.currentWave);
+        }, 100); 
+
+        window.addEventListener('resize', updateRootScaling);
+        updateRootScaling();
+        return () => { 
+            unsubs.forEach(fn => fn());
+            clearInterval(heartbeat);
+            window.removeEventListener('resize', updateRootScaling); 
+        };
+    }, [waveManager, towerManager]);
 
     const handleRepair = () => {
         if (credits >= 250 && integrity < 20) {
-            StateManager.instance.credits -= 250;
+            StateManager.instance.addCredits(-250);
             StateManager.instance.integrity = Math.min(20, StateManager.instance.integrity + 5);
             AudioManager.getInstance().playUiClick();
         }
     };
 
-    const selectTurret = (type: TowerType) => {
-        const config = TOWER_CONFIGS[type];
-        if (currentWave < config.unlockWave) return;
-        if (credits < config.cost) return;
-
-        if (StateManager.instance.selectedTurretType === type) {
-            StateManager.instance.selectedTurretType = null;
-        } else {
-            if (towerManager) towerManager.deselectTower();
-            StateManager.instance.selectedTurretType = type;
-            AudioManager.getInstance().playUiClick();
-        }
-    };
-
-    const allTurrets = [
-        TowerType.PULSE_NODE,
-        TowerType.SONIC_IMPULSE,
-        TowerType.STASIS_FIELD,
-        TowerType.PRISM_BEAM,
-        TowerType.RAIL_CANNON,
-        TowerType.VOID_PROJECTOR
-    ];
-
-    const isCritical = integrity <= 6; 
-    const isPrep = gameState === AppState.WAVE_PREP;
     const isWave = gameState === AppState.GAME_WAVE;
+    const isPrep = gameState === AppState.WAVE_PREP;
+    const themeColor = integrity <= 6 ? 'var(--neon-red)' : isPrep ? 'var(--neon-cyan)' : isWave ? '#00ff66' : 'var(--neon-cyan)';
+
+    const [hoveredProtocol, setHoveredProtocol] = useState<TowerType | null>(null);
+    const activeInfoType = hoveredProtocol ?? (selectedTower?.type || null);
+    const activeInfo = activeInfoType !== null ? TOWER_CONFIGS[activeInfoType] : null;
 
     return (
         <div className={`ui-layer ${isBreaching ? 'breach-glitch' : ''}`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-            <div className="tactical-dashboard">
-                <div className="dashboard-content-wrapper" style={{ paddingLeft: '3rem', paddingRight: '3rem', justifyContent: 'space-between', gap: '1rem' }}>
+            
+            {isWave && (
+                <div style={{ position: 'absolute', bottom: hudHeight, left: leftBuffer, right: rightBuffer, height: '4px', zIndex: 101 }}>
+                    <SegmentedBar progress={waveProgress} segments={20} color={themeColor} />
+                </div>
+            )}
+
+            <div className="tactical-dashboard" style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0, height: hudHeight, 
+                display: 'flex', alignItems: 'stretch', backgroundColor: 'rgba(0,10,25,0.98)', borderTop: `0.15rem solid ${themeColor}`,
+                zIndex: 100, pointerEvents: 'auto', boxShadow: '0 -10px 40px rgba(0,0,0,0.8)'
+            }}>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', paddingLeft: leftBuffer, paddingRight: rightBuffer, paddingTop: '0.8rem', paddingBottom: '0.8rem' }}>
                     
-                    {/* LOGISTICS - Stretches Left */}
-                    <div className="dashboard-left" style={{ flex: '1 1 12rem', maxWidth: '16rem', minWidth: 0 }}>
-                        <div className="logistics-stack" style={{ width: '100%' }}>
-                            <div className="control-grid" style={{ marginBottom: '0.5rem', pointerEvents: 'auto', gap: '0.5rem', display: 'flex' }}>
-                                <button className="blue-button" onClick={() => { StateManager.instance.isPaused = !StateManager.instance.isPaused; }} style={{ fontSize: '0.8rem', height: '2.0rem', flex: 2 }}>
-                                    {StateManager.instance.isPaused ? 'RESUME' : 'PAUSE'}
-                                </button>
-                                <button 
-                                    className="blue-button" 
-                                    onClick={() => {
-                                        const current = StateManager.instance.gameSpeed;
-                                        StateManager.instance.gameSpeed = current === 1.0 ? 2.0 : 1.0;
-                                        AudioManager.getInstance().playUiClick();
-                                    }}
-                                    style={{ fontSize: '0.8rem', height: '2.0rem', flex: 1, color: gameSpeed > 1 ? '#00ff66' : '#00ffff' }}
-                                >
-                                    {gameSpeed}X
-                                </button>
+                    {/* 1. STATUS MODULE */}
+                    <div className="module-box" style={{ width: sideSectionWidth, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                            <div style={{ fontSize: '0.65rem', color: themeColor, letterSpacing: '2px', fontWeight: 900 }}>SIMULATION_STATUS</div>
+                            <div style={{ fontSize: '0.5rem', color: '#666', fontWeight: 900 }}>SEED_{sessionSeed}</div>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', gap: '0.6rem' }}>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div style={{ background: 'rgba(0,255,255,0.05)', border: `1px solid ${themeColor}33`, padding: '0.2rem 0.4rem' }}>
+                                    <div style={{ fontSize: '0.45rem', color: '#888' }}>SYSTEM_THEME</div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 900, color: themeColor }}>{sessionTheme}</div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.3rem', flex: 1 }}>
+                                    <button onClick={() => { StateManager.instance.isPaused = !StateManager.instance.isPaused; }} 
+                                        style={{ flex: 1, fontSize: '0.8rem', background: 'rgba(0,255,255,0.05)', border: `1.5px solid ${themeColor}`, color: themeColor, cursor: 'pointer', fontWeight: 900 }}>
+                                        {StateManager.instance.isPaused ? 'RESUME' : 'PAUSE'}
+                                    </button>
+                                    <button onClick={() => { StateManager.instance.gameSpeed = StateManager.instance.gameSpeed === 1.0 ? 2.0 : 1.0; }} 
+                                        style={{ flex: 1, fontSize: '0.8rem', background: 'rgba(0,255,255,0.05)', border: `1.5px solid ${themeColor}`, color: gameSpeed > 1 ? '#00ff66' : themeColor, cursor: 'pointer', fontWeight: 900 }}>
+                                        {gameSpeed}X
+                                    </button>
+                                </div>
                             </div>
-                            <button 
-                                className={`blue-button initiate-btn ${(isWave || isPrep) ? 'disabled' : ''}`} 
-                                onClick={onStartWave}
-                                style={{ height: '2.4rem', marginTop: '0.2rem', pointerEvents: 'auto', fontSize: '0.9rem', width: '100%', whiteSpace: 'nowrap' }}
-                                disabled={isWave || isPrep}
-                            >
-                                {isPrep ? `SECURE [${Math.ceil(prepTime)}s]` : (isWave ? 'ENGAGED_PROTOCOL' : 'INITIATE_WAVE')}
-                            </button>
+                            <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <button className="blue-button initiate-btn" onClick={onStartWave} disabled={isWave || isPrep}
+                                    style={{ flex: 1, fontSize: '0.8rem', background: (isWave || isPrep) ? '#151515' : themeColor, color: (isWave || isPrep) ? '#444' : '#000', fontWeight: 900, border: 'none' }}>
+                                    AUTHORIZE_WAVE
+                                </button>
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', border: `1px solid ${themeColor}33`, fontSize: '0.7rem', color: '#fff', fontWeight: 900 }}>
+                                    WAVE: {currentWave.toString().padStart(2, '0')}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* TURRET ARRAY - Fixed 3-Wide Centered */}
-                    <div className="dashboard-center" style={{ flex: '0 0 18.5rem', minWidth: 0, display: 'flex', justifyContent: 'center' }}>
-                        <div className="turret-row custom-scrollbar" style={{ justifyContent: 'flex-start', gap: '0.65rem', overflowX: 'auto', paddingBottom: '12px', pointerEvents: 'auto', width: '100%' }}>
-                            {allTurrets.map((type) => {
-                                const cfg = TOWER_CONFIGS[type];
-                                const isUnlocked = currentWave >= cfg.unlockWave;
-                                const canAfford = credits >= cfg.cost;
-                                const isActive = selectedType === type;
-
-                                return (
-                                    <div 
-                                        key={type}
-                                        className={`protocol-card ${isActive ? 'active' : ''} ${!isUnlocked ? 'locked' : ''} ${!canAfford && isUnlocked ? 'too-expensive' : ''}`}
-                                        onClick={() => { if (isUnlocked) selectTurret(type); }}
-                                        style={{ 
-                                            pointerEvents: isUnlocked ? 'auto' : 'none',
-                                            border: isActive ? '2px solid var(--neon-cyan)' : (isUnlocked ? '1px solid #333' : '1px dashed #222'),
-                                            background: isActive ? 'rgba(0, 255, 255, 0.1)' : 'transparent',
-                                            opacity: isUnlocked ? 1.0 : 0.4,
-                                            minWidth: '5.2rem',
-                                            padding: '0.4rem'
-                                        }}
-                                    >
-                                        <div className="protocol-header" style={{ color: isActive ? 'var(--neon-cyan)' : (isUnlocked ? '#888' : '#444'), fontSize: '0.55rem' }}>
-                                            {isUnlocked ? cfg.name : "LOCKED"}
-                                        </div>
-                                        <div className="protocol-visual-container" style={{ margin: '0.3rem 0' }}>
-                                            <div style={{ width: '2.4rem', height: '2.4rem', filter: isUnlocked ? 'none' : 'grayscale(1)' }}>
-                                                <TechnicalTurretIcon type={type} color={cfg.color} isLocked={!isUnlocked} />
+                    {/* 2. CONTEXTUAL CENTER: NEURAL DRAG PROTOCOL */}
+                    <div className="module-box" style={{ width: centerSectionWidth, marginLeft: tileGap, marginRight: tileGap, flexShrink: 0, border: `1px solid ${selectedTower ? 'var(--neon-cyan)' : themeColor + '33'}`, background: selectedTower ? 'rgba(0,255,255,0.1)' : 'rgba(255,255,255,0.02)', padding: '0.6rem', display: 'flex', flexDirection: 'column', borderRadius: '3px' }}>
+                        <div style={{ fontSize: '0.65rem', color: themeColor, textAlign: 'center', marginBottom: '0.4rem', fontWeight: 900, letterSpacing: '2px' }}>PROTOCOL_DECK</div>
+                        {!selectedTower ? (
+                            <div style={{ flex: 1, display: 'flex', gap: '1rem', overflow: 'hidden' }}>
+                                <div style={{ width: '10rem', flexShrink: 0, borderRight: '1px solid #222', paddingRight: '0.8rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                    {activeInfo ? (
+                                        <>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#fff' }}>{activeInfo.name}</div>
+                                            <div style={{ fontSize: '0.9rem', color: '#666' }}>LETHALITY: <span style={{ color: '#fff' }}>{activeInfo.damage}</span></div>
+                                            <div style={{ fontSize: '0.9rem', color: '#666' }}>RANGE: <span style={{ color: '#fff' }}>{activeInfo.range}x</span></div>
+                                        </>
+                                    ) : (
+                                        <div style={{ fontSize: '0.65rem', color: '#333', textAlign: 'center' }}>DRAG_TO_DEPLOY</div>
+                                    )}
+                                </div>
+                                <div className="turret-scroll-area" style={{ flex: 1, display: 'flex', gap: '0.8rem', overflowX: 'auto', paddingBottom: '0.4rem' }}>
+                                    {Object.values(TowerType).filter(v => typeof v === 'number').map((type) => {
+                                        const cfg = TOWER_CONFIGS[type as TowerType];
+                                        const isLocked = currentWave < cfg.unlockWave;
+                                        return (
+                                            <div key={type} 
+                                                onMouseEnter={() => setHoveredProtocol(type as TowerType)}
+                                                onMouseLeave={() => setHoveredProtocol(null)}
+                                                onPointerDown={() => !isLocked && towerManager?.initiateDrag(type as TowerType)}
+                                                className="protocol-card-interactive"
+                                                style={{
+                                                    flex: '0 0 6.5rem', height: '100%', border: `1px solid #333`,
+                                                    background: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                                    cursor: isLocked ? 'not-allowed' : 'grab', opacity: isLocked ? 0.2 : 1, transition: 'transform 0.2s'
+                                                }}>
+                                                <HudTurretIcon type={type as TowerType} color={`#${cfg.color.toString(16).padStart(6, '0')}`} size={32} />
+                                                <div style={{ fontSize: '0.7rem', color: '#aaa', fontWeight: 900 }}>{cfg.name}</div>
+                                                <div style={{ fontSize: '0.8rem', color: credits >= cfg.cost ? 'var(--neon-cyan)' : 'var(--neon-red)', fontWeight: 900 }}>{cfg.cost}c</div>
                                             </div>
-                                        </div>
-                                        <div className="protocol-footer" style={{ color: isUnlocked ? (canAfford ? 'var(--neon-cyan)' : 'var(--neon-red)') : '#333', fontSize: '0.6rem' }}>
-                                            {isUnlocked ? `${cfg.cost}c` : `WAVE_${cfg.unlockWave}`}
-                                        </div>
-                                        {isActive && <div className="selection-neon-border"></div>}
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ flex: 1, display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                                <div style={{ width: '4.5rem', height: '4.5rem', background: '#000', border: '1.5px solid var(--neon-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <HudTurretIcon type={selectedTower.type} color={`#${selectedTower.config.color.toString(16).padStart(6, '0')}`} size={42} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff' }}>{selectedTower.config.name}_PROTOCOL</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#888' }}>PURGED: <span style={{ color: 'var(--neon-cyan)', fontWeight: 900 }}>{selectedTower.killCount}</span> | TIER: 0{selectedTower.tier}</div>
+                                    <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.8rem' }}>
+                                        <button onClick={() => towerManager?.upgradeSelectedTower()} style={{ flex: 1, height: '2.4rem', background: 'var(--neon-cyan)', color: '#000', border: 'none', fontSize: '0.85rem', fontWeight: 900, cursor: 'pointer' }}>UPGRADE ({selectedTower.getUpgradeCost()}c)</button>
+                                        <button onClick={() => { towerManager?.sellSelectedTower(); setSelectedTower(null); }} style={{ width: '5rem', height: '2.4rem', background: 'transparent', border: '1px solid #ff3300', color: '#ff3300', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' }}>SELL</button>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* VITALS - Stretches Right */}
-                    <div className="dashboard-right" style={{ flex: '1 1 12rem', maxWidth: '16rem', minWidth: 0 }}>
-                        <div className="vitals-stack" style={{ transform: 'translateY(-0.3rem)', width: '100%' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                <span className="mission-text-large" style={{ fontSize: '0.9rem' }}>WAVE_0{currentWave}</span>
-                                <span className="token-text-large" style={{ color: 'var(--neon-cyan)', fontSize: '1.0rem' }}>{credits.toLocaleString()}c</span>
+                    {/* 3. LOGISTICS HUB */}
+                    <div className={`module-box ${isAlert ? 'threat-jitter' : ''}`} style={{ width: sideSectionWidth, flexShrink: 0, display: 'flex', gap: '1rem' }}>
+                        <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', borderRight: '2px solid #222', paddingRight: '0.8rem' }}>
+                            <div style={{ fontSize: '0.7rem', color: themeColor, marginBottom: '0.4rem', letterSpacing: '1px', fontWeight: 900, textAlign: 'right' }}>{isAlert ? <span style={{ color: 'red' }}>!_ACTIVE_THREAT_!</span> : "ECONOMY"}</div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '0.4rem' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 900 }}>DATA_CREDITS</div>
+                                    <div style={{ fontSize: '2.2rem', color: 'var(--neon-cyan)', fontWeight: 900, lineHeight: 1 }}><CreditStream value={credits} /></div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 900 }}>PURGED</div>
+                                    <div style={{ fontSize: '1.4rem', color: '#fff', fontWeight: 900, lineHeight: 1 }}>{totalPurged}</div>
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2px' }}>
-                                <span className="integrity-label" style={{ fontSize: '0.65rem' }}>Integrity</span>
-                                {isCritical && <span className="critical-tag" style={{ fontSize: '0.65rem' }}>[CRITICAL]</span>}
+                        </div>
+                        <div style={{ width: '11rem', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: '0.7rem', color: themeColor, marginBottom: '0.5rem', letterSpacing: '1px', fontWeight: 900, textAlign: 'right' }}>CORE</div>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '0.6rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 900 }}>INTEGRITY</span><span style={{ fontSize: '1.6rem', color: themeColor, fontWeight: 900 }}>{Math.round((integrity / 20) * 100)}%</span></div>
+                                <div style={{ width: '100%', height: '1rem' }}><SegmentedBar progress={integrity / 20} segments={10} color={themeColor} /></div>
+                                <button onClick={handleRepair} disabled={credits < 250 || integrity >= 20} style={{ height: '1.8rem', background: 'transparent', border: `2px solid ${credits < 250 ? '#222' : '#ff3300'}`, color: credits < 250 ? '#333' : '#ff3300', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 900, marginTop: '0.4rem' }}>{isAlert ? 'ERROR_0x3' : '[ REPAIR_PROTOCOL ]'}</button>
                             </div>
-                            <div className="integrity-bar-clean" style={{ marginBottom: '0.6rem', height: '0.4rem' }}>
-                                <div className="integrity-fill" style={{ width: `${(integrity / 20) * 100}%`, backgroundColor: isCritical ? 'var(--neon-red)' : 'var(--neon-cyan)' }}></div>
-                            </div>
-                            <button className={`blue-button repair-btn ${credits < 250 || integrity >= 20 ? 'disabled' : ''}`} onClick={handleRepair} disabled={credits < 250 || integrity >= 20} style={{ height: '2.0rem', fontSize: '0.7rem', pointerEvents: 'auto', width: '100%' }}>
-                                REPAIR KERNEL (250c)
-                            </button>
                         </div>
                     </div>
-
                 </div>
             </div>
             <style>{`
-                .breach-glitch { 
-                    animation: breach-shake 0.1s infinite;
-                    filter: sepia(1) saturate(5) hue-rotate(-50deg);
-                }
-                @keyframes breach-shake {
-                    0% { transform: translate(0,0); }
-                    25% { transform: translate(-5px, 5px); }
-                    75% { transform: translate(5px, -5px); }
-                    100% { transform: translate(0,0); }
-                }
+                .protocol-card-interactive:hover:not(:disabled) { transform: scale(1.05); border-color: var(--neon-cyan) !important; background: rgba(0,255,255,0.1) !important; }
+                .crt-flicker { animation: flicker 0.05s infinite; }
+                @keyframes flicker { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 0.9; } }
+                @keyframes glitch-distortion { 0% { transform: translate(0); } 20% { transform: translate(-5px, 5px) skew(5deg); filter: hue-rotate(90deg); } 40% { transform: translate(5px, -5px) skew(-5deg); filter: hue-rotate(-90deg); } 60% { transform: translate(-5px, -5px) skew(5deg); } 80% { transform: translate(5px, 5px) skew(-5deg); } 100% { transform: translate(0); } }
+                .threat-jitter { animation: jitter 0.2s infinite; }
+                @keyframes jitter { 0% { transform: translate(0,0); } 25% { transform: translate(-2px, 2px); } 50% { transform: translate(2px, -2px); } 75% { transform: translate(-2px, -2px); } 100% { transform: translate(0,0); } }
+                ::-webkit-scrollbar { width: 0px; }
             `}</style>
         </div>
     );

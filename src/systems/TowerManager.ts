@@ -1,214 +1,139 @@
 import * as PIXI from 'pixi.js';
+import { MapManager, TILE_SIZE } from './MapManager';
 import { Tower, TowerType, TOWER_CONFIGS } from '../entities/Tower';
-import { IMapManager, TileType } from './MapManager';
-import { Projectile } from '../entities/Projectile';
-import { Enemy } from '../entities/Enemy';
 import { StateManager } from '../core/StateManager';
+import { NeuralBrain } from './NeuralBrain';
+import { Enemy } from '../entities/Enemy';
 import { AudioManager } from './AudioManager';
-import { Engine } from '../core/Engine';
 
 export class TowerManager {
     public towers: Tower[] = [];
-    private projectiles: Projectile[] = [];
-    private mapManager: IMapManager;
     private container: PIXI.Container;
     private projectileContainer: PIXI.Container;
+    private mapManager: MapManager;
     
-    public selectedTower: Tower | null = null;
-    private ghostContainer: PIXI.Container;
-    private ghostTower: Tower | null = null;
+    // DRAG AND PLACE SYSTEM
+    private ghostTower: PIXI.Container | null = null;
+    private ghostRange: PIXI.Graphics | null = null;
+    private ghostBox: PIXI.Graphics | null = null;
 
-    constructor(mapManager: IMapManager) {
+    constructor(mapManager: MapManager) {
         this.mapManager = mapManager;
         this.container = new PIXI.Container();
         this.projectileContainer = new PIXI.Container();
-        this.ghostContainer = new PIXI.Container();
-        this.ghostContainer.alpha = 0.4;
-        Engine.instance.app.stage.addChild(this.ghostContainer);
+        this.projectileContainer.eventMode = 'none';
+
+        // Global drag listener
+        window.addEventListener('pointermove', this.updateDrag.bind(this));
+        window.addEventListener('pointerup', this.executePlacement.bind(this));
     }
 
-    public showGhost(type: TowerType) {
-        this.hideGhost();
-        this.ghostTower = new Tower(type, 0, 0);
-        this.ghostContainer.addChild(this.ghostTower.container);
-        this.ghostContainer.visible = true;
-    }
-
-    public hideGhost() {
-        this.ghostContainer.removeChildren();
-        this.ghostTower = null;
-        this.ghostContainer.visible = false;
-    }
-
-    public updateGhost(x: number, y: number) {
-        if (this.ghostTower) {
-            const gx = Math.floor(x / 40) * 40 + 20;
-            const gy = Math.floor(y / 40) * 40 + 20;
-            this.ghostTower.container.position.set(gx, gy);
-            
-            // Red tint if not buildable
-            const buildable = this.mapManager.isBuildable(gx, gy);
-            this.ghostTower.container.alpha = buildable ? 1.0 : 0.4;
+    public update(dt: number, enemies: Enemy[]) {
+        for (const tower of this.towers) {
+            tower.update(dt, enemies, (p) => this.projectileContainer.addChild(p.container));
         }
     }
 
-    public getContainer() { return this.container; }
-    public getProjectileContainer() { return this.projectileContainer; }
-
-    public placeTower(type: TowerType, x: number, y: number) {
-        if (this.mapManager.isBuildable(x, y)) {
-            const config = TOWER_CONFIGS[type];
-            if (StateManager.instance.credits >= config.cost) {
-                const tower = new Tower(type, x, y);
-                StateManager.instance.credits -= config.cost;
-                this.towers.push(tower);
-                this.container.addChild(tower.container);
-                this.mapManager.setOccupied(x, y, true);
-                AudioManager.getInstance().playTerminalCommand();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * MODULAR HIT-DETECTION: Resolves selection via coordinate proximity.
-     * This is 100% reliable regardless of PIXI event propagation bugs.
-     */
-    public attemptSelection(x: number, y: number): boolean {
-        this.deselectTower();
+    // --- DRAG AND PLACE PROTOCOL ---
+    public initiateDrag(type: TowerType) {
+        if (this.ghostTower) this.cleanupGhost();
         
-        // Find the tower closest to the tap
-        const found = this.towers.find(t => {
-            const dx = t.container.x - x;
-            const dy = t.container.y - y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            return dist < 40; // Increased from 24 to 40 for mobile precision
+        const cfg = TOWER_CONFIGS[type];
+        if (StateManager.instance.credits < cfg.cost) return;
+
+        StateManager.instance.activeDraggingTurret = type;
+        
+        this.ghostTower = new PIXI.Container();
+        this.ghostRange = new PIXI.Graphics();
+        this.ghostBox = new PIXI.Graphics();
+
+        // 1. Light Radius Signature
+        this.ghostRange.circle(0, 0, cfg.range * TILE_SIZE).fill({ color: 0x00ffff, alpha: 0.15 }).stroke({ color: 0x00ffff, width: 2, alpha: 0.3 });
+        
+        // 2. Snap Box Indicator
+        this.ghostBox.rect(-TILE_SIZE/2, -TILE_SIZE/2, TILE_SIZE, TILE_SIZE).stroke({ color: 0xff3300, width: 2 });
+
+        this.ghostTower.addChild(this.ghostRange);
+        this.ghostTower.addChild(this.ghostBox);
+        this.container.addChild(this.ghostTower);
+        
+        AudioManager.getInstance().playUiClick();
+    }
+
+    private updateDrag(e: PointerEvent) {
+        if (!this.ghostTower) return;
+        const canvas = document.getElementById('canvas-container');
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const sc = this.container.parent.scale.x;
+        const offsetX = this.container.parent.x;
+        
+        const rawX = (e.clientX - rect.left - offsetX) / sc;
+        const rawY = (e.clientY - rect.top) / sc;
+
+        // QUANTUM SNAP
+        const gridX = Math.floor(rawX / TILE_SIZE);
+        const gridY = Math.floor(rawY / TILE_SIZE);
+
+        this.ghostTower.position.set((gridX + 0.5) * TILE_SIZE, (gridY + 0.5) * TILE_SIZE);
+
+        // AVAILABILITY CHECK
+        const isAvailable = NeuralBrain.getInstance().isNodeAvailable(gridX, gridY);
+        const alreadyOccupied = this.towers.some(t => {
+            const tx = Math.floor(t.container.x / TILE_SIZE);
+            const ty = Math.floor(t.container.y / TILE_SIZE);
+            return tx === gridX && ty === gridY;
         });
 
-        if (found) {
-            this.selectedTower = found;
-            found.setHighlight(true);
-            StateManager.instance.selectedTurretType = null;
-            AudioManager.getInstance().playUiClick();
-            console.log(`[TowerManager] Selected ${found.config.name} at Tier ${found.tier}`);
-            return true;
-        }
-        return false;
+        const valid = isAvailable && !alreadyOccupied;
+        this.ghostBox!.tint = valid ? 0x00ff66 : 0xff3300;
+        this.ghostRange!.alpha = valid ? 1.0 : 0.3;
     }
 
-    public deselectTower() {
-        if (this.selectedTower) {
-            this.selectedTower.setHighlight(false);
-            this.selectedTower = null;
-        }
-    }
+    private executePlacement(e: PointerEvent) {
+        if (!this.ghostTower || !StateManager.instance.activeDraggingTurret) return;
 
-    public upgradeSelectedTower() {
-        if (this.selectedTower) {
-            const cost = this.selectedTower.getUpgradeCost();
-            if (StateManager.instance.credits >= cost) {
-                if (this.selectedTower.upgrade()) {
-                    StateManager.instance.credits -= cost;
-                    this.selectedTower.setHighlight(true);
-                    AudioManager.getInstance().playTerminalCommand();
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+        const type = StateManager.instance.activeDraggingTurret;
+        const gridX = Math.floor(this.ghostTower.x / TILE_SIZE);
+        const gridY = Math.floor(this.ghostTower.y / TILE_SIZE);
 
-    public sellSelectedTower() {
-        if (this.selectedTower) {
-            const refund = this.selectedTower.getRefundValue();
-            StateManager.instance.addCredits(refund);
-            this.mapManager.setOccupied(this.selectedTower.container.x, this.selectedTower.container.y, false);
-            
-            const index = this.towers.indexOf(this.selectedTower);
-            if (index !== -1) {
-                this.towers.splice(index, 1);
-            }
-            this.selectedTower.destroy();
-            this.selectedTower = null;
-            AudioManager.getInstance().playTerminalCommand();
-            return true;
-        }
-        return false;
-    }
-
-    public clearAllTowers() {
-        this.deselectTower();
-        this.towers.forEach(t => {
-            this.mapManager.setOccupied(t.container.x, t.container.y, false);
-            t.destroy();
+        const isAvailable = NeuralBrain.getInstance().isNodeAvailable(gridX, gridY);
+        const alreadyOccupied = this.towers.some(t => {
+            const tx = Math.floor(t.container.x / TILE_SIZE);
+            const ty = Math.floor(t.container.y / TILE_SIZE);
+            return tx === gridX && ty === gridY;
         });
-        this.towers = [];
-        this.projectiles.forEach(p => p.destroy());
-        this.projectiles = [];
-    }
 
-    public loadTowers(towerData: any[]) {
-        this.clearAllTowers();
-        towerData.forEach(data => {
-            const tower = new Tower(data.type, data.x, data.y);
-            // Manually set tier and update visual
-            for (let i = 1; i < data.tier; i++) {
-                tower.upgrade();
-            }
+        if (isAvailable && !alreadyOccupied) {
+            const tower = new Tower(type, gridX, gridY);
             this.towers.push(tower);
             this.container.addChild(tower.container);
-            this.mapManager.setOccupied(data.x, data.y, true);
-        });
+            StateManager.instance.addCredits(-TOWER_CONFIGS[type].cost);
+            AudioManager.getInstance().playUiClick();
+        }
+
+        this.cleanupGhost();
+        StateManager.instance.activeDraggingTurret = null;
     }
 
-    public update(delta: number, enemies: Enemy[]) {
-        const TILE_SIZE = 40;
-        const SECTOR_SIZE = TILE_SIZE * 4; // 4x4 Tiles per sector
-
-        // Spatial Partitioning: Bucket enemies by sector
-        const sectors: Record<string, any[]> = {};
-        for (const enemy of enemies) {
-            const sx = Math.floor(enemy.container.x / SECTOR_SIZE);
-            const sy = Math.floor(enemy.container.y / SECTOR_SIZE);
-            const key = `${sx},${sy}`;
-            if (!sectors[key]) sectors[key] = [];
-            sectors[key].push(enemy);
-        }
-
-        for (const tower of this.towers) {
-            // Only scan enemies in tower's sector + adjacent sectors
-            const tx = Math.floor(tower.container.x / SECTOR_SIZE);
-            const ty = Math.floor(tower.container.y / SECTOR_SIZE);
-            const nearbyEnemies: any[] = [];
-            
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
-                    const key = `${tx + dx},${ty + dy}`;
-                    if (sectors[key]) nearbyEnemies.push(...sectors[key]);
-                }
-            }
-
-            tower.update(delta, nearbyEnemies, (p) => {
-                this.projectiles.push(p);
-                this.projectileContainer.addChild(p.container);
-            });
-        }
-        
-        for (let i = this.projectiles.length - 1; i >= 0; i--) {
-            const p = this.projectiles[i];
-            p.update(delta);
-            if (p.dead) {
-                this.projectileContainer.removeChild(p.container);
-                this.projectiles.splice(i, 1);
-                p.destroy();
-            }
+    private cleanupGhost() {
+        if (this.ghostTower) {
+            this.container.removeChild(this.ghostTower);
+            this.ghostTower.destroy({ children: true });
+            this.ghostTower = null;
         }
     }
 
-    public getTowerCounts(): Record<TowerType, number> {
-        const counts: any = {};
-        this.towers.forEach(t => counts[t.type] = (counts[t.type] || 0) + 1);
-        return counts;
-    }
+    // --- EXISTING ---
+    public getContainer() { return this.container; }
+    public getProjectileContainer() { return this.projectileContainer; }
+    public selectedTower: Tower | null = null;
+    public selectTower(t: Tower) { this.selectedTower = t; t.showRange(true); }
+    public deselectTower() { if(this.selectedTower) this.selectedTower.showRange(false); this.selectedTower = null; }
+    public upgradeSelectedTower() { if(this.selectedTower && StateManager.instance.credits >= this.selectedTower.getUpgradeCost()) { StateManager.instance.addCredits(-this.selectedTower.getUpgradeCost()); this.selectedTower.upgrade(); }}
+    public sellSelectedTower() { if(this.selectedTower) { StateManager.instance.addCredits(this.selectedTower.getRefundValue()); this.removeTower(this.selectedTower); this.deselectTower(); }}
+    private removeTower(t: Tower) { this.towers = this.towers.filter(tw => tw !== t); this.container.removeChild(t.container); t.destroy(); }
+    public loadTowers(data: any[]) { data.forEach(d => { const tw = new Tower(d.type, Math.floor(d.x / TILE_SIZE), Math.floor(d.y / TILE_SIZE)); tw.tier = d.tier; this.towers.push(tw); this.container.addChild(tw.container); });}
+    public getTowerCounts() { const counts = {} as any; this.towers.forEach(t => counts[t.type] = (counts[t.type] || 0) + 1); return counts; }
 }

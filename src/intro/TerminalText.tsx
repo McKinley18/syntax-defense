@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { AudioManager } from '../../systems/AudioManager';
+import { AudioManager } from '../systems/AudioManager';
 
 interface TerminalTextProps {
   text: string;
@@ -51,6 +51,7 @@ const TerminalText = ({
         if (isCancelled) return;
 
         if (humanTyping) {
+            // Simulated Typo Logic
             if (Math.random() < 0.02 && i > 2 && text[i] !== ' ' && text[i-1] !== ' ') {
                 const keys = "asdfghjklqwertyuiop";
                 const typo = keys[Math.floor(Math.random() * keys.length)];
@@ -72,9 +73,13 @@ const TerminalText = ({
         currentStr += text[i];
         setDisplayedText(currentStr);
         
+        // --- REALISTIC AUDIO SYNC ---
         if (text[i] !== ' ') {
-            if (humanTyping) AudioManager.getInstance().playTypeClick();
-            else AudioManager.getInstance().playUiClick();
+            if (humanTyping) {
+                AudioManager.getInstance().playTypeClick(); // Mechanical
+            } else {
+                AudioManager.getInstance().playDataChatter(); // Tech Blip
+            }
         }
 
         i++;
@@ -118,13 +123,14 @@ const TerminalText = ({
         transformOrigin: 'left center'
     }}>
       {displayedText}
-      {(!isFinished || isTyping) && <span className="terminal-cursor-active"></span>}
-      <style>{`
-          @keyframes text-grow {
-              0% { transform: scale(0.6); opacity: 0; filter: blur(4px); }
-              100% { transform: scale(1); opacity: 1; filter: blur(0); }
-          }
-      `}</style>
+      {(!isFinished || isTyping) && <span style={{
+          display: 'inline-block',
+          width: '8px',
+          height: '1.2em',
+          backgroundColor: 'currentColor',
+          marginLeft: '4px',
+          verticalAlign: 'middle'
+      }}></span>}
     </span>
   );
 };

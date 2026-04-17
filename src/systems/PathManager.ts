@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { NeuralBrain } from './NeuralBrain';
 
 export interface GridCoord {
     x: number;
@@ -14,8 +15,8 @@ export class PathManager {
     public pathVectors: { dx: number, dy: number }[] = [];
     
     private readonly TILE_SIZE = 40;
-    private readonly GRID_COLS = 40; // HARDENED
-    private readonly GRID_ROWS = 18; // HARDENED
+    private readonly GRID_COLS = 40; 
+    private readonly GRID_ROWS = 18; 
 
     constructor() {}
 
@@ -26,7 +27,12 @@ export class PathManager {
     }
 
     private executeSmartGeneration(waveNumber: number) {
-        // MACRO GRID: 1 cell = 2x2 micro tiles
+        const brain = NeuralBrain.getInstance();
+        const profile = brain.currentProfile;
+        
+        // ENTROPY LAW: Higher brain entropy = more turns/chaos
+        const entropy = profile ? profile.entropy : 0.5;
+
         const macroCols = 20; 
         const minMY = 1;
         const maxMY = 5; 
@@ -34,26 +40,23 @@ export class PathManager {
         const macroPath: GridCoord[] = [];
 
         if (waveNumber === 0) {
-            // TUTORIAL: Consistent Straight Line on the Equator
             for (let x = 0; x < macroCols; x++) macroPath.push({ x, y: 3 });
         } else {
-            // RANDOM SESSION UNIQUE PATH
             let currentX = 0;
             let currentY = minMY + Math.floor(Math.random() * (maxMY - minMY + 1));
             macroPath.push({ x: currentX, y: currentY });
 
             while (currentX < macroCols - 1) {
-                // Horizontal Run: Length decreases as complexity increases with waves
-                // Wave 1: avg 4 steps, Wave 20: avg 2 steps (more turns)
-                const minRun = Math.max(1, 3 - Math.floor(waveNumber / 10));
-                const maxRun = Math.max(2, 5 - Math.floor(waveNumber / 8));
+                // BRAIN-DRIVEN RUN LENGTH
+                // Lower entropy = longer straight runs
+                const minRun = Math.max(1, Math.floor(4 * (1 - entropy)));
+                const maxRun = Math.max(2, Math.floor(7 * (1 - entropy)));
                 let stepX = minRun + Math.floor(Math.random() * (maxRun - minRun + 1));
                 
                 let nextX = Math.min(macroCols - 1, currentX + stepX);
                 for (let x = currentX + 1; x <= nextX; x++) macroPath.push({ x, y: currentY });
                 currentX = nextX;
 
-                // Vertical Snake
                 if (currentX < macroCols - 1) {
                     let nextY = currentY;
                     while (nextY === currentY) {
@@ -70,7 +73,6 @@ export class PathManager {
             }
         }
 
-        // --- MICRO-TILE MANIFESTATION ---
         macroPath.forEach((p) => {
             const bx = p.x * 2;
             const by = p.y * 2;
@@ -83,7 +85,6 @@ export class PathManager {
             this.pathPoints.push(new PIXI.Point((bx + 1) * this.TILE_SIZE, (by + 1) * this.TILE_SIZE));
         });
 
-        // Terminate at physical Right Edge (Column 40)
         const lastP = macroPath[macroPath.length - 1];
         this.pathCells.push({ x: 39, y: lastP.y * 2 }, { x: 39, y: lastP.y * 2 + 1 });
         this.pathPoints.push(new PIXI.Point(40 * this.TILE_SIZE, (lastP.y * 2 + 1) * this.TILE_SIZE));

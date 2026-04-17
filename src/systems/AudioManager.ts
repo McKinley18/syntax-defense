@@ -23,12 +23,6 @@ export class AudioManager {
         try {
             const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
             this.ctx = new AudioContextClass();
-            
-            // Check if context starts suspended (standard browser behavior)
-            if (this.ctx.state === 'suspended') {
-                console.log("[AudioManager] AudioContext initialized in SUSPENDED state.");
-            }
-
             this.masterGain = this.ctx.createGain();
             this.masterGain.gain.value = 1.0;
             this.masterGain.connect(this.ctx.destination);
@@ -41,55 +35,65 @@ export class AudioManager {
     public async resume() {
         if (!this.ctx) this.init();
         if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
-            console.log("[AudioManager] Resuming AudioContext via User Gesture...");
             await this.ctx.resume();
         }
-        
-        // Re-kick music scheduler if needed
         if (this.ctx && this.ctx.state === 'running') {
             MusicManager.getInstance().start(); 
         }
     }
 
-    public startMusic() {
-        MusicManager.getInstance().start();
-    }
+    public startMusic() { MusicManager.getInstance().start(); }
 
     public playUiClick() {
-        if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
-        const time = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, time);
-        osc.frequency.exponentialRampToValueAtTime(1200, time + 0.05);
-        g.gain.setValueAtTime(0.1 * this.sfxVolume, time);
-        g.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-        osc.connect(g);
-        g.connect(this.masterGain!);
-        osc.start(time);
-        osc.stop(time + 0.05);
+        this.triggerTonedBlip(880, 1200, 0.05, 0.08, 'sine');
+    }
+
+    // MECHANICAL KEYBOARD CLICK (Filtered for ear-fatigue)
+    public playTypeClick() {
+        this.triggerTonedBlip(1200 + Math.random() * 400, 1000, 0.03, 0.04, 'triangle', 2500);
+    }
+
+    // AUTOMATED COMPUTER CHATTER (Softened Transients)
+    public playDataChatter() {
+        this.triggerTonedBlip(2400 + Math.random() * 800, 2000, 0.015, 0.02, 'sine', 2000);
     }
 
     public playTerminalCommand() {
+        this.triggerTonedBlip(140, 60, 0.12, 0.2, 'triangle');
+    }
+
+    /**
+     * UNIVERSAL BLIP TRIGGER
+     * Includes optional Low-Pass Filter for ear-fatigue mitigation.
+     */
+    private triggerTonedBlip(startF: number, endF: number, dur: number, vol: number, type: OscillatorType, filterF?: number) {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
         const time = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const g = this.ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(120, time);
-        osc.frequency.exponentialRampToValueAtTime(40, time + 0.1);
-        g.gain.setValueAtTime(0.15 * this.sfxVolume, time);
-        g.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
-        osc.connect(g);
+        
+        osc.type = type;
+        osc.frequency.setValueAtTime(startF, time);
+        osc.frequency.exponentialRampToValueAtTime(endF, time + dur);
+        
+        g.gain.setValueAtTime(vol * this.sfxVolume, time);
+        g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+
+        if (filterF) {
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = filterF;
+            osc.connect(filter);
+            filter.connect(g);
+        } else {
+            osc.connect(g);
+        }
+
         g.connect(this.masterGain!);
         osc.start(time);
-        osc.stop(time + 0.1);
+        osc.stop(time + dur);
     }
 
-    /**
-     * TACTICAL ORDNANCE SFX: Unique signatures for every turret type
-     */
     public playFireSfx(type: TowerType) {
         if (!this.ctx || this.isSfxMuted || this.ctx.state !== 'running') return;
         const time = this.ctx.currentTime;
@@ -108,7 +112,6 @@ export class AudioManager {
                 oscP.start(time);
                 oscP.stop(time + 0.05);
                 break;
-
             case TowerType.SONIC_IMPULSE:
                 const oscS = this.ctx.createOscillator();
                 oscS.type = 'triangle';
@@ -120,7 +123,6 @@ export class AudioManager {
                 oscS.start(time);
                 oscS.stop(time + 0.1);
                 break;
-
             case TowerType.STASIS_FIELD:
                 const oscST = this.ctx.createOscillator();
                 oscST.type = 'sine';
@@ -132,7 +134,6 @@ export class AudioManager {
                 oscST.start(time);
                 oscST.stop(time + 0.2);
                 break;
-
             case TowerType.PRISM_BEAM:
                 const oscPB = this.ctx.createOscillator();
                 oscPB.type = 'sine';
@@ -144,7 +145,6 @@ export class AudioManager {
                 oscPB.start(time);
                 oscPB.stop(time + 0.03);
                 break;
-
             case TowerType.RAIL_CANNON:
                 const oscR = this.ctx.createOscillator();
                 oscR.type = 'sawtooth';
@@ -156,7 +156,6 @@ export class AudioManager {
                 oscR.start(time);
                 oscR.stop(time + 0.15);
                 break;
-
             case TowerType.VOID_PROJECTOR:
                 const oscV = this.ctx.createOscillator();
                 oscV.type = 'triangle';
@@ -171,9 +170,11 @@ export class AudioManager {
         }
     }
 
-    public playDataChatter() {}
-    public playTypeClick() {}
-    public playPlacement() {}
-    public playBreach(x: number, w: number) {}
-    public playPurge(x: number, w: number) {}
+    public playPurge() {
+        this.triggerTonedBlip(800, 100, 0.3, 0.1, 'sine');
+    }
+
+    public playBreach() {
+        this.triggerTonedBlip(60, 40, 0.5, 0.2, 'sawtooth');
+    }
 }
