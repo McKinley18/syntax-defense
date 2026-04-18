@@ -4,35 +4,74 @@ import { MenuBackground } from './MenuBackground';
 import { AudioManager } from '../systems/AudioManager';
 import { NeuralBrain } from '../systems/NeuralBrain';
 
+type GlitchMode = 'NONE' | 'WORD_1' | 'WORD_2' | 'SPARSE';
+
 export const MainMenu: React.FC = () => {
-    const [isInitialized, setIsInitialized] = useState(false);
-    const [showTitle, setShowTitle] = useState(false);
-    const [showUI, setShowUI] = useState(false);
-    const [isGlobalFlickering, setGlobalFlickering] = useState(false);
-    const [isTitleGlitched, setIsTitleGlitched] = useState(false);
+    // --- CONDITIONAL INITIALIZATION ---
+    const isFromSplash = StateManager.instance.previousState === AppState.STUDIO_SPLASH;
+    
+    const [isInitialized, setIsInitialized] = useState(!isFromSplash);
+    const [showTitle, setShowTitle] = useState(!isFromSplash);
+    const [showUI, setShowUI] = useState(!isFromSplash);
+    
+    const [isGlobalFlickering, setGlobalFlickering] = useState(false); 
+    const [glitchMode, setGlitchMode] = useState<GlitchMode>('NONE');
+    const [isHardwareFlickering, setHardwareFlickering] = useState(false); 
     
     const [uptime, setUptime] = useState(0);
     const [entropy, setEntropy] = useState(0.042);
     const [vitals, setVitals] = useState<{id: number, text: string, isRed?: boolean}[]>([]);
 
     useEffect(() => {
-        // --- ATMOSPHERIC IGNITION TIMELINE ---
-        const t1 = setTimeout(() => {
-            setShowTitle(true);
+        let t1: any, t2: any, t3: any;
+        
+        if (isFromSplash) {
+            t1 = setTimeout(() => {
+                setShowTitle(true);
+                AudioManager.getInstance().startMusic();
+            }, 200);
+            t2 = setTimeout(() => setIsInitialized(true), 2200);
+            t3 = setTimeout(() => setShowUI(true), 2400);
+        } else {
             AudioManager.getInstance().startMusic();
-        }, 200);
-        const t2 = setTimeout(() => setIsInitialized(true), 2200);
-        const t3 = setTimeout(() => setShowUI(true), 2400);
+        }
 
         const utv = setInterval(() => setUptime(prev => prev + 1), 1000);
         const etv = setInterval(() => setEntropy(prev => Math.max(0, prev + (Math.random()*0.01 - 0.005))), 2000);
 
+        const gtv = setInterval(() => {
+            if (Math.random() < 0.08) {
+                const modes: GlitchMode[] = ['WORD_1', 'WORD_2', 'SPARSE'];
+                setGlitchMode(modes[Math.floor(Math.random() * modes.length)]);
+                setTimeout(() => setGlitchMode('NONE'), 150);
+            }
+        }, 9000);
+
+        let flickerTimeout: any;
+        const runFlickerBurst = async () => {
+            if (!isInitialized) return;
+            const burstCount = Math.random() < 0.7 ? 1 : 2;
+            for (let i = 0; i < burstCount; i++) {
+                setHardwareFlickering(true);
+                await new Promise(r => setTimeout(r, 30 + Math.random() * 30));
+                setHardwareFlickering(false);
+                await new Promise(r => setTimeout(r, 50 + Math.random() * 50));
+            }
+            const nextInterval = 6000 + Math.random() * 12000;
+            flickerTimeout = setTimeout(runFlickerBurst, nextInterval);
+        };
+        flickerTimeout = setTimeout(runFlickerBurst, 5000);
+
         return () => {
-            [t1, t2, t3].forEach(clearTimeout);
+            if (t1) clearTimeout(t1);
+            if (t2) clearTimeout(t2);
+            if (t3) clearTimeout(t3);
+            clearTimeout(flickerTimeout);
             clearInterval(utv);
             clearInterval(etv);
+            clearInterval(gtv);
         };
-    }, []);
+    }, [isInitialized, isFromSplash]);
 
     useEffect(() => {
         if (!showUI) return;
@@ -45,9 +84,7 @@ export const MainMenu: React.FC = () => {
     }, [showUI]);
 
     const handleInteraction = () => {
-        // --- SEAMLESS AUDIO RESUMPTION ---
         AudioManager.getInstance().resume();
-        
         AudioManager.getInstance().playUiClick();
         setGlobalFlickering(true);
         setTimeout(() => setGlobalFlickering(false), 80);
@@ -60,14 +97,27 @@ export const MainMenu: React.FC = () => {
         return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
+    const renderGlitchedTitle = () => {
+        const base1 = "SYNTAX";
+        const base2 = "DEFENSE";
+        const symbols = ["∑", "λ", "ø", "X", "∆", "§"];
+        const glitchWord = (word: string, chance: number) => {
+            return word.split('').map(char => 
+                Math.random() < chance ? symbols[Math.floor(Math.random() * symbols.length)] : char
+            ).join('');
+        };
+        if (glitchMode === 'WORD_1') return <>{glitchWord(base1, 0.4)} {base2}</>;
+        if (glitchMode === 'WORD_2') return <>{base1} {glitchWord(base2, 0.4)}</>;
+        if (glitchMode === 'SPARSE') return <>{glitchWord(base1, 0.15)} {glitchWord(base2, 0.15)}</>;
+        return <>{base1} {base2}</>;
+    };
+
     const menuItems = [
         { 
             label: 'INFILTRATE CORE', id: 'INIT', log: 'EXE: NEW_SESSION.BIN', 
             action: () => {
                 handleInteraction();
-                // --- NEURAL BRAIN ACTIVATION ---
                 NeuralBrain.getInstance().initializeSession();
-                
                 StateManager.instance.resetSession();
                 const hasSeenTutorial = localStorage.getItem('syndef_tutorial_v19');
                 if (hasSeenTutorial) {
@@ -99,16 +149,20 @@ export const MainMenu: React.FC = () => {
             display: 'flex', flexDirection: 'column', fontFamily: "'Courier New', Courier, monospace", 
             position: 'relative', overflow: 'hidden' 
         }}>
-            
-            {/* 1. NEURAL BACKGROUND */}
-            <div style={{ position: 'absolute', inset: 0, opacity: isInitialized ? 1 : 0, transition: 'opacity 2.5s ease-in-out', pointerEvents: 'none' }}>
-                <MenuBackground isFlickering={isGlobalFlickering} />
+            {/* BACKGROUND: Fully synchronized with hardware and global flickering */}
+            <div style={{ 
+                position: 'absolute', inset: 0, 
+                opacity: isInitialized ? (isHardwareFlickering ? 0.94 : 1) : 0, 
+                transition: isHardwareFlickering ? 'none' : 'opacity 2.5s ease-in-out', 
+                filter: isHardwareFlickering ? 'brightness(0.84)' : 'none',
+                pointerEvents: 'none' 
+            }}>
+                <MenuBackground isFlickering={isHardwareFlickering || isGlobalFlickering} />
             </div>
             
-            {/* 2. SYSTEM VITALS */}
             <div style={{ opacity: showUI ? 0.8 : 0, transition: 'opacity 1.5s ease-out' }}>
                 <div style={{ position: 'absolute', top: '1.2rem', left: '2.0rem', zIndex: 10, color: '#00ffff', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                    ARCHITECT @ SYNTAX_CORE:~/ROOT$
+                    ARCHITECT @ SYNTAX_CORE:~/ROOT$ [SYSTEM_LINK_V83.1]
                 </div>
                 <div style={{ position: 'absolute', top: '1.2rem', right: '2.0rem', zIndex: 10, textAlign: 'right', fontSize: '0.75rem' }}>
                     <div>UPTIME: {formatTime(uptime)}</div>
@@ -117,71 +171,86 @@ export const MainMenu: React.FC = () => {
                 </div>
             </div>
 
-            {/* 3. CENTER CONTENT */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, paddingTop: 'min(10vh, 5rem)' }}>
+            {/* 3. CENTER CONTENT: EXPANDED SCALING */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, paddingTop: 'min(20vh, 10rem)', perspective: '1000px' }}>
                 {showTitle && (
-                    <h1 className={`menu-title-2d ${isTitleGlitched ? 'anomaly-glitch' : ''}`} style={{ 
-                        fontSize: 'clamp(2.5rem, 7vw, 3.5rem)', 
-                        letterSpacing: '0.15rem', 
-                        margin: 0,
-                        color: '#00ffff', 
-                        fontWeight: 900,
-                        textShadow: '0 0 1.5rem rgba(0,255,255,0.4)',
-                        animation: 'title-entry-2d 1.5s cubic-bezier(0.2, 0, 0.2, 1) forwards'
+                    <div style={{ 
+                        transform: 'rotateX(35deg) translateZ(50px)', 
+                        transformStyle: 'preserve-3d',
+                        animation: isFromSplash ? 'title-entry-3d 2s cubic-bezier(0.1, 0, 0.1, 1) forwards' : 'none'
                     }}>
-                        SYNTAX DEFENSE
-                    </h1>
+                        <h1 className={`neon-title-3d ${glitchMode !== 'NONE' ? 'anomaly-glitch' : ''}`} style={{ 
+                            fontSize: 'clamp(3rem, 10vw, 5.5rem)', 
+                            letterSpacing: '0.5rem', 
+                            wordSpacing: '-0.2rem',
+                            margin: 0,
+                            color: glitchMode !== 'NONE' ? '#ff3300' : '#00ffff', 
+                            fontWeight: 900,
+                            textAlign: 'center',
+                            fontFamily: 'monospace',
+                            opacity: isHardwareFlickering ? 0.88 : 1,
+                            textShadow: glitchMode !== 'NONE' ? '0 0 15px #ff3300' : `
+                                0 0 10px #00ffff,
+                                0 0 25px #00ffff,
+                                0 5px 3px #008888,
+                                0 10px 3px #005555,
+                                0 15px 40px rgba(0,0,0,0.8)
+                            `,
+                            filter: isHardwareFlickering ? 'brightness(0.9) contrast(1.1)' : 'contrast(1.2) brightness(1.2)',
+                            transition: 'color 0.1s, text-shadow 0.1s, opacity 0.05s'
+                        }}>
+                            {renderGlitchedTitle()}
+                        </h1>
+                    </div>
                 )}
 
-                {/* THE COMPACT 2D COMMAND WINDOW */}
                 <div style={{
-                    marginTop: '1rem',
-                    width: '28rem',
-                    background: 'rgba(0,0,0,0.92)',
-                    border: '1px solid rgba(0,255,255,0.15)',
-                    padding: '1rem',
+                    marginTop: '-2.5rem',
+                    width: '32rem',
+                    background: 'rgba(10,12,15,0.99)',
+                    border: '1px solid rgba(200,210,220,0.4)',
+                    padding: '1.2rem',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.1rem',
                     opacity: showUI ? 1 : 0,
-                    transform: `translateY(${showUI ? '0' : '2rem'})`,
-                    transition: 'all 1.2s cubic-bezier(0.2, 0, 0.2, 1)',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+                    transform: `translateY(${showUI ? '0' : '2rem'}) translateZ(0)`,
+                    transition: isFromSplash ? 'all 1.2s cubic-bezier(0.2, 0, 0.2, 1)' : 'none',
+                    boxShadow: '0 0 40px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,255,0.05)',
                     zIndex: 2
                 }}>
-                    <div style={{ fontSize: '0.6rem', color: 'rgba(0,255,255,0.4)', marginBottom: '0.6rem', letterSpacing: '2px', borderBottom: '1px solid rgba(0,255,255,0.1)', paddingBottom: '0.4rem' }}>
-                        COMMAND_INTERFACE_V1.5
+                    <div style={{ fontSize: '0.65rem', color: 'rgba(200,210,220,0.6)', marginBottom: '0.8rem', letterSpacing: '3px', borderBottom: '1px solid rgba(200,210,220,0.2)', paddingBottom: '0.5rem', fontWeight: 900 }}>
+                        SYSTEM_TERMINAL_V1.6_STABLE
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {menuItems.map((item, idx) => (
                             <button key={item.id} onClick={item.action} disabled={item.disabled}
                                 style={{
-                                    background: item.primary ? 'rgba(0,255,255,0.08)' : 'transparent', 
-                                    border: `1px solid ${item.disabled ? '#222' : 'rgba(0,255,255,0.1)'}`,
-                                    color: item.disabled ? '#444' : '#fff', padding: '0.6rem 1.2rem', fontSize: '0.9rem',
+                                    background: item.primary ? 'rgba(255,255,255,0.03)' : 'transparent', 
+                                    border: `1px solid ${item.disabled ? '#222' : 'rgba(200,210,220,0.15)'}`,
+                                    color: item.disabled ? '#444' : '#eee', padding: '0.6rem 1.4rem', fontSize: '0.95rem',
                                     cursor: item.disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit', textAlign: 'left',
                                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                     transition: 'all 0.2s ease-out'
                                 }}
-                                onMouseEnter={(e) => !item.disabled && (e.currentTarget.style.borderColor = '#00ffff', e.currentTarget.style.background = 'rgba(0,255,255,0.12)')}
-                                onMouseLeave={(e) => !item.disabled && (e.currentTarget.style.borderColor = 'rgba(0,255,255,0.1)', e.currentTarget.style.background = item.primary ? 'rgba(0,255,255,0.08)' : 'transparent')}
+                                onMouseEnter={(e) => !item.disabled && (e.currentTarget.style.borderColor = '#00ffff', e.currentTarget.style.background = 'rgba(0,255,255,0.08)', e.currentTarget.style.color = '#fff')}
+                                onMouseLeave={(e) => !item.disabled && (e.currentTarget.style.borderColor = 'rgba(200,210,220,0.15)', e.currentTarget.style.background = item.primary ? 'rgba(255,255,255,0.03)' : 'transparent', e.currentTarget.style.color = '#eee')}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <span style={{ opacity: 0.3, fontSize: '0.65rem' }}>0{idx + 1}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+                                    <span style={{ opacity: 0.2, fontSize: '0.7rem' }}>[{idx + 1}]</span>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ fontWeight: 900, letterSpacing: '2px' }}>{item.label}</span>
-                                        <span style={{ fontSize: '0.5rem', color: '#00ffff', opacity: 0.5 }}>{item.log}</span>
+                                        <span style={{ fontSize: '0.55rem', color: '#888', opacity: 0.7 }}>{item.log}</span>
                                     </div>
                                 </div>
-                                {item.status && <span style={{ fontSize: '0.6rem', color: '#00ffff', border: '1px solid #00ffff44', padding: '0.1rem 0.5rem', fontWeight: 900 }}>{item.status}</span>}
+                                {item.status && <span style={{ fontSize: '0.6rem', color: '#00ffff', border: '1px solid #00ffff33', padding: '0.1rem 0.6rem', fontWeight: 900, opacity: 0.8 }}>{item.status}</span>}
                             </button>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* 4. NEURAL LOGS */}
             <div style={{ position: 'absolute', bottom: '2.5rem', left: '2.5rem', zIndex: 10, opacity: showUI ? 0.6 : 0, transition: 'opacity 1s' }}>
                 {vitals.map((v) => (
                     <div key={v.id} style={{ fontSize: '0.7rem', color: '#00ffff', marginBottom: '0.3rem', letterSpacing: '0.08rem' }}>
@@ -191,9 +260,28 @@ export const MainMenu: React.FC = () => {
             </div>
 
             <style>{`
-                @keyframes title-entry-2d {
-                    from { opacity: 0; transform: scale(0.95) translateY(2rem); filter: blur(20px); }
-                    to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+                @keyframes title-entry-3d {
+                    from { opacity: 0; transform: rotateX(45deg) translateZ(-100px); filter: blur(20px); }
+                    to { opacity: 1; transform: rotateX(35deg) translateZ(50px); filter: blur(0); }
+                }
+                .neon-title-3d {
+                    animation: title-flicker 4s infinite;
+                }
+                .anomaly-glitch {
+                    animation: title-jitter-soft 0.18s infinite;
+                    filter: brightness(1.3) !important;
+                }
+                @keyframes title-jitter-soft {
+                    0% { transform: translate(0) rotateX(35deg) translateZ(50px); }
+                    33% { transform: translate(-1px, 1px) rotateX(35deg) translateZ(50px); }
+                    66% { transform: translate(1px, -1px) rotateX(35deg) translateZ(50px); }
+                    100% { transform: translate(0) rotateX(35deg) translateZ(50px); }
+                }
+                @keyframes title-flicker {
+                    0%, 100% { opacity: 1; filter: brightness(1.2); }
+                    50% { opacity: 0.95; filter: brightness(1.1); }
+                    98% { opacity: 1; }
+                    99% { opacity: 0.8; }
                 }
             `}</style>
         </div>

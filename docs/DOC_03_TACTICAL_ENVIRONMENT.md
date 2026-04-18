@@ -1,27 +1,24 @@
 # [03] TACTICAL_ENVIRONMENT: MASTER_LAYOUT_BLUEPRINT
 
-## I. UNIVERSAL SCALING
-- **Logical Workspace:** 1600 x 720 (Native 40x18 nodes).
-- **Quantum Snap:** All tactical entities strictly lock to `TILE_SIZE` (40px).
+## I. PHYSICAL TOPOGRAPHY (V1.6.0)
+- **Grid Resolution:** 40 Columns x 14 Rows.
+- **Node Matrix:** 560 logical nodes.
+- **Scaling Law:** Full-Surface Stretch (Independent X/Y).
+- **Logical Dimension:** 1600px x 560px (Simulation) within a 720px Engine Frame.
 
-## II. HIGH-CONTRAST TOPOLOGY
-- **Tactical Grid:** Cyan stroke (`0x00ffff`, 0.08 alpha) over absolute black.
-- **Pathway Architecture:**
-  - **Visual:** Solid, opaque black blocks (`alpha: 1.0`).
-  - **Logic:** The path layer is mounted *above* the grid, effectively masking it to create a clear corridor.
-  - **Definition:** Subtle cyan edge stroke (`alpha: 0.15`) defines the corridor boundaries.
+## II. ZONAL DEFINITIONS
+- **ROW 0:** Top Forbidden Buffer. No Pathing. No Placement.
+- **ROWS 1-12:** Playable Tactical Zone. Authorized for Pathing and Deployment.
+- **ROW 13:** Bottom Forbidden Buffer. Primary HUD interface. No Pathing. No Placement.
+- **HUD ZONE:** Rows 14-17 (Engine Space). Hard-affixed UI layer.
 
-## III. QUANTUM HUD GEOMETRY
-- **Safe Zone:** Content anchored between Column 3 and Column 39.
-- **Distribution:**
-  - **STATUS:** 9 Tiles (Left).
-  - **PROTOCOL:** 17 Tiles (Center, includes 3-Wide Array + Intel).
-  - **LOGISTICS:** 9 Tiles (Right).
-- **Buffers:** 1-tile length gutters on all module boundaries.
+## III. PATH ARCHITECTURE (AUTHORITY VOID)
+- **Width:** Exactly 2 grid boxes wide (80px logical).
+- **Flow:** Continuous left-to-right (Col 0 to Col 40).
+- **Parallel Separation:** Minimum 1-grid square empty buffer between parallel segments.
+- **Visuals:** Solid black mask erasing internal grid lines with sharp cyan side-borders.
 
-## IV. PLACEMENT VALIDATION
-- **Neural Brain Mapping:** Proactively identifies 100% of non-path squares.
-- **Indicator Protocol:**
-  - **Green Snap:** Available node.
-  - **Red Snap:** Occupied or Path cell.
-  - **Reach Signature:** Cyan halo represents weapon range during drag.
+## IV. UNIT TRAVERSAL
+- **Formation:** Atomic Pair-Spawning (Zero Stagger).
+- **Alignment:** Perpendicular vector offsets (+/- 18px).
+- **Scale:** Reduced 14px virus profile for spacious combat feel.
