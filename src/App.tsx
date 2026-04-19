@@ -21,8 +21,13 @@ function App() {
 
     const updateScaling = () => {
         const userScale = StateManager.instance.uiScale;
-        // Law: Width-driven scaling for better aspect ratio compatibility (1600px target)
-        document.documentElement.style.fontSize = `clamp(8px, ${(1.2 * userScale) * (window.innerWidth / 1600 * 100)}vw, 24px)`;
+        // Law: Dynamic Mean Scaling (v99.19)
+        // We calculate both scales and use the average to maintain consistent legibility.
+        const scaleX = window.innerWidth / 1600;
+        const scaleY = window.innerHeight / 720;
+        const combinedScale = (scaleX + scaleY) / 2;
+        
+        document.documentElement.style.fontSize = `${16 * combinedScale * userScale}px`;
     };
 
     const unbindScale = StateManager.instance.subscribe('uiScale', updateScaling);
@@ -65,7 +70,6 @@ function App() {
       }
   };
 
-  // Only show barrier if strictly portrait and likely a mobile device
   const showBarrier = isPortrait && window.innerWidth < 1000;
 
   return (
@@ -93,7 +97,7 @@ function App() {
 
       <div className="game-container" style={{ 
           width: '100%', height: '100%', position: 'relative',
-          opacity: showBarrier ? 0 : 1, // Use opacity instead of hidden for smoother recovery
+          opacity: showBarrier ? 0 : 1,
           transition: 'opacity 0.3s ease'
       }}>
         {needsWake && (

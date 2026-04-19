@@ -115,7 +115,6 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
     const [waveProgress, setWaveProgress] = useState(0);
     const [prepCountdown, setPrepCountdown] = useState(0);
     const [isAlert, setIsAlert] = useState(false);
-    const [sessionSeed, setSessionSeed] = useState(NeuralBrain.getInstance().currentProfile?.seed || "NONE");
     const [projectedYield, setProjectedYield] = useState(0);
 
     const [leftBuffer, setLeftBuffer] = useState("0px");
@@ -130,25 +129,27 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
             StateManager.instance.subscribe('credits', (v) => setCredits(v)),
             StateManager.instance.subscribe('integrity', (v) => setIntegrity(v)),
             StateManager.instance.subscribe('state', (v) => setGameState(v)),
-            StateManager.instance.subscribe('breach', (v) => setIsBreaching(v)),
             StateManager.instance.subscribe('waveName', (v) => setWaveName(v)),
             StateManager.instance.subscribe('gameMode', (v) => setGameMode(v))
         ];
 
         const updateRootScaling = () => {
-            const vw = window.innerWidth;
             const engine = Engine.instance;
             if (!engine.app || !engine.app.stage) return;
-            const scale = engine.app.stage.scale.x;
-            const stageX = engine.app.stage.x;
-            const tileWidth = 40 * scale; 
+            
+            // INDEPENDENT AXIS SCALING (v99.19)
+            const sx = engine.app.stage.scale.x;
+            const sy = engine.app.stage.scale.y;
 
-            setHudHeight(`${4 * tileWidth}px`);
-            setSideSectionWidth(`${9 * tileWidth}px`);
-            setCenterSectionWidth(`${17 * tileWidth}px`);
-            setLogisticsSubWidth(`${4.2 * tileWidth}px`);
-            setLeftBuffer(`${stageX + (1 * tileWidth)}px`);
-            setRightBuffer(`${vw - (stageX + (39 * tileWidth))}px`);
+            // Heights scale with sy
+            setHudHeight(`${160 * sy}px`); // 4 tiles high
+            
+            // Widths scale with sx
+            setSideSectionWidth(`${360 * sx}px`);
+            setCenterSectionWidth(`${680 * sx}px`);
+            setLogisticsSubWidth(`${168 * sx}px`);
+            setLeftBuffer(`${40 * sx}px`); // 1 tile buffer
+            setRightBuffer(`${40 * sx}px`);
         };
 
         const heartbeat = setInterval(() => {
@@ -160,7 +161,7 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
 
                 const rewards = waveManager.getRemainingRewards();
                 const bonus = waveManager.getEndWaveBonus();
-                const interest = Math.floor(StateManager.instance.credits * (StateManager.instance.gameMode === 'HARDCORE' ? 0.01 : 0.05));
+                const interest = Math.min(1500, Math.floor(StateManager.instance.credits * (StateManager.instance.gameMode === 'HARDCORE' ? 0.01 : 0.05)));
                 setProjectedYield(rewards + bonus + interest);
             }
             if (towerManager) setSelectedTower(towerManager.selectedTower);
