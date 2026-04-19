@@ -12,7 +12,7 @@ import { AudioManager } from './systems/AudioManager';
 function App() {
   const [state, setState] = useState<AppState>(StateManager.instance.currentState);
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
-  const [needsWake, setNeedsWake] = useState(false);
+  const [needsWake, setNeedsWake] = useState(true); // FORCE INTERACTION BY DEFAULT
 
   useEffect(() => {
     const unbind = StateManager.instance.subscribe('state', (newState) => {
@@ -29,15 +29,6 @@ function App() {
     const checkOrientation = () => {
         const portrait = window.innerHeight > window.innerWidth;
         setIsPortrait(portrait);
-
-        if (!portrait && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
-            // AUTHORITATIVE ENTRY
-            if (StateManager.instance.skipCinematics) {
-                StateManager.instance.transitionTo(AppState.MAIN_MENU);
-            } else {
-                StateManager.instance.transitionTo(AppState.TERMINAL_BOOT);
-            }
-        }
     };
 
     const handleKeys = (e: KeyboardEvent) => {
@@ -53,15 +44,6 @@ function App() {
     checkOrientation();
     updateScaling();
 
-    // Forced landscape check on initial mount
-    if (window.innerWidth > window.innerHeight && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
-        if (StateManager.instance.skipCinematics) {
-            StateManager.instance.transitionTo(AppState.MAIN_MENU);
-        } else {
-            StateManager.instance.transitionTo(AppState.TERMINAL_BOOT);
-        }
-    }
-
     return () => {
         unbind();
         unbindScale();
@@ -75,7 +57,7 @@ function App() {
       setNeedsWake(false);
       
       const s = StateManager.instance;
-      // THE DEFINITIVE FIX: Force boot sequence if not skipped
+      // AUTHORITATIVE NARRATIVE INITIATION
       if (s.skipCinematics) {
           s.transitionTo(AppState.MAIN_MENU);
       } else {

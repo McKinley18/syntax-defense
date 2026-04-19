@@ -1,0 +1,1 @@
+import{n as e}from"./index-tRwcE8Zq.js";export{e as WebGLRenderer};

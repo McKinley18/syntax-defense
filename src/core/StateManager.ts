@@ -42,7 +42,7 @@ export class StateManager {
     private _isPaused: boolean = false;
     public gameSpeed: number = 1.0;
     public uiScale: number = 1.0;
-    public skipCinematics: boolean = true; 
+    public skipCinematics: boolean = false; // DEFAULT: ENABLED for immersion
     
     public nearKernelAlert: boolean = false;
     public selectedTurretType: number | null = null;
@@ -51,15 +51,15 @@ export class StateManager {
     private listeners: Map<string, ((value: any) => void)[]> = new Map();
 
     private constructor() {
-        this.currentState = AppState.MAIN_MENU;
+        this.currentState = AppState.ORIENTATION_LOCK; // FORCE GATEWAY
+        
         const saved = localStorage.getItem('syndef_prefs');
         if (saved) {
             const p = JSON.parse(saved);
             this.uiScale = p.uiScale || 1.0;
-            this.skipCinematics = p.skipCinematics !== undefined ? p.skipCinematics : true;
+            // Respect saved, but allow intro by default if not set
+            this.skipCinematics = p.skipCinematics === true;
             this.hasSeenTutorial = !!p.hasSeenTutorial;
-        } else {
-            this.skipCinematics = true; 
         }
     }
 
@@ -107,7 +107,6 @@ export class StateManager {
         let interest = 0;
         if (this.waveDamageTaken === 0) {
             const rate = this.gameMode === 'HARDCORE' ? 0.01 : 0.05;
-            // INTEREST CAP: Max 1500c interest per wave
             interest = Math.min(1500, Math.floor(this.credits * rate));
             this.addCredits(interest);
             this.perfectWaves++;
@@ -119,7 +118,6 @@ export class StateManager {
     }
 
     public getRepairCost(): number {
-        // DYNAMIC COST: 250c base + Wave Scaling
         return 250 + (this.currentWave * 50);
     }
 
