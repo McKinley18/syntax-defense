@@ -74,10 +74,12 @@ function App() {
       await AudioManager.getInstance().resume();
       setNeedsWake(false);
       
-      if (StateManager.instance.skipCinematics) {
-          StateManager.instance.transitionTo(AppState.MAIN_MENU);
+      const s = StateManager.instance;
+      // THE DEFINITIVE FIX: Force boot sequence if not skipped
+      if (s.skipCinematics) {
+          s.transitionTo(AppState.MAIN_MENU);
       } else {
-          StateManager.instance.transitionTo(AppState.TERMINAL_BOOT);
+          s.transitionTo(AppState.TERMINAL_BOOT);
       }
   };
 
