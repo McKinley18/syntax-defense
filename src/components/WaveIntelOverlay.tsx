@@ -60,7 +60,7 @@ export const WaveIntelOverlay: React.FC<{ waveManager: IIntelWaveManager }> = ({
                         &gt; {isFirstWave ? "INITIAL_INFILTRATION_INTEL" : `PREVIOUS_OPERATION_REPORT [WAVE_${currentWave - 1}]`}
                     </div>
                     <button 
-                        onClick={() => { AudioManager.getInstance().playUiClick(); s.transitionTo(AppState.MAIN_MENU); }}
+                        onClick={() => { AudioManager.getInstance().playUiClick(); s.abortSession(); }}
                         style={{ background: 'transparent', border: '1px solid #ff3300', color: '#ff3300', fontSize: '0.65rem', padding: '0.2rem 0.6rem', cursor: 'pointer' }}
                     >
                         [ ABORT_MISSION ]

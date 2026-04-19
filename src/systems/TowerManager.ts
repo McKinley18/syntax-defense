@@ -108,6 +108,7 @@ export class TowerManager {
         if (this.ghostRange) this.ghostRange.visible = false;
     }
 
+    public getPendingTurretType() { return this.pendingTurretType; }
     public getContainer() { return this.container; }
     public getProjectileContainer() { return this.projectileContainer; }
     public selectedTower: Tower | null = null;

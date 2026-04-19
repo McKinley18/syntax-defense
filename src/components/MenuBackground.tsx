@@ -7,16 +7,18 @@ interface MenuBackgroundProps {
 }
 
 /**
- * MENU BACKGROUND v99.12: Visibility Hardening
- * THE DEFINITIVE SYNC: Incorporates external visibility control for sequential reveals.
+ * MENU BACKGROUND v99.26: Lifecycle Hardening
+ * THE FIX: Implements passive destruction to prevent shared resource null-errors.
  */
 export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker, isVisible = true }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const appRef = useRef<PIXI.Application | null>(null);
     const systemLayerRef = useRef<PIXI.Container | null>(null);
     const onFlickerRef = useRef(onSyncFlicker);
+    const isVisibleRef = useRef(isVisible);
 
     useEffect(() => { onFlickerRef.current = onSyncFlicker; }, [onSyncFlicker]);
+    useEffect(() => { isVisibleRef.current = isVisible; }, [isVisible]);
 
     useEffect(() => {
         let isMounted = true;
@@ -100,9 +102,11 @@ export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker, i
                 }
 
                 const isDipped = (nextFlickerTime - now) < flickerDuration;
-                const targetAlpha = isDipped ? 0.2 : 1.0;
+                const targetAlpha = isDipped ? 0.7 : 1.0;
                 
-                // Authoritative Sync Push
+                systemLayer.alpha = isVisibleRef.current ? targetAlpha : 0;
+                systemLayer.visible = isVisibleRef.current;
+
                 if (onFlickerRef.current) {
                     onFlickerRef.current(targetAlpha);
                 }
@@ -115,13 +119,14 @@ export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker, i
         return () => {
             isMounted = false;
             if (appRef.current) {
-                appRef.current.destroy(true, { children: true, texture: true });
+                // PASSIVE DESTRUCTION: Destroy app and children, but preserve global textures
+                // to prevent hash-null errors in the shared PIXI pipeline.
+                appRef.current.destroy(true, { children: true, texture: false });
                 appRef.current = null;
             }
         };
     }, []);
 
-    // Reactive Alpha Control (for the Phase 2 reveal)
     useEffect(() => {
         if (systemLayerRef.current) {
             systemLayerRef.current.alpha = isVisible ? 1.0 : 0;

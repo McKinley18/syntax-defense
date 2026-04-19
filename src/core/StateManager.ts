@@ -176,12 +176,19 @@ export class StateManager {
         this.waveDamageTaken = 0;
         this.waveCreditsEarned = 0;
         this.wavePurgedCount = 0;
-        this.isPaused = false; // THE FIX: Ensure session starts awake
+        this.isPaused = false;
         this.gameSpeed = 1.0;
         this.notify('credits', this.credits);
         this.notify('integrity', this.integrity);
-        this.notify('state', this.currentState);
         this.notify('gameMode', this.gameMode);
+    }
+
+    /**
+     * ABORT SESSION: Destructive exit that wipes save data.
+     */
+    public abortSession() {
+        localStorage.removeItem('syndef_game_save');
+        this.transitionTo(AppState.MAIN_MENU);
     }
 
     public resetTutorial() {
@@ -210,7 +217,7 @@ export class StateManager {
             this.currentWave = data.currentWave || 1;
             this.credits = data.credits || 600;
             this.integrity = data.integrity || 20;
-            this.isPaused = false; // THE FIX: Force wake-up on load
+            this.isPaused = false;
             
             this.notify('credits', this.credits);
             this.notify('integrity', this.integrity);

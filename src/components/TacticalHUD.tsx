@@ -182,11 +182,12 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
 
     const isWave = gameState === AppState.GAME_WAVE;
     const isPrep = gameState === AppState.WAVE_PREP || gameState === AppState.GAME_PREP;
-    const themeColor = integrity <= 6 ? 'var(--neon-red)' : isPrep ? 'var(--neon-cyan)' : isWave ? '#00ff66' : 'var(--neon-cyan)';
+    const themeColor = integrity <= 6 ? 'var(--neon-red)' : 'var(--neon-cyan)';
 
     const [hoveredProtocol, setHoveredProtocol] = useState<TowerType | null>(null);
-    const activeInfoType = hoveredProtocol !== null ? hoveredProtocol : (selectedTower !== null ? selectedTower.type : null);
-    const activeInfo = activeInfoType !== null ? TOWER_CONFIGS[activeInfoType] : null;
+    const draggingType = towerManager?.getPendingTurretType();
+    const activeInfoType = hoveredProtocol !== null ? hoveredProtocol : (draggingType !== null && draggingType !== undefined ? draggingType : (selectedTower !== null ? selectedTower.type : null));
+    const activeInfo = activeInfoType !== null ? TOWER_CONFIGS[activeInfoType as TowerType] : null;
 
     const getTargetModeLabel = (mode: TargetMode) => {
         switch(mode) {

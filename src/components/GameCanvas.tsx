@@ -21,9 +21,9 @@ export const GameCanvas = () => {
     const [activeSelectedTower, setActiveSelectedTower] = useState<any>(null);
     const [isPaused, setIsPaused] = useState(StateManager.instance.isPaused);
     
-    // REF FOR TICKER SYNC (Avoid infinite render loops)
     const lastSyncTower = useRef<any>(null);
     const shakeIntensity = useRef(0);
+    const tickerRef = useRef<((t: PIXI.Ticker) => void) | null>(null);
 
     const systemsRef = useRef<{
         mapManager: MapManager,
@@ -36,9 +36,15 @@ export const GameCanvas = () => {
     useEffect(() => {
         const handleShake = (e: any) => { shakeIntensity.current = e.detail; };
         window.addEventListener('syndef-shake', handleShake);
-
+        
         const unsub = StateManager.instance.subscribe('isPaused', (val) => {
             setIsPaused(val);
+            // AUTHORITATIVE TICKER CONTROL: Handle pause outside the ticker loop
+            const app = Engine.instance.app;
+            if (app) {
+                if (val) app.ticker.stop();
+                else app.ticker.start();
+            }
         });
 
         return () => {
@@ -53,7 +59,6 @@ export const GameCanvas = () => {
         const setup = async () => {
             try {
                 if (!containerRef.current) return;
-                
                 const engine = Engine.instance;
                 await engine.init(containerRef.current);
                 if (!isMounted) return;
@@ -88,7 +93,6 @@ export const GameCanvas = () => {
                     kernel.update(0); 
                 };
 
-                // AUTHORITATIVE INITIALIZATION
                 const s = StateManager.instance;
                 if (s.previousState === AppState.MAIN_MENU) {
                     const saveData = s.loadGame();
@@ -118,9 +122,7 @@ export const GameCanvas = () => {
                     if (shakeIntensity.current > 0) {
                         const sx = (Math.random() - 0.5) * shakeIntensity.current;
                         const sy = (Math.random() - 0.5) * shakeIntensity.current;
-                        if (containerRef.current) {
-                            containerRef.current.style.transform = `translate(${sx}px, ${sy}px)`;
-                        }
+                        if (containerRef.current) containerRef.current.style.transform = `translate(${sx}px, ${sy}px)`;
                         shakeIntensity.current *= 0.9; 
                         if (shakeIntensity.current < 0.1) {
                             shakeIntensity.current = 0;
@@ -128,33 +130,27 @@ export const GameCanvas = () => {
                         }
                     }
 
-                    // 3. ENGINE PAUSE
-                    if (StateManager.instance.isPaused) {
-                        if (app.ticker.started) app.ticker.stop();
-                        return;
-                    }
-                    if (!app.ticker.started) app.ticker.start();
-
-                    // 4. SYSTEMS UPDATE
+                    // 3. SYSTEMS UPDATE (Only runs when ticker is started)
                     if (systemsRef.current) {
                         const delta = ticker.deltaTime * StateManager.instance.gameSpeed;
                         const { towerManager, waveManager, kernel } = systemsRef.current;
                         waveManager.update(delta);
                         towerManager.update(delta, waveManager.enemies);
                         kernel.update(delta);
-                        if (isPaused !== StateManager.instance.isPaused) setIsPaused(StateManager.instance.isPaused);
                     }
                 };
 
+                tickerRef.current = masterTicker;
                 app.ticker.add(masterTicker);
-                app.ticker.start();
-                (app as any)._masterTicker = masterTicker;
                 
-                engine.resize(); // Force layout sync
+                // Set initial pause state correctly
+                if (StateManager.instance.isPaused) app.ticker.stop();
+                else app.ticker.start();
+                
+                engine.resize(); 
                 setIsReady(true);
             } catch (err) {
                 console.error("TACTICAL_INIT_CRASH", err);
-                // Fallback to ensure UI renders
                 setIsReady(true);
             }
         };
@@ -164,10 +160,9 @@ export const GameCanvas = () => {
             isMounted = false; 
             const app = Engine.instance.app;
             if (app) {
-                if ((app as any)._masterTicker) {
-                    app.ticker.remove((app as any)._masterTicker);
-                }
+                if (tickerRef.current) app.ticker.remove(tickerRef.current);
                 app.ticker.stop();
+                app.stage.removeChildren(); 
             }
         };
     }, []);
@@ -183,7 +178,6 @@ export const GameCanvas = () => {
     return (
         <div className="tactical-theater" style={{ width: '100%', height: '100%', position: 'relative', backgroundColor: '#050505' }}>
             <div ref={containerRef} id="canvas-container" style={{ width: '100%', height: '100%', display: 'block', transition: 'transform 0.05s linear' }} />
-            
             {isReady && (
                 <>
                     <TacticalHUD onStartWave={startWave} waveManager={systemsRef.current?.waveManager} towerManager={systemsRef.current?.towerManager} />

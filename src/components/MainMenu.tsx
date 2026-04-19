@@ -5,13 +5,13 @@ import { AudioManager } from '../systems/AudioManager';
 import { NeuralBrain } from '../systems/NeuralBrain';
 
 /**
- * MAIN MENU v99.15: Authoritative Persistence Gate
- * DESIGN: Phase 1 (Title + Grid Synchronization) -> Phase 2 (Operational Window Reveal).
- * FIX: Hard-locked RESUME SESSION to the presence of kernel archive data.
+ * MAIN MENU v99.25: User Session Tracking
+ * DESIGN: Sequential Branding Reveal + Real-time Infiltration Timer.
  */
 export const MainMenu: React.FC = () => {
     const [showBranding, setShowBranding] = useState(false);
     const [showUI, setShowUI] = useState(false);
+    const [uptime, setUptime] = useState(0); // USER_SESSION_TIMER
     const [entropy, setEntropy] = useState(0.042);
     const [kernelLogs, setKernelLogs] = useState<string[]>(["INIT_KERNEL_LINK...", "MOUNTING_FS_SECTORS...", "NEURAL_READY"]);
     const [isGlitched, setIsGlitched] = useState(false);
@@ -43,6 +43,8 @@ export const MainMenu: React.FC = () => {
             AudioManager.getInstance().startMusic();
         }, isFromSplash ? 2200 : 200); 
 
+        // --- SESSION UPTIME CLOCK ---
+        const utv = setInterval(() => setUptime(prev => prev + 1), 1000);
         const etv = setInterval(() => setEntropy(prev => Math.max(0, prev + (Math.random()*0.01 - 0.005))), 2000);
 
         const runGlitch = async () => {
@@ -68,9 +70,16 @@ export const MainMenu: React.FC = () => {
         }, 1200);
 
         return () => {
-            clearTimeout(t1); clearTimeout(t2); clearTimeout(gt); clearInterval(etv); clearInterval(ltv);
+            clearTimeout(t1); clearTimeout(t2); clearTimeout(gt); clearInterval(utv); clearInterval(etv); clearInterval(ltv);
         };
     }, [isFromSplash]);
+
+    const formatUptime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    };
 
     const menuItems = [
         { label: 'INFILTRATE CORE', ext: '.BIN', status: 'NEW', action: () => { StateManager.instance.resetSession('STANDARD'); StateManager.instance.transitionTo(AppState.GAME_PREP); }},
@@ -101,10 +110,13 @@ export const MainMenu: React.FC = () => {
                 <div style={{ position: 'absolute', top: '1.5rem', left: '2.5rem', fontSize: '0.8rem', fontWeight: 900, color: 'var(--neon-cyan)', letterSpacing: '1px', opacity: 0.4 }}>
                     ARCHITECT @ SYNTAX_CORE:~/ROOT$ [LINK_V88.3]
                 </div>
+
                 <div style={{ position: 'absolute', top: '1.5rem', right: '2.5rem', textAlign: 'right', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontWeight: 900, opacity: 0.4 }}>
+                    <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>SESSION_UPTIME: <span style={{ color: '#fff' }}>{formatUptime(uptime)}</span></div>
                     <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>ENTROPY: <span style={{ color: isGlitched ? '#ff3300' : 'var(--neon-cyan)' }}>{entropy.toFixed(3)}%</span></div>
                     <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>THREAT_LEVEL: <span style={{ color: isGlitched ? '#ff3300' : '#00ff66', animation: isGlitched ? 'flash-red 0.1s infinite' : 'none' }}>{isGlitched ? 'CRITICAL' : 'NOMINAL'}</span></div>
                 </div>
+
                 <div style={{ position: 'absolute', bottom: '1.5rem', left: '2.5rem', fontSize: '0.7rem', color: 'var(--neon-cyan)', display: 'flex', flexDirection: 'column', gap: '4px', fontWeight: 900, opacity: 0.6 }}>
                     {kernelLogs.map((log, idx) => <div key={idx} style={{ animation: 'log-fade 0.5s forwards' }}>&gt; {log}</div>)}
                 </div>
@@ -113,10 +125,10 @@ export const MainMenu: React.FC = () => {
 
             <div style={{ height: '8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', perspective: '1200px', zIndex: 10, marginTop: '10vh', opacity: showBranding ? 1 : 0, transition: 'opacity 1s ease-in' }}>
                 <h1 ref={titleRef} style={{ 
-                    fontSize: '4.5rem', fontWeight: 900, letterSpacing: '1.2rem', color: 'var(--neon-cyan)',
+                    fontSize: '5.5rem', fontWeight: 900, letterSpacing: '1.2rem', color: 'var(--neon-cyan)',
                     transform: 'rotateX(25deg) skewX(-2deg)', transformStyle: 'preserve-3d',
                     transition: 'color 0.1s',
-                    wordSpacing: '-2.5rem'
+                    wordSpacing: '-3rem'
                 }}>
                     {glitchedText}
                 </h1>
