@@ -42,7 +42,7 @@ export class StateManager {
     private _isPaused: boolean = false;
     public gameSpeed: number = 1.0;
     public uiScale: number = 1.0;
-    public skipCinematics: boolean = false; // DEFAULT: ENABLED for immersion
+    public skipCinematics: boolean = false; 
     
     public nearKernelAlert: boolean = false;
     public selectedTurretType: number | null = null;
@@ -51,13 +51,11 @@ export class StateManager {
     private listeners: Map<string, ((value: any) => void)[]> = new Map();
 
     private constructor() {
-        this.currentState = AppState.ORIENTATION_LOCK; // FORCE GATEWAY
-        
+        this.currentState = AppState.ORIENTATION_LOCK;
         const saved = localStorage.getItem('syndef_prefs');
         if (saved) {
             const p = JSON.parse(saved);
             this.uiScale = p.uiScale || 1.0;
-            // Respect saved, but allow intro by default if not set
             this.skipCinematics = p.skipCinematics === true;
             this.hasSeenTutorial = !!p.hasSeenTutorial;
         }
@@ -168,9 +166,7 @@ export class StateManager {
     }
 
     public resetSession(mode: GameMode = 'STANDARD') {
-        // AUTH_CLEANUP: Clear previous save data for a fresh infiltration
         localStorage.removeItem('syndef_game_save');
-        
         this.gameMode = mode;
         this.credits = mode === 'HARDCORE' ? 450 : 600;
         this.integrity = 20;
@@ -180,7 +176,7 @@ export class StateManager {
         this.waveDamageTaken = 0;
         this.waveCreditsEarned = 0;
         this.wavePurgedCount = 0;
-        this.isPaused = false;
+        this.isPaused = false; // THE FIX: Ensure session starts awake
         this.gameSpeed = 1.0;
         this.notify('credits', this.credits);
         this.notify('integrity', this.integrity);
@@ -214,6 +210,8 @@ export class StateManager {
             this.currentWave = data.currentWave || 1;
             this.credits = data.credits || 600;
             this.integrity = data.integrity || 20;
+            this.isPaused = false; // THE FIX: Force wake-up on load
+            
             this.notify('credits', this.credits);
             this.notify('integrity', this.integrity);
             this.notify('gameMode', this.gameMode);

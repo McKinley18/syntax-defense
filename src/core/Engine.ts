@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
 
 /**
- * CORE ENGINE: Full-Surface Stretch Protocol
- * Ensures the 40x18 grid fills 100% of the screen area with mathematically equal segments.
+ * CORE ENGINE: Authoritative Resurrection Protocol
+ * THE FIX: Ensures PIXI renders correctly when re-mounting after a session exit.
  */
 export class Engine {
     private static _instance: Engine | null = null;
@@ -22,10 +22,14 @@ export class Engine {
 
     public async init(container: HTMLElement) {
         if (this._initialized) {
+            // RESURRECTION: Re-attach and force wake-up
             if (this.app.canvas.parentElement !== container) {
                 container.appendChild(this.app.canvas);
-                this.resize();
             }
+            this.app.stage.visible = true;
+            this.app.stage.alpha = 1;
+            this.app.ticker.start(); // Ensure engine is pumping
+            this.resize();
             return;
         }
 
@@ -74,7 +78,6 @@ export class Engine {
         
         this.app.stage.scale.x = scaleX;
         this.app.stage.scale.y = scaleY;
-
         this.app.stage.x = 0;
         this.app.stage.y = 0;
 
