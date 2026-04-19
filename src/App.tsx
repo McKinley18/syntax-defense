@@ -12,7 +12,7 @@ import { AudioManager } from './systems/AudioManager';
 function App() {
   const [state, setState] = useState<AppState>(StateManager.instance.currentState);
   const [isPortrait, setIsPortrait] = useState(window.innerHeight > window.innerWidth);
-  const [needsWake, setNeedsWake] = useState(true); // FORCE INTERACTION BY DEFAULT
+  const [needsWake, setNeedsWake] = useState(true); 
 
   useEffect(() => {
     const unbind = StateManager.instance.subscribe('state', (newState) => {
@@ -57,7 +57,6 @@ function App() {
       setNeedsWake(false);
       
       const s = StateManager.instance;
-      // AUTHORITATIVE NARRATIVE INITIATION
       if (s.skipCinematics) {
           s.transitionTo(AppState.MAIN_MENU);
       } else {
@@ -65,31 +64,34 @@ function App() {
       }
   };
 
-  const showBarrier = isPortrait && (
-      state === AppState.MAIN_MENU || 
-      state === AppState.GAME_WAVE || 
-      state === AppState.GAME_PREP ||
-      state === AppState.WAVE_PREP ||
-      state === AppState.WAVE_COMPLETED ||
-      state === AppState.ARCHIVE ||
-      state === AppState.DIAGNOSTICS
-  );
+  // --- UNIVERSAL BARRIER LAW ---
+  // If in portrait, block the UI immediately to prevent layout corruption.
+  const showBarrier = isPortrait;
 
   return (
     <div className="game-wrapper" style={{ 
         backgroundColor: '#000', width: '100vw', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center',
         margin: 0, padding: 0, overflow: 'hidden'
     }}>
-      <div className="orientation-barrier" style={{ display: showBarrier ? 'flex' : 'none', position: 'absolute', inset: 0, zIndex: 1000000, backgroundColor: '#000', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#00ffff', textAlign: 'center', fontFamily: 'monospace', padding: '2rem' }}>
-          <div style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '1rem' }}>TACTICAL_ERROR: PORTRAIT_MODE</div>
-          <div style={{ opacity: 0.8, fontSize: '0.9rem' }}>
-              Landscape orientation required for tactical deployment.
+      <div className="orientation-barrier" style={{ 
+          display: showBarrier ? 'flex' : 'none', 
+          position: 'absolute', inset: 0, zIndex: 1000000, 
+          backgroundColor: '#000', flexDirection: 'column', 
+          alignItems: 'center', justifyContent: 'center', 
+          color: '#00ffff', textAlign: 'center', 
+          fontFamily: "'Courier New', Courier, monospace", padding: '2rem' 
+      }}>
+          <div style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: '1.5rem', letterSpacing: '4px' }}>[ TACTICAL_ERROR ]</div>
+          <div style={{ opacity: 0.8, fontSize: '1rem', lineHeight: 1.6 }}>
+              UNSUPPORTED_RESOLUTION: PORTRAIT_MODE_DETECTED.
+              <br/>
+              LANDSCAPE_ORIENTATION_REQUIRED_FOR_SYSTEM_LINK.
               <br/><br/>
-              [ PLEASE ROTATE DEVICE ]
+              <span style={{ color: '#fff', fontWeight: 900 }}>[ PLEASE ROTATE DEVICE ]</span>
           </div>
       </div>
 
-      <div className="game-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div className="game-container" style={{ width: '100%', height: '100%', position: 'relative', visibility: showBarrier ? 'hidden' : 'visible' }}>
         {needsWake && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 100000, backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <button onClick={handleWake} style={{ backgroundColor: 'transparent', color: '#00ffff', border: '1px solid #00ffff', padding: '20px 40px', cursor: 'pointer', fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: 900, boxShadow: '0 0 20px rgba(0,255,255,0.2)' }}>
