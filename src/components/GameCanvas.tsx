@@ -21,6 +21,10 @@ export const GameCanvas = () => {
     const [activeSelectedTower, setActiveSelectedTower] = useState<any>(null);
     const [isPaused, setIsPaused] = useState(StateManager.instance.isPaused);
     
+    // REF FOR TICKER SYNC (Avoid infinite render loops)
+    const lastSyncTower = useRef<any>(null);
+    const shakeIntensity = useRef(0);
+
     const systemsRef = useRef<{
         mapManager: MapManager,
         towerManager: TowerManager,
@@ -28,9 +32,6 @@ export const GameCanvas = () => {
         pathManager: PathManager,
         kernel: Kernel
     } | null>(null);
-
-    // PERSISTENT SHAKE INTENSITY
-    const shakeIntensity = useRef(0);
 
     useEffect(() => {
         const handleShake = (e: any) => { shakeIntensity.current = e.detail; };
@@ -50,106 +51,124 @@ export const GameCanvas = () => {
         let isMounted = true;
 
         const setup = async () => {
-            if (!containerRef.current) return;
-            
-            const engine = Engine.instance;
-            await engine.init(containerRef.current);
-            if (!isMounted) return;
-
-            const app = engine.app;
-            if (!app) return;
-            
-            TextureGenerator.getInstance().generate(app);
-
-            const pathManager = new PathManager();
-            const mapManager = new MapManager();
-            const towerManager = new TowerManager(mapManager);
-            const kernel = new Kernel();
-            const waveManager = new WaveManager(mapManager, towerManager, pathManager, kernel);
-            
-            app.stage.removeChildren();
-            app.stage.addChild(mapManager.getContainer());       
-            app.stage.addChild(waveManager.getContainer());      
-            app.stage.addChild(kernel.container);               
-            app.stage.addChild(towerManager.getProjectileContainer()); 
-            app.stage.addChild(towerManager.getContainer());     
-            
-            app.stage.hitArea = new PIXI.Rectangle(0, 0, 1600, 720);
-            new InputManager(app, mapManager, towerManager);
-            
-            systemsRef.current = { pathManager, mapManager, towerManager, waveManager, kernel };
-
-            const initializeTopology = (wave: number) => {
-                pathManager.generatePath(wave);
-                mapManager.setPathFromCells(pathManager.pathCells);
-                kernel.setPosition(pathManager.endNodePos.x, pathManager.endNodePos.y);
-                kernel.update(0); 
-            };
-
-            if (StateManager.instance.previousState === AppState.MAIN_MENU) {
-                const saveData = StateManager.instance.loadGame();
-                if (saveData && saveData.towers) {
-                    initializeTopology(saveData.currentWave);
-                    towerManager.loadTowers(saveData.towers);
-                } else {
-                    initializeTopology(1);
-                }
-            } else {
-                initializeTopology(StateManager.instance.currentWave);
-            }
-
-            const masterTicker = (ticker: PIXI.Ticker) => {
+            try {
+                if (!containerRef.current) return;
+                
+                const engine = Engine.instance;
+                await engine.init(containerRef.current);
                 if (!isMounted) return;
 
-                // 1. SYNC SELECTION
-                if (systemsRef.current) {
-                    const currentSelected = systemsRef.current.towerManager.selectedTower;
-                    if (activeSelectedTower !== currentSelected) {
-                        setActiveSelectedTower(currentSelected);
+                const app = engine.app;
+                if (!app) return;
+                
+                TextureGenerator.getInstance().generate(app);
+
+                const pathManager = new PathManager();
+                const mapManager = new MapManager();
+                const towerManager = new TowerManager(mapManager);
+                const kernel = new Kernel();
+                const waveManager = new WaveManager(mapManager, towerManager, pathManager, kernel);
+                
+                app.stage.removeChildren();
+                app.stage.addChild(mapManager.getContainer());       
+                app.stage.addChild(waveManager.getContainer());      
+                app.stage.addChild(kernel.container);               
+                app.stage.addChild(towerManager.getProjectileContainer()); 
+                app.stage.addChild(towerManager.getContainer());     
+                
+                app.stage.hitArea = new PIXI.Rectangle(0, 0, 1600, 720);
+                new InputManager(app, mapManager, towerManager);
+                
+                systemsRef.current = { pathManager, mapManager, towerManager, waveManager, kernel };
+
+                const initializeTopology = (wave: number) => {
+                    pathManager.generatePath(wave);
+                    mapManager.setPathFromCells(pathManager.pathCells);
+                    kernel.setPosition(pathManager.endNodePos.x, pathManager.endNodePos.y);
+                    kernel.update(0); 
+                };
+
+                // AUTHORITATIVE INITIALIZATION
+                const s = StateManager.instance;
+                if (s.previousState === AppState.MAIN_MENU) {
+                    const saveData = s.loadGame();
+                    if (saveData && saveData.towers && saveData.towers.length > 0) {
+                        initializeTopology(saveData.currentWave);
+                        towerManager.loadTowers(saveData.towers);
+                    } else {
+                        initializeTopology(s.currentWave);
                     }
+                } else {
+                    initializeTopology(s.currentWave);
                 }
 
-                // 2. SCREEN SHAKE
-                if (shakeIntensity.current > 0) {
-                    const sx = (Math.random() - 0.5) * shakeIntensity.current;
-                    const sy = (Math.random() - 0.5) * shakeIntensity.current;
-                    if (containerRef.current) {
-                        containerRef.current.style.transform = `translate(${sx}px, ${sy}px)`;
+                const masterTicker = (ticker: PIXI.Ticker) => {
+                    if (!isMounted) return;
+
+                    // 1. SYNC SELECTION
+                    if (systemsRef.current) {
+                        const currentSelected = systemsRef.current.towerManager.selectedTower;
+                        if (lastSyncTower.current !== currentSelected) {
+                            lastSyncTower.current = currentSelected;
+                            setActiveSelectedTower(currentSelected);
+                        }
                     }
-                    shakeIntensity.current *= 0.9; 
-                    if (shakeIntensity.current < 0.1) {
-                        shakeIntensity.current = 0;
-                        if (containerRef.current) containerRef.current.style.transform = '';
+
+                    // 2. SCREEN SHAKE
+                    if (shakeIntensity.current > 0) {
+                        const sx = (Math.random() - 0.5) * shakeIntensity.current;
+                        const sy = (Math.random() - 0.5) * shakeIntensity.current;
+                        if (containerRef.current) {
+                            containerRef.current.style.transform = `translate(${sx}px, ${sy}px)`;
+                        }
+                        shakeIntensity.current *= 0.9; 
+                        if (shakeIntensity.current < 0.1) {
+                            shakeIntensity.current = 0;
+                            if (containerRef.current) containerRef.current.style.transform = '';
+                        }
                     }
-                }
 
-                // 3. ENGINE PAUSE
-                if (StateManager.instance.isPaused) {
-                    if (app.ticker.started) app.ticker.stop();
-                    return;
-                }
-                if (!app.ticker.started) app.ticker.start();
+                    // 3. ENGINE PAUSE
+                    if (StateManager.instance.isPaused) {
+                        if (app.ticker.started) app.ticker.stop();
+                        return;
+                    }
+                    if (!app.ticker.started) app.ticker.start();
 
-                // 4. SYSTEMS UPDATE
-                if (systemsRef.current) {
-                    const delta = ticker.deltaTime * StateManager.instance.gameSpeed;
-                    const { towerManager, waveManager, kernel } = systemsRef.current;
-                    waveManager.update(delta);
-                    towerManager.update(delta, waveManager.enemies);
-                    kernel.update(delta);
-                    if (isPaused !== StateManager.instance.isPaused) setIsPaused(StateManager.instance.isPaused);
-                }
-            };
+                    // 4. SYSTEMS UPDATE
+                    if (systemsRef.current) {
+                        const delta = ticker.deltaTime * StateManager.instance.gameSpeed;
+                        const { towerManager, waveManager, kernel } = systemsRef.current;
+                        waveManager.update(delta);
+                        towerManager.update(delta, waveManager.enemies);
+                        kernel.update(delta);
+                        if (isPaused !== StateManager.instance.isPaused) setIsPaused(StateManager.instance.isPaused);
+                    }
+                };
 
-            app.ticker.add(masterTicker);
-            setIsReady(true);
+                app.ticker.add(masterTicker);
+                app.ticker.start();
+                (app as any)._masterTicker = masterTicker;
+                
+                engine.resize(); // Force layout sync
+                setIsReady(true);
+            } catch (err) {
+                console.error("TACTICAL_INIT_CRASH", err);
+                // Fallback to ensure UI renders
+                setIsReady(true);
+            }
         };
 
         setup();
         return () => { 
             isMounted = false; 
-            // Cleanup PIXI to prevent memory leaks on exit
-            Engine.instance.app?.ticker.stop();
+            const app = Engine.instance.app;
+            if (app) {
+                if ((app as any)._masterTicker) {
+                    app.ticker.remove((app as any)._masterTicker);
+                }
+                app.ticker.stop();
+            }
         };
     }, []);
 
@@ -176,6 +195,7 @@ export const GameCanvas = () => {
                             towerManager={systemsRef.current!.towerManager} 
                             onClose={() => {
                                 systemsRef.current?.towerManager.deselectTower();
+                                lastSyncTower.current = null;
                                 setActiveSelectedTower(null);
                             }} 
                         />

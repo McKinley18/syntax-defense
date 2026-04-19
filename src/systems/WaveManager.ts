@@ -14,8 +14,8 @@ interface TacticalRow {
 }
 
 /**
- * WAVE MANAGER v99.0: Strategic Wave Authority
- * THE PERFORMANCE REBUILD: Scales difficulty via LETHALITY rather than VOLUME.
+ * WAVE MANAGER v99.13: Authoritative State Handling
+ * THE DEFINITIVE FIX: Uses transitionTo() for all state changes to ensure UI sync.
  */
 export class WaveManager {
     private pathManager: PathManager;
@@ -70,9 +70,7 @@ export class WaveManager {
         StateManager.instance.waveCreditsEarned = 0;
         StateManager.instance.wavePurgedCount = 0;
 
-        // WAVE_IGNITION: Breach Alarm + Visual Pulse
         AudioManager.getInstance().playBreach();
-        // Dispatches a global event for GameCanvas to shake the screen
         window.dispatchEvent(new CustomEvent('syndef-shake', { detail: 10 }));
 
         this.rows.forEach(r => r.units.forEach(u => {
@@ -82,7 +80,7 @@ export class WaveManager {
         this.spawnQueue = [];
 
         let currentDelay = 0;
-        const rowInterval = 450; 
+        const rowInterval = 600; 
         const blockInterval = 2000;
 
         for (let i = 0; i < this.nextWaveIntel.length; i += 2) {

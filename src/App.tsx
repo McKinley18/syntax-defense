@@ -64,9 +64,8 @@ function App() {
       }
   };
 
-  // --- UNIVERSAL BARRIER LAW ---
-  // If in portrait, block the UI immediately to prevent layout corruption.
-  const showBarrier = isPortrait;
+  // Only show barrier if strictly portrait and likely a mobile device
+  const showBarrier = isPortrait && window.innerWidth < 1000;
 
   return (
     <div className="game-wrapper" style={{ 
@@ -76,7 +75,7 @@ function App() {
       <div className="orientation-barrier" style={{ 
           display: showBarrier ? 'flex' : 'none', 
           position: 'absolute', inset: 0, zIndex: 1000000, 
-          backgroundColor: '#000', flexDirection: 'column', 
+          backgroundColor: '#050505', flexDirection: 'column', 
           alignItems: 'center', justifyContent: 'center', 
           color: '#00ffff', textAlign: 'center', 
           fontFamily: "'Courier New', Courier, monospace", padding: '2rem' 
@@ -87,11 +86,15 @@ function App() {
               <br/>
               LANDSCAPE_ORIENTATION_REQUIRED_FOR_SYSTEM_LINK.
               <br/><br/>
-              <span style={{ color: '#fff', fontWeight: 900 }}>[ PLEASE ROTATE DEVICE ]</span>
+              <span style={{ color: '#fff', fontWeight: 900, animation: 'blink 1s infinite alternate' }}>[ PLEASE ROTATE DEVICE ]</span>
           </div>
       </div>
 
-      <div className="game-container" style={{ width: '100%', height: '100%', position: 'relative', visibility: showBarrier ? 'hidden' : 'visible' }}>
+      <div className="game-container" style={{ 
+          width: '100%', height: '100%', position: 'relative',
+          opacity: showBarrier ? 0 : 1, // Use opacity instead of hidden for smoother recovery
+          transition: 'opacity 0.3s ease'
+      }}>
         {needsWake && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 100000, backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <button onClick={handleWake} style={{ backgroundColor: 'transparent', color: '#00ffff', border: '1px solid #00ffff', padding: '20px 40px', cursor: 'pointer', fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: 900, boxShadow: '0 0 20px rgba(0,255,255,0.2)' }}>
@@ -117,6 +120,10 @@ function App() {
             </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }
+      `}</style>
     </div>
   );
 }

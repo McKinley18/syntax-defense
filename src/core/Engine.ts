@@ -8,6 +8,7 @@ export class Engine {
     private static _instance: Engine | null = null;
     public app: PIXI.Application;
     private _initialized: boolean = false;
+    private _initPromise: Promise<void> | null = null;
     private resizeListeners: (() => void)[] = [];
 
     private constructor() {
@@ -28,27 +29,34 @@ export class Engine {
             return;
         }
 
-        try {
-            await this.app.init({
-                background: '#000',
-                resizeTo: container,
-                antialias: true,
-                resolution: window.devicePixelRatio || 1,
-                autoDensity: true,
-            });
+        if (this._initPromise) return this._initPromise;
 
-            container.appendChild(this.app.canvas);
-            
-            this.app.stage.alpha = 1;
-            this.app.stage.visible = true;
-            this.app.stage.eventMode = 'static';
+        this._initPromise = (async () => {
+            try {
+                await this.app.init({
+                    background: '#000',
+                    resizeTo: container,
+                    antialias: true,
+                    resolution: window.devicePixelRatio || 1,
+                    autoDensity: true,
+                });
 
-            this._initialized = true;
-            this.resize();
-            window.addEventListener('resize', () => this.resize());
-        } catch (e) {
-            console.error("PIXI_INIT_ERROR", e);
-        }
+                container.appendChild(this.app.canvas);
+                
+                this.app.stage.alpha = 1;
+                this.app.stage.visible = true;
+                this.app.stage.eventMode = 'static';
+
+                this._initialized = true;
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            } catch (e) {
+                console.error("PIXI_INIT_ERROR", e);
+                this._initPromise = null;
+            }
+        })();
+
+        return this._initPromise;
     }
 
     public resize() {
@@ -58,20 +66,15 @@ export class Engine {
         const width = parent.clientWidth;
         const height = parent.clientHeight;
 
-        // LAW: THE 1600x720 LOGICAL MATRIX
         const logicalW = 1600;
         const logicalH = 720;
 
-        // LAW: FULL-SURFACE STRETCH
-        // We calculate unique scales for X and Y to force the grid to fill the entire container.
         const scaleX = width / logicalW;
         const scaleY = height / logicalH;
         
-        // Apply independent scaling to remove all gaps
         this.app.stage.scale.x = scaleX;
         this.app.stage.scale.y = scaleY;
 
-        // LOCK TO EDGES
         this.app.stage.x = 0;
         this.app.stage.y = 0;
 

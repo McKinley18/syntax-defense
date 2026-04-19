@@ -168,6 +168,9 @@ export class StateManager {
     }
 
     public resetSession(mode: GameMode = 'STANDARD') {
+        // AUTH_CLEANUP: Clear previous save data for a fresh infiltration
+        localStorage.removeItem('syndef_game_save');
+        
         this.gameMode = mode;
         this.credits = mode === 'HARDCORE' ? 450 : 600;
         this.integrity = 20;

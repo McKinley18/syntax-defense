@@ -5,8 +5,9 @@ import { AudioManager } from '../systems/AudioManager';
 import { NeuralBrain } from '../systems/NeuralBrain';
 
 /**
- * MAIN MENU v98.5: Resource Execution Layer
- * DESIGN: Cyan Signature with faint resource extensions (.BIN, .SAV, .SYS).
+ * MAIN MENU v99.12: Rendering Hardening
+ * DESIGN: Phase 1 Title Manifestation (Black Background) -> Phase 2 UI Swipe.
+ * FIX: Decouples background mounting from visibility to ensure PIXI sync.
  */
 export const MainMenu: React.FC = () => {
     const [showUI, setShowUI] = useState(false);
@@ -18,7 +19,6 @@ export const MainMenu: React.FC = () => {
     const titleRef = useRef<HTMLHeadingElement>(null);
     const isFromSplash = StateManager.instance.previousState === AppState.STUDIO_SPLASH;
 
-    // --- MASTER SYNC MIRROR ---
     const handleSyncMirror = useCallback((alpha: number) => {
         if (titleRef.current) {
             titleRef.current.style.opacity = alpha.toString();
@@ -36,8 +36,10 @@ export const MainMenu: React.FC = () => {
     }, [isGlitched]);
 
     useEffect(() => {
-        let t1 = setTimeout(() => setShowUI(true), isFromSplash ? 2000 : 200);
-        AudioManager.getInstance().startMusic();
+        let t1 = setTimeout(() => {
+            setShowUI(true);
+            AudioManager.getInstance().startMusic();
+        }, isFromSplash ? 2000 : 200); 
 
         const etv = setInterval(() => setEntropy(prev => Math.max(0, prev + (Math.random()*0.01 - 0.005))), 2000);
 
@@ -56,7 +58,7 @@ export const MainMenu: React.FC = () => {
             setGlitchedText(original);
             setTimeout(runGlitch, 30000 + Math.random() * 90000);
         };
-        const gt = setTimeout(runGlitch, 45000);
+        const gt = setTimeout(runGlitch, 15000);
 
         const logPool = ["PKT_RECV: 0x884", "LINK_SYNC: 94%", "THREAD_IDLE: 0", "CACHE_PURGE: OK", "GATE_OPEN: 5173", "BUFFER_CLEAN", "CORE_THERMAL: 34C", "AUTH_VERIFIED"];
         const ltv = setInterval(() => {
@@ -66,7 +68,7 @@ export const MainMenu: React.FC = () => {
         return () => {
             clearTimeout(t1); clearTimeout(gt); clearInterval(etv); clearInterval(ltv);
         };
-    }, []);
+    }, [isFromSplash]);
 
     const menuItems = [
         { label: 'INFILTRATE CORE', ext: '.BIN', status: 'NEW', action: () => { StateManager.instance.resetSession('STANDARD'); StateManager.instance.transitionTo(AppState.GAME_PREP); }},
@@ -91,8 +93,10 @@ export const MainMenu: React.FC = () => {
             display: 'flex', flexDirection: 'column', fontFamily: "'Courier New', Courier, monospace", 
             position: 'relative', overflow: 'hidden', alignItems: 'center'
         }}>
-            <MenuBackground onSyncFlicker={handleSyncMirror} />
+            {/* THE FIX: Background mounts immediately for sync, but remains hidden via isVisible */}
+            <MenuBackground onSyncFlicker={handleSyncMirror} isVisible={showUI} />
             
+            {/* 1. GLOBAL HUD */}
             <div style={{ position: 'absolute', inset: 0, padding: '1.5rem 2.5rem', pointerEvents: 'none', zIndex: 100, opacity: showUI ? 0.8 : 0, transition: 'opacity 2s ease-in' }}>
                 <div style={{ position: 'absolute', top: '1.5rem', left: '2.5rem', fontSize: '0.8rem', fontWeight: 900, color: 'var(--neon-cyan)', letterSpacing: '1px', opacity: 0.4 }}>
                     ARCHITECT @ SYNTAX_CORE:~/ROOT$ [LINK_V88.3]
@@ -107,16 +111,20 @@ export const MainMenu: React.FC = () => {
                 <div style={{ position: 'absolute', bottom: '1.5rem', right: '2.5rem', fontSize: '0.65rem', color: '#222', letterSpacing: '2px' }}>SYNDEF_OS_SECURE_AUTH</div>
             </div>
 
+            {/* 2. EXTRUDED 3D TITLE */}
             <div style={{ height: '8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', perspective: '1200px', zIndex: 10, marginTop: '10vh' }}>
                 <h1 ref={titleRef} style={{ 
                     fontSize: '4.5rem', fontWeight: 900, letterSpacing: '1.2rem', color: 'var(--neon-cyan)',
                     transform: 'rotateX(25deg) skewX(-2deg)', transformStyle: 'preserve-3d',
-                    opacity: showUI ? 1 : 0, transition: 'opacity 1.5s ease-in, color 0.1s', wordSpacing: '-2.5rem'
+                    opacity: 1, 
+                    transition: 'opacity 1.5s ease-in, color 0.1s',
+                    wordSpacing: '-2.5rem'
                 }}>
                     {glitchedText}
                 </h1>
             </div>
 
+            {/* 3. CENTERED COMPACT WINDOW */}
             <div style={{
                 width: '42rem', height: '25rem', background: 'rgba(0,10,25,0.96)', border: '1px solid rgba(0,255,255,0.2)',
                 boxShadow: '0 0 80px rgba(0,0,0,1.0)', display: 'flex', flexDirection: 'column',
@@ -145,17 +153,10 @@ export const MainMenu: React.FC = () => {
                                 <span style={{ fontSize: '0.65rem', color: 'var(--neon-cyan)', opacity: 0.3, fontWeight: 300 }}>{item.ext}</span>
                             </div>
                             <span style={{ 
-                                fontSize: '0.65rem', 
-                                color: item.disabled ? '#444' : 'var(--neon-cyan)', 
+                                fontSize: '0.65rem', color: item.disabled ? '#444' : 'var(--neon-cyan)', 
                                 border: `1px solid ${item.disabled ? '#222' : 'var(--neon-cyan)'}`, 
-                                padding: '0.2rem 0',
-                                width: '6rem',
-                                textAlign: 'center',
-                                display: 'inline-block',
-                                flexShrink: 0
-                            }}>
-                                {item.status}
-                            </span>
+                                padding: '0.2rem 0', width: '6rem', textAlign: 'center', display: 'inline-block', flexShrink: 0
+                            }}>{item.status}</span>
                         </button>
                     ))}
                 </div>
@@ -163,7 +164,6 @@ export const MainMenu: React.FC = () => {
 
             <style>{`
                 button:not(:disabled):hover { background: rgba(0,255,255,0.15) !important; border-color: var(--neon-cyan) !important; transform: scale(1.02); }
-                @keyframes flash-red { from { opacity: 1; } to { opacity: 0.5; } }
                 @keyframes log-fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
                 .main-menu::after { 
                     content: " "; position: absolute; inset: 0; pointer-events: none; zIndex: 1000;

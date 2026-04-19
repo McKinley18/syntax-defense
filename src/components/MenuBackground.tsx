@@ -3,14 +3,14 @@ import * as PIXI from 'pixi.js';
 
 interface MenuBackgroundProps {
     onSyncFlicker?: (alpha: number) => void;
+    isVisible?: boolean;
 }
 
 /**
- * MENU BACKGROUND v96.2: Master Sync Clock (RESTORED)
- * THE DEFINITIVE FIX: Calculates light fluctuations in the PIXI ticker 
- * and pushes the exact alpha value to the Title for 1:1 mirroring.
+ * MENU BACKGROUND v99.12: Visibility Hardening
+ * THE DEFINITIVE SYNC: Incorporates external visibility control for sequential reveals.
  */
-export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker }) => {
+export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker, isVisible = true }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const appRef = useRef<PIXI.Application | null>(null);
     const systemLayerRef = useRef<PIXI.Container | null>(null);
@@ -63,9 +63,6 @@ export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker })
             app.stage.addChild(maskSprite);
             systemLayer.mask = maskSprite; 
 
-            const scanline = new PIXI.Graphics();
-            app.stage.addChild(scanline);
-
             const updateLayout = () => {
                 if (!app.renderer || !systemLayer || !isMounted) return;
                 const { width, height } = app.screen;
@@ -90,25 +87,12 @@ export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker })
 
             updateLayout();
 
-            // --- MASTER FLICKER TICKER ---
             let nextFlickerTime = 0;
             let flickerDuration = 0;
-            let scanTime = 0;
 
-            const ticker = (t: PIXI.Ticker) => {
+            const ticker = () => {
                 if (!isMounted) return;
                 const now = performance.now();
-                const { width, height } = app.screen;
-
-                // 1. SCANLINE KINEMATICS
-                scanTime += 0.002 * t.deltaTime;
-                const scanY = (scanTime * 300) % (height + 200) - 100;
-                scanline.clear();
-                scanline.rect(0, scanY, width, 2).fill({ color: 0x00ffff, alpha: 0.1 });
-                for(let i=0; i<30; i++) {
-                    const a = (1 - (i/30)) * 0.05;
-                    scanline.rect(0, scanY - i, width, 1).fill({ color: 0x00ffff, alpha: a });
-                }
 
                 if (now > nextFlickerTime) {
                     flickerDuration = 30 + Math.random() * 50;
@@ -116,12 +100,9 @@ export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker })
                 }
 
                 const isDipped = (nextFlickerTime - now) < flickerDuration;
-                const targetAlpha = isDipped ? 0.7 : 1.0;
+                const targetAlpha = isDipped ? 0.2 : 1.0;
                 
-                // 2. Sync Logic
-                systemLayer.alpha = targetAlpha;
-                scanline.alpha = targetAlpha;
-
+                // Authoritative Sync Push
                 if (onFlickerRef.current) {
                     onFlickerRef.current(targetAlpha);
                 }
@@ -139,6 +120,14 @@ export const MenuBackground: React.FC<MenuBackgroundProps> = ({ onSyncFlicker })
             }
         };
     }, []);
+
+    // Reactive Alpha Control (for the Phase 2 reveal)
+    useEffect(() => {
+        if (systemLayerRef.current) {
+            systemLayerRef.current.alpha = isVisible ? 1.0 : 0;
+            systemLayerRef.current.visible = isVisible;
+        }
+    }, [isVisible]);
 
     return (
         <div ref={containerRef} style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }} />
