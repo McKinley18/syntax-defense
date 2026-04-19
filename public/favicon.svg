@@ -1,1 +1,26 @@
-<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22black%22/><text y=%22.9em%22 font-size=%2290%22 fill=%22cyan%22>S</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <!-- Solid Background for Mobile Stability -->
+    <rect width="512" height="512" rx="100" fill="#0a0a0a"/>
+    
+    <!-- Geometric Shield (Solid Cyan) -->
+    <path d="M256,64 L420,160 V352 L256,448 L92,352 V160 Z" 
+          fill="none" stroke="#00ffff" stroke-width="12" opacity="0.8"/>
+
+    <!-- High-Contrast Monogram -->
+    <g transform="translate(0, 0)">
+        <!-- The "S" -->
+        <path d="M 320 180 L 192 180 L 160 220 L 256 220 L 256 256 L 160 256 L 192 296 L 320 296" 
+              fill="none" stroke="#00ffff" stroke-width="36" stroke-linecap="square" stroke-linejoin="miter"/>
+        
+        <!-- The "D" -->
+        <path d="M 192 332 L 320 332 L 352 292 L 352 256" 
+              fill="none" stroke="#00ffff" stroke-width="36" stroke-linecap="square" stroke-linejoin="miter"/>
+              
+        <!-- Core Link -->
+        <circle cx="256" cy="256" r="20" fill="#00ffff" />
+    </g>
+
+    <!-- Target Brackets (White for Pop) -->
+    <path d="M 120 120 L 92 120 L 92 148 M 392 120 L 420 120 L 420 148 M 120 392 L 92 392 L 92 364 M 392 392 L 420 392 L 420 364" 
+          fill="none" stroke="#ffffff" stroke-width="16"/>
+</svg>

@@ -31,6 +31,7 @@ function App() {
         setIsPortrait(portrait);
 
         if (!portrait && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
+            // AUTHORITATIVE ENTRY
             if (StateManager.instance.skipCinematics) {
                 StateManager.instance.transitionTo(AppState.MAIN_MENU);
             } else {
@@ -52,9 +53,13 @@ function App() {
     checkOrientation();
     updateScaling();
 
+    // Forced landscape check on initial mount
     if (window.innerWidth > window.innerHeight && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
-        if (StateManager.instance.skipCinematics) StateManager.instance.transitionTo(AppState.MAIN_MENU);
-        else StateManager.instance.transitionTo(AppState.TERMINAL_BOOT);
+        if (StateManager.instance.skipCinematics) {
+            StateManager.instance.transitionTo(AppState.MAIN_MENU);
+        } else {
+            StateManager.instance.transitionTo(AppState.TERMINAL_BOOT);
+        }
     }
 
     return () => {
@@ -68,7 +73,12 @@ function App() {
   const handleWake = async () => {
       await AudioManager.getInstance().resume();
       setNeedsWake(false);
-      StateManager.instance.transitionTo(AppState.MAIN_MENU);
+      
+      if (StateManager.instance.skipCinematics) {
+          StateManager.instance.transitionTo(AppState.MAIN_MENU);
+      } else {
+          StateManager.instance.transitionTo(AppState.TERMINAL_BOOT);
+      }
   };
 
   const showBarrier = isPortrait && (
@@ -111,13 +121,7 @@ function App() {
         {state === AppState.MAIN_MENU && <MainMenu />}
         {state === AppState.ARCHIVE && <SystemArchive />}
         {state === AppState.DIAGNOSTICS && <SystemDiagnostics />}
-        
-        {/* Authoritative Render Block: Ensures GameCanvas remains active during all tactical phases */}
-        {(state === AppState.GAME_PREP || 
-          state === AppState.GAME_WAVE || 
-          state === AppState.WAVE_COMPLETED || 
-          state === AppState.WAVE_PREP) && <GameCanvas />}
-
+        {(state === AppState.GAME_PREP || state === AppState.GAME_WAVE || state === AppState.WAVE_COMPLETED || state === AppState.WAVE_PREP) && <GameCanvas />}
         {state === AppState.GAME_OVER && (
             <div style={{ color: 'red', textAlign: 'center', fontFamily: 'monospace', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' }}>
                 <h1>SYSTEM_TERMINATED</h1>

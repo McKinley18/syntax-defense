@@ -1,0 +1,17 @@
+{
+  "short_name": "Syndef",
+  "name": "Syntax Defense",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#00ffff",
+  "background_color": "#000000",
+  "orientation": "landscape"
+}
