@@ -5,11 +5,12 @@ import { AudioManager } from '../systems/AudioManager';
 import { NeuralBrain } from '../systems/NeuralBrain';
 
 /**
- * MAIN MENU v99.12: Rendering Hardening
- * DESIGN: Phase 1 Title Manifestation (Black Background) -> Phase 2 UI Swipe.
- * FIX: Decouples background mounting from visibility to ensure PIXI sync.
+ * MAIN MENU v99.15: Authoritative Persistence Gate
+ * DESIGN: Phase 1 (Title + Grid Synchronization) -> Phase 2 (Operational Window Reveal).
+ * FIX: Hard-locked RESUME SESSION to the presence of kernel archive data.
  */
 export const MainMenu: React.FC = () => {
+    const [showBranding, setShowBranding] = useState(false);
     const [showUI, setShowUI] = useState(false);
     const [entropy, setEntropy] = useState(0.042);
     const [kernelLogs, setKernelLogs] = useState<string[]>(["INIT_KERNEL_LINK...", "MOUNTING_FS_SECTORS...", "NEURAL_READY"]);
@@ -36,10 +37,11 @@ export const MainMenu: React.FC = () => {
     }, [isGlitched]);
 
     useEffect(() => {
-        let t1 = setTimeout(() => {
+        let t1 = setTimeout(() => setShowBranding(true), isFromSplash ? 400 : 50);
+        let t2 = setTimeout(() => {
             setShowUI(true);
             AudioManager.getInstance().startMusic();
-        }, isFromSplash ? 2000 : 200); 
+        }, isFromSplash ? 2200 : 200); 
 
         const etv = setInterval(() => setEntropy(prev => Math.max(0, prev + (Math.random()*0.01 - 0.005))), 2000);
 
@@ -66,7 +68,7 @@ export const MainMenu: React.FC = () => {
         }, 1200);
 
         return () => {
-            clearTimeout(t1); clearTimeout(gt); clearInterval(etv); clearInterval(ltv);
+            clearTimeout(t1); clearTimeout(t2); clearTimeout(gt); clearInterval(etv); clearInterval(ltv);
         };
     }, [isFromSplash]);
 
@@ -93,10 +95,8 @@ export const MainMenu: React.FC = () => {
             display: 'flex', flexDirection: 'column', fontFamily: "'Courier New', Courier, monospace", 
             position: 'relative', overflow: 'hidden', alignItems: 'center'
         }}>
-            {/* THE FIX: Background mounts immediately for sync, but remains hidden via isVisible */}
-            <MenuBackground onSyncFlicker={handleSyncMirror} isVisible={showUI} />
+            <MenuBackground onSyncFlicker={handleSyncMirror} isVisible={showBranding} />
             
-            {/* 1. GLOBAL HUD */}
             <div style={{ position: 'absolute', inset: 0, padding: '1.5rem 2.5rem', pointerEvents: 'none', zIndex: 100, opacity: showUI ? 0.8 : 0, transition: 'opacity 2s ease-in' }}>
                 <div style={{ position: 'absolute', top: '1.5rem', left: '2.5rem', fontSize: '0.8rem', fontWeight: 900, color: 'var(--neon-cyan)', letterSpacing: '1px', opacity: 0.4 }}>
                     ARCHITECT @ SYNTAX_CORE:~/ROOT$ [LINK_V88.3]
@@ -111,20 +111,17 @@ export const MainMenu: React.FC = () => {
                 <div style={{ position: 'absolute', bottom: '1.5rem', right: '2.5rem', fontSize: '0.65rem', color: '#222', letterSpacing: '2px' }}>SYNDEF_OS_SECURE_AUTH</div>
             </div>
 
-            {/* 2. EXTRUDED 3D TITLE */}
-            <div style={{ height: '8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', perspective: '1200px', zIndex: 10, marginTop: '10vh' }}>
+            <div style={{ height: '8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', perspective: '1200px', zIndex: 10, marginTop: '10vh', opacity: showBranding ? 1 : 0, transition: 'opacity 1s ease-in' }}>
                 <h1 ref={titleRef} style={{ 
                     fontSize: '4.5rem', fontWeight: 900, letterSpacing: '1.2rem', color: 'var(--neon-cyan)',
                     transform: 'rotateX(25deg) skewX(-2deg)', transformStyle: 'preserve-3d',
-                    opacity: 1, 
-                    transition: 'opacity 1.5s ease-in, color 0.1s',
+                    transition: 'color 0.1s',
                     wordSpacing: '-2.5rem'
                 }}>
                     {glitchedText}
                 </h1>
             </div>
 
-            {/* 3. CENTERED COMPACT WINDOW */}
             <div style={{
                 width: '42rem', height: '25rem', background: 'rgba(0,10,25,0.96)', border: '1px solid rgba(0,255,255,0.2)',
                 boxShadow: '0 0 80px rgba(0,0,0,1.0)', display: 'flex', flexDirection: 'column',
