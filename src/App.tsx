@@ -21,7 +21,8 @@ function App() {
 
     const updateScaling = () => {
         const userScale = StateManager.instance.uiScale;
-        document.documentElement.style.fontSize = `clamp(10px, ${1.8 * userScale}vh, 26px)`;
+        // Law: Width-driven scaling for better aspect ratio compatibility (1600px target)
+        document.documentElement.style.fontSize = `clamp(8px, ${(1.2 * userScale) * (window.innerWidth / 1600 * 100)}vw, 24px)`;
     };
 
     const unbindScale = StateManager.instance.subscribe('uiScale', updateScaling);
