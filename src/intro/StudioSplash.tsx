@@ -1,11 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { StateManager, AppState } from '../core/StateManager';
+import { AudioManager } from '../systems/AudioManager';
 
 export const StudioSplash: React.FC = () => {
     const [phase, setPhase] = useState(0); 
     const hasTransitioned = useRef(false);
 
     useEffect(() => {
+        // Subtle hardware hum on entry
+        AudioManager.getInstance().resume().then(() => {
+            AudioManager.getInstance().triggerTonedBlip(60, 2000, 0.15, 1.5, 'sine');
+        });
+
         // ACT 1: MONOLITH Transformation
         const t1 = setTimeout(() => setPhase(1), 500);
         

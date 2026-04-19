@@ -2,31 +2,58 @@ import React, { useState, useEffect } from 'react';
 import { StateManager, AppState } from '../core/StateManager';
 import { MenuBackground } from './MenuBackground';
 import { AudioManager } from '../systems/AudioManager';
+import { MusicManager } from '../systems/MusicManager';
 
 /**
- * SYSTEM DIAGNOSTICS v52.0: Industrial Admin Interface
- * Refined to match System Archive theme with windowed architecture and atmospheric depth.
+ * SYSTEM DIAGNOSTICS v86.0: Enhanced Operator Interface
+ * IMPLEMENTS: Dual-Audio Sliders, Track Selection, and Session Resets.
  */
 export const SystemDiagnostics: React.FC = () => {
-    const [volume, setVolume] = useState(AudioManager.getInstance().sfxVolume * 100);
+    const [sfxVolume, setSfxVolume] = useState(AudioManager.getInstance().sfxVolume * 100);
+    const [musicVolume, setMusicVolume] = useState(0.35 * 100); // Default from MusicManager
     const [uiScale, setUiScale] = useState(StateManager.instance.uiScale);
     const [skipIntro, setSkipIntro] = useState(StateManager.instance.skipCinematics);
     const [tutEnabled, setTutEnabled] = useState(!StateManager.instance.hasSeenTutorial);
+    const [enabledTracks, setEnabledTracks] = useState([...MusicManager.getInstance().enabledTracks]);
+
+    const trackNames = [
+        "CORE_LOGIC",
+        "NEON_BREACH",
+        "LIQUID_DATA",
+        "VOID_SIGNAL",
+        "GRID_RUNNER"
+    ];
 
     const handleBack = () => {
         AudioManager.getInstance().playUiClick();
         StateManager.instance.transitionTo(AppState.MAIN_MENU);
     };
 
-    const updateVolume = (val: number) => {
-        setVolume(val);
+    const updateSfxVolume = (val: number) => {
+        setSfxVolume(val);
         AudioManager.getInstance().sfxVolume = val / 100;
         AudioManager.getInstance().playUiClick();
+    };
+
+    const updateMusicVolume = (val: number) => {
+        setMusicVolume(val);
+        MusicManager.getInstance().setVolume(val / 100);
     };
 
     const updateScale = (val: number) => {
         setUiScale(val);
         StateManager.instance.setUiScale(val);
+    };
+
+    const toggleTrack = (id: number) => {
+        MusicManager.getInstance().toggleTrack(id);
+        setEnabledTracks([...MusicManager.getInstance().enabledTracks]);
+        AudioManager.getInstance().playUiClick();
+    };
+
+    const previewTrack = (id: number) => {
+        MusicManager.getInstance().previewTrack(id);
+        AudioManager.getInstance().playDataChatter();
     };
 
     const toggleIntro = (val: boolean) => {
@@ -36,15 +63,10 @@ export const SystemDiagnostics: React.FC = () => {
         AudioManager.getInstance().playUiClick();
     };
 
-    const toggleTutorial = (val: boolean) => {
-        setTutEnabled(val);
-        StateManager.instance.hasSeenTutorial = !val;
-        if (val) {
-            localStorage.removeItem('syndef_tutorial_v19');
-        } else {
-            localStorage.setItem('syndef_tutorial_v19', 'true');
-        }
-        AudioManager.getInstance().playUiClick();
+    const resetTutorial = () => {
+        StateManager.instance.resetTutorial();
+        setTutEnabled(true);
+        AudioManager.getInstance().playTerminalCommand();
     };
 
     const themeColor = 'var(--neon-cyan)';
@@ -58,67 +80,96 @@ export const SystemDiagnostics: React.FC = () => {
             <MenuBackground />
             
             <div style={{ 
-                position: 'absolute', inset: '4rem', 
-                border: '1px solid #00ffff33', backgroundColor: 'rgba(0,10,25,0.96)',
+                width: 'min(90vw, 65rem)',
+                height: 'min(90vh, 50rem)',
+                border: '1px solid #00ffff33', backgroundColor: 'rgba(0,10,25,0.98)',
                 display: 'flex', flexDirection: 'column', zIndex: 1, borderRadius: '4px', 
-                boxShadow: '0 0 60px rgba(0,0,0,0.9)', overflow: 'hidden', maxWidth: '55rem', maxHeight: '42rem'
+                boxShadow: '0 0 80px rgba(0,0,0,1.0)', overflow: 'hidden'
             }}>
                 {/* WINDOW HEADER */}
-                <div style={{ padding: '0.8rem 1.5rem', borderBottom: '1px solid #00ffff33', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#151515' }}>
+                <div style={{ padding: '0.8rem 1.5rem', borderBottom: '1px solid #00ffff33', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#101218' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span style={{ color: '#00ffff', opacity: 0.5, fontSize: '0.7rem' }}>ADMIN_DIAGNOSTICS_v1.4</span>
+                        <span style={{ color: '#00ffff', opacity: 0.5, fontSize: '0.7rem', fontWeight: 900 }}>ADMIN_DIAGNOSTICS_v1.6_STABLE</span>
                         <span style={{ color: '#444' }}>|</span>
-                        <span style={{ fontSize: '0.8rem', color: '#fff', letterSpacing: '1px' }}>SYSTEM_CORE / CONFIGURATION.SYS</span>
+                        <span style={{ fontSize: '0.8rem', color: '#fff', letterSpacing: '1px' }}>SYNTAX_CORE / CONFIGURATION.SYS</span>
                     </div>
-                    <button 
-                        onClick={handleBack}
-                        style={{ background: 'transparent', border: '1px solid #ff3300', color: '#ff3300', padding: '0.4rem 1.5rem', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.75rem', fontWeight: 900 }}
-                    >
+                    <button onClick={handleBack} style={{ background: 'transparent', border: '1px solid #ff3300', color: '#ff3300', padding: '0.4rem 1.5rem', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.75rem', fontWeight: 900 }}>
                         [ EXIT_ADMIN ]
                     </button>
                 </div>
 
-                <div style={{ flex: 1, padding: '3rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                <div style={{ flex: 1, padding: '2.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     
-                    {/* SECTION: HARDWARE CALIBRATION */}
+                    {/* 1. AUDIO KINEMATICS */}
                     <section>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                            <div style={{ width: '4rem', height: '1px', background: 'linear-gradient(to right, transparent, #00ffff)' }} />
-                            <h2 style={{ fontSize: '1rem', color: '#fff', margin: 0, letterSpacing: '3px', fontWeight: 900 }}>HARDWARE_CALIBRATION</h2>
-                            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, #00ffff, transparent)' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem' }}>
+                            <h2 style={{ fontSize: '0.9rem', color: '#fff', margin: 0, letterSpacing: '3px', fontWeight: 900 }}>AUDIO_KINEMATICS</h2>
+                            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, #00ffff33, transparent)' }} />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                            <div style={{ padding: '1.2rem', border: '1px solid #00ffff11', background: 'rgba(0,255,255,0.02)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                    <span style={{ fontSize: '0.7rem', color: '#888', fontWeight: 900 }}>AUDIO_LETHALITY_LEVEL</span>
-                                    <span style={{ fontSize: '0.8rem', color: themeColor, fontWeight: 900 }}>{volume}%</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div style={{ padding: '1rem', border: '1px solid #00ffff11', background: 'rgba(0,255,255,0.02)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                                    <span style={{ fontSize: '0.65rem', color: '#888', fontWeight: 900 }}>SFX_LETHALITY</span>
+                                    <span style={{ fontSize: '0.8rem', color: themeColor, fontWeight: 900 }}>{sfxVolume}%</span>
                                 </div>
-                                <input type="range" min="0" max="100" value={volume} onChange={(e) => updateVolume(Number(e.target.value))} 
+                                <input type="range" min="0" max="100" value={sfxVolume} onChange={(e) => updateSfxVolume(Number(e.target.value))} 
                                     style={{ width: '100%', accentColor: themeColor, cursor: 'pointer' }} />
                             </div>
 
-                            <div style={{ padding: '1.2rem', border: '1px solid #00ffff11', background: 'rgba(0,255,255,0.02)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                    <span style={{ fontSize: '0.7rem', color: '#888', fontWeight: 900 }}>INTERFACE_RENDER_SCALE</span>
-                                    <span style={{ fontSize: '0.8rem', color: themeColor, fontWeight: 900 }}>{uiScale.toFixed(1)}x</span>
+                            <div style={{ padding: '1rem', border: '1px solid #00ffff11', background: 'rgba(0,255,255,0.02)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
+                                    <span style={{ fontSize: '0.65rem', color: '#888', fontWeight: 900 }}>SYNTH_WAVE_AMPLITUDE</span>
+                                    <span style={{ fontSize: '0.8rem', color: themeColor, fontWeight: 900 }}>{musicVolume.toFixed(0)}%</span>
                                 </div>
-                                <input type="range" min="0.8" max="1.5" step="0.1" value={uiScale} onChange={(e) => updateScale(Number(e.target.value))} 
+                                <input type="range" min="0" max="100" value={musicVolume} onChange={(e) => updateMusicVolume(Number(e.target.value))} 
                                     style={{ width: '100%', accentColor: themeColor, cursor: 'pointer' }} />
                             </div>
                         </div>
                     </section>
 
-                    {/* SECTION: SUBSYSTEM OVERRIDES */}
+                    {/* 2. MUSIC ARCHIVE SELECTION */}
                     <section>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                            <div style={{ width: '4rem', height: '1px', background: 'linear-gradient(to right, transparent, #00ffff)' }} />
-                            <h2 style={{ fontSize: '1rem', color: '#fff', margin: 0, letterSpacing: '3px', fontWeight: 900 }}>SUBSYSTEM_OVERRIDES</h2>
-                            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, #00ffff, transparent)' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem' }}>
+                            <h2 style={{ fontSize: '0.9rem', color: '#fff', margin: 0, letterSpacing: '3px', fontWeight: 900 }}>MUSIC_ARCHIVE_SELECTION</h2>
+                            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, #00ffff33, transparent)' }} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(11rem, 1fr))', gap: '1rem' }}>
+                            {trackNames.map((name, i) => (
+                                <div key={i} style={{ 
+                                    padding: '0.8rem', border: '1px solid #00ffff22', background: enabledTracks[i] ? 'rgba(0,255,255,0.05)' : 'rgba(0,0,0,0.4)',
+                                    display: 'flex', flexDirection: 'column', gap: '0.6rem'
+                                }}>
+                                    <div style={{ fontSize: '0.7rem', color: enabledTracks[i] ? '#fff' : '#444', fontWeight: 900, textAlign: 'center' }}>{name}</div>
+                                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                        <button onClick={() => toggleTrack(i)} style={{
+                                            flex: 2, fontSize: '0.6rem', padding: '0.4rem', cursor: 'pointer', fontWeight: 900,
+                                            background: enabledTracks[i] ? themeColor : 'transparent', color: enabledTracks[i] ? '#000' : themeColor,
+                                            border: `1px solid ${themeColor}`
+                                        }}>
+                                            {enabledTracks[i] ? 'ENABLED' : 'DISABLED'}
+                                        </button>
+                                        <button onClick={() => previewTrack(i)} style={{
+                                            flex: 1, fontSize: '0.6rem', padding: '0.4rem', cursor: 'pointer', fontWeight: 900,
+                                            background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid #444'
+                                        }}>
+                                            PREV
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* 3. SYSTEM OVERRIDES */}
+                    <section>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem' }}>
+                            <h2 style={{ fontSize: '0.9rem', color: '#fff', margin: 0, letterSpacing: '3px', fontWeight: 900 }}>SYSTEM_OVERRIDES</h2>
+                            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, #00ffff33, transparent)' }} />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                            <div style={{ padding: '1.5rem', border: '1px solid #00ffff11', background: 'rgba(0,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div style={{ padding: '1.2rem', border: '1px solid #00ffff11', background: 'rgba(0,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                     <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 900, marginBottom: '0.2rem' }}>INTRO_CINEMATICS</span>
                                     <span style={{ fontSize: '0.6rem', color: '#666' }}>Bypass atmospheric hardware ignition.</span>
@@ -126,40 +177,35 @@ export const SystemDiagnostics: React.FC = () => {
                                 <button onClick={() => toggleIntro(!skipIntro)} style={{
                                     width: '8rem', height: '2.4rem', background: skipIntro ? themeColor : 'transparent',
                                     border: `1px solid ${themeColor}`, color: skipIntro ? '#000' : themeColor,
-                                    fontWeight: 900, cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s'
+                                    fontWeight: 900, cursor: 'pointer', fontSize: '0.75rem'
                                 }}>
                                     {skipIntro ? '[ BYPASSED ]' : '[ ACTIVE ]'}
                                 </button>
                             </div>
 
-                            <div style={{ padding: '1.5rem', border: '1px solid #00ffff11', background: 'rgba(0,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ padding: '1.2rem', border: '1px solid #00ffff11', background: 'rgba(0,255,255,0.02)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                     <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 900, marginBottom: '0.2rem' }}>TACTICAL_TUTORIAL</span>
-                                    <span style={{ fontSize: '0.6rem', color: '#666' }}>Primary training overlay deployment.</span>
+                                    <span style={{ fontSize: '0.6rem', color: '#666' }}>Reset primary training protocols.</span>
                                 </div>
-                                <button onClick={() => toggleTutorial(!tutEnabled)} style={{
-                                    width: '8rem', height: '2.4rem', background: tutEnabled ? themeColor : 'transparent',
-                                    border: `1px solid ${themeColor}`, color: tutEnabled ? '#000' : themeColor,
-                                    fontWeight: 900, cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s'
+                                <button onClick={resetTutorial} style={{
+                                    width: '8rem', height: '2.4rem', background: 'transparent',
+                                    border: `1px solid #fff`, color: '#fff',
+                                    fontWeight: 900, cursor: 'pointer', fontSize: '0.75rem'
                                 }}>
-                                    {tutEnabled ? '[ ACTIVE ]' : '[ SUPPRESSED ]'}
+                                    [ RESET_EXE ]
                                 </button>
                             </div>
                         </div>
                     </section>
 
-                    {/* FOOTER ACTION */}
                     <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'center' }}>
                         <button onClick={handleBack} style={{
-                            width: '24rem', height: '3.5rem', background: themeColor, color: '#000',
+                            width: '28rem', height: '3.5rem', background: themeColor, color: '#000',
                             border: 'none', fontSize: '1.1rem', fontWeight: 900, cursor: 'pointer',
-                            letterSpacing: '5px', boxShadow: `0 0 30px ${themeColor}44`,
-                            transition: 'transform 0.1s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        >
-                            COMMIT_CHANGES_&_EXIT
+                            letterSpacing: '5px', boxShadow: `0 0 30px ${themeColor}66`
+                        }}>
+                            SAVE_&_EXIT
                         </button>
                     </div>
                 </div>

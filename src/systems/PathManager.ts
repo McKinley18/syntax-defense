@@ -13,7 +13,7 @@ export interface PathTransform {
 }
 
 /**
- * PATH MANAGER v84.0: Parametric Spline Engine
+ * PATH MANAGER v84.3: Parametric Spline Engine (FIXED)
  * THE REBUILD: Replaces discrete grid-chasing with a continuous mathematical spine.
  * Guaranteed: Zero desync, 100% abreast formation, absolute 2-grid restriction.
  */
@@ -37,33 +37,29 @@ export class PathManager {
         this.segments = [];
         this.totalLength = 0;
         
-        // 1. MACRO TOPOLOGY (Consistent with previous versions)
+        // 1. MACRO TOPOLOGY
         let curMX = 0;
-        let curMR = (waveNumber === 0) ? 3 : 1 + Math.floor(Math.random() * 5); 
+        let curMR = 1 + Math.floor(Math.random() * 5); 
         const macroPath: {mx: number, mr: number}[] = [{mx: curMX, mr: curMR}];
 
-        if (waveNumber === 0) {
-            for (let x = 1; x < 20; x++) macroPath.push({ mx: x, mr: 3 });
-        } else {
-            while (curMX < 19) {
-                const run = 2 + Math.floor(Math.random() * 4);
-                for (let i = 0; i < run && curMX < 19; i++) {
-                    curMX++;
+        while (curMX < 19) {
+            const run = 2 + Math.floor(Math.random() * 4);
+            for (let i = 0; i < run && curMX < 19; i++) {
+                curMX++;
+                macroPath.push({ mx: curMX, mr: curMR });
+            }
+            if (curMX < 19) {
+                let nextMR = curMR;
+                while (Math.abs(nextMR - curMR) < 2) nextMR = 1 + Math.floor(Math.random() * 5);
+                const step = nextMR > curMR ? 1 : -1;
+                while (curMR !== nextMR) {
+                    curMR += step;
                     macroPath.push({ mx: curMX, mr: curMR });
-                }
-                if (curMX < 19) {
-                    let nextMR = curMR;
-                    while (Math.abs(nextMR - curMR) < 2) nextMR = 1 + Math.floor(Math.random() * 5);
-                    const step = nextMR > curMR ? 1 : -1;
-                    while (curMR !== nextMR) {
-                        curMR += step;
-                        macroPath.push({ mx: curMX, mr: curMR });
-                    }
                 }
             }
         }
 
-        // 2. VISUAL GRID REGISTRATION (Keep the 2-wide visual path)
+        // 2. VISUAL GRID REGISTRATION
         macroPath.forEach(m => {
             const bx = m.mx * 2; const by = m.mr * 2 + 1;
             for(let ix=0; ix<2; ix++) {
@@ -77,13 +73,16 @@ export class PathManager {
         });
 
         // 3. CONTINUOUS SPINE CALCULATION
-        // We treat each 2x2 macro-block as a point on the spine (center of the block)
         const waypoints: PIXI.Point[] = macroPath.map(m => new PIXI.Point(
             (m.mx * 2 + 1) * this.TILE_SIZE, 
             (m.mr * 2 + 2) * this.TILE_SIZE
         ));
 
-        // Generate segments (Linear for now, but with unified distance tracking)
+        // THE REPAIR: Ensure the last waypoint isn't at the very edge
+        if (waypoints[waypoints.length - 1].x > 1520) {
+            waypoints[waypoints.length - 1].x = 1520;
+        }
+
         for (let i = 0; i < waypoints.length - 1; i++) {
             const p1 = waypoints[i];
             const p2 = waypoints[i+1];
@@ -106,26 +105,21 @@ export class PathManager {
         // 4. ANCHOR SYNCHRONIZATION
         this.startNodePos.set(0, waypoints[0].y);
         const lastWP = waypoints[waypoints.length - 1];
-        this.endNodePos.set(lastWP.x + this.TILE_SIZE, lastWP.y);
+        this.endNodePos.set(lastWP.x, lastWP.y);
 
         NeuralBrain.getInstance().mapGridAvailability(40, 14, this.pathCells);
     }
 
-    /**
-     * PARAMETRIC LOOKUP API
-     * Returns the exact position and rotation of the spine at a given pixel distance.
-     */
     public getTransformAtDistance(distance: number): PathTransform {
         if (distance <= 0) return { x: 0, y: this.startNodePos.y, rotation: 0 };
         
-        // Find the segment containing this distance
         let seg = this.segments[0];
         for (let i = 0; i < this.segments.length; i++) {
             if (distance < this.segments[i].cumulativeDist + this.segments[i].length) {
                 seg = this.segments[i];
                 break;
             }
-            seg = this.segments[i]; // Default to last segment
+            seg = this.segments[i];
         }
 
         const localDist = distance - seg.cumulativeDist;

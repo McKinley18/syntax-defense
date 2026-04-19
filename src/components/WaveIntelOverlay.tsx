@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { StateManager, AppState } from '../core/StateManager';
 import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
+import { AudioManager } from '../systems/AudioManager';
 
-// Interface to break circular dependency
 export interface IIntelWaveManager {
-    nextWaveIntel: EnemyType[];
+    nextWaveIntel: { type: EnemyType, mult: number }[];
     confirmIntel(): void;
 }
 
@@ -34,51 +34,89 @@ export const WaveIntelOverlay: React.FC<{ waveManager: IIntelWaveManager }> = ({
 
     if (state !== AppState.WAVE_COMPLETED) return null;
 
-    // Count enemy types in next wave
     const counts: Record<number, number> = {};
-    waveManager.nextWaveIntel.forEach(t => {
-        counts[t] = (counts[t] || 0) + 1;
+    waveManager.nextWaveIntel.forEach(entry => {
+        const type = entry.type;
+        counts[type] = (counts[type] || 0) + 1;
     });
+
+    const s = StateManager.instance;
+    const isFirstWave = currentWave === 1 && s.wavePurgedCount === 0 && s.waveCreditsEarned === 0;
 
     return (
         <div className="intel-overlay" style={{
             position: 'absolute', inset: 0, zIndex: 40000,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.8)', pointerEvents: 'auto'
+            backgroundColor: 'rgba(0,0,0,0.85)', pointerEvents: 'auto', backdropFilter: 'blur(10px)'
         }}>
             <div className="terminal-box" style={{
-                width: '28rem', background: 'rgba(0, 10, 25, 0.98)',
+                width: '32rem', background: 'rgba(0, 10, 25, 0.98)',
                 border: '0.15rem solid var(--neon-cyan)', padding: '2rem',
-                boxShadow: '0 0 40px rgba(0, 255, 255, 0.2)',
-                display: 'flex', flexDirection: 'column', gap: '1.5rem'
+                boxShadow: '0 0 60px rgba(0, 255, 255, 0.15)',
+                display: 'flex', flexDirection: 'column', gap: '2rem'
             }}>
-                <div style={{ color: 'var(--neon-cyan)', fontSize: '1.2rem', fontWeight: 900, borderBottom: '1px solid rgba(0,255,255,0.2)', paddingBottom: '0.5rem', textAlign: 'center' }}>
-                    NEXT_WAVE_INTEL [WAVE_{currentWave.toString().padStart(2, '0')}]
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ color: 'var(--neon-cyan)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '2px', opacity: 0.8 }}>
+                        &gt; {isFirstWave ? "INITIAL_INFILTRATION_INTEL" : `PREVIOUS_OPERATION_REPORT [WAVE_${currentWave - 1}]`}
+                    </div>
+                    <button 
+                        onClick={() => { AudioManager.getInstance().playUiClick(); s.transitionTo(AppState.MAIN_MENU); }}
+                        style={{ background: 'transparent', border: '1px solid #ff3300', color: '#ff3300', fontSize: '0.65rem', padding: '0.2rem 0.6rem', cursor: 'pointer' }}
+                    >
+                        [ ABORT_MISSION ]
+                    </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    {Object.entries(counts).map(([typeStr, count]) => {
-                        const type = Number(typeStr) as EnemyType;
-                        const cfg = VISUAL_REGISTRY[type];
-                        const color = `#${cfg.color.toString(16).padStart(6, '0')}`;
-                        return (
-                            <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '4px' }}>
-                                <VirusIcon type={type} color={color} />
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 700 }}>{cfg.name}</span>
-                                    <span style={{ color: 'var(--neon-cyan)', fontSize: '0.8rem', fontWeight: 900 }}>x{count}</span>
+                {!isFirstWave && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', border: '1px solid #222' }}>
+                            <div style={{ fontSize: '0.55rem', color: '#666', marginBottom: '4px' }}>UNITS_PURGED</div>
+                            <div style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 900 }}>{s.wavePurgedCount} <span style={{ fontSize: '0.7rem', color: '#444' }}>NODES</span></div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', border: '1px solid #222' }}>
+                            <div style={{ fontSize: '0.55rem', color: '#666', marginBottom: '4px' }}>DATA_HARVESTED</div>
+                            <div style={{ fontSize: '1.2rem', color: 'var(--neon-cyan)', fontWeight: 900 }}>{s.waveCreditsEarned}c</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', border: '1px solid #222' }}>
+                            <div style={{ fontSize: '0.55rem', color: '#666', marginBottom: '4px' }}>INTEREST_ACCRUED</div>
+                            <div style={{ fontSize: '1.2rem', color: '#00ff66', fontWeight: 900 }}>+{s.lastWaveInterest}c</div>
+                        </div>
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', border: '1px solid #222' }}>
+                            <div style={{ fontSize: '0.55rem', color: '#666', marginBottom: '4px' }}>RECONSTRUCTION_GRANT</div>
+                            <div style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 900 }}>+{s.lastWaveBonus}c</div>
+                        </div>
+                    </div>
+                )}
+
+                <div>
+                    <div style={{ color: 'var(--neon-cyan)', fontSize: '0.7rem', fontWeight: 900, letterSpacing: '2px', marginBottom: '0.8rem', opacity: 0.8 }}>
+                        &gt; UPCOMING_THREAT_PROJECTION [WAVE_{currentWave}]
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                        {Object.entries(counts).map(([typeStr, count]) => {
+                            const type = Number(typeStr) as EnemyType;
+                            const cfg = VISUAL_REGISTRY[type];
+                            if (!cfg) return null;
+                            const color = `#${cfg.color.toString(16).padStart(6, '0')}`;
+                            return (
+                                <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(0,255,255,0.03)', padding: '10px', border: '1px solid #00ffff11' }}>
+                                    <VirusIcon type={type} color={color} />
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 700 }}>{cfg.name}</span>
+                                        <span style={{ color: 'var(--neon-cyan)', fontSize: '0.8rem', fontWeight: 900 }}>x{count}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <button 
                     className="blue-button" 
-                    onClick={() => waveManager.confirmIntel()}
-                    style={{ height: '3rem', fontSize: '1rem', background: 'var(--neon-cyan)', color: '#000', fontWeight: 900 }}
+                    onClick={() => { AudioManager.getInstance().playUiClick(); waveManager.confirmIntel(); }}
+                    style={{ height: '3.5rem', fontSize: '1.1rem', background: 'var(--neon-cyan)', color: '#000', fontWeight: 900, letterSpacing: '2px', border: 'none', cursor: 'pointer' }}
                 >
-                    ACKNOWLEDGE & READY
+                    AUTHORIZE_REBUILD
                 </button>
             </div>
         </div>

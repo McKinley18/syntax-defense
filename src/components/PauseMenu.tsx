@@ -46,7 +46,6 @@ export const PauseMenu: React.FC<{ onResume: () => void, towerManager?: any }> =
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1rem',
-                transform: 'translateY(-2.5rem)',
                 transition: 'all 0.3s ease'
             }}>
                 
@@ -70,7 +69,7 @@ export const PauseMenu: React.FC<{ onResume: () => void, towerManager?: any }> =
                             </button>
 
                             <button className="blue-button" onClick={handleSaveAndExit} style={{ height: '2.4rem', fontSize: '0.85rem', background: 'rgba(0,255,255,0.05)' }}>
-                                SAVE_&_TERMINATE
+                                SAVE_&_EXIT
                             </button>
 
                             <button 

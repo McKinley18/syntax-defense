@@ -12,7 +12,6 @@ import { TutorialOverlay } from './TutorialOverlay';
 import { WaveIntelOverlay } from './WaveIntelOverlay';
 import { TurretUpgradeOverlay } from './TurretUpgradeOverlay';
 import { PauseMenu } from './PauseMenu';
-import { TowerType } from '../entities/Tower';
 import { StateManager, AppState } from '../core/StateManager';
 import * as PIXI from 'pixi.js';
 
@@ -30,6 +29,23 @@ export const GameCanvas = () => {
         kernel: Kernel
     } | null>(null);
 
+    // PERSISTENT SHAKE INTENSITY
+    const shakeIntensity = useRef(0);
+
+    useEffect(() => {
+        const handleShake = (e: any) => { shakeIntensity.current = e.detail; };
+        window.addEventListener('syndef-shake', handleShake);
+
+        const unsub = StateManager.instance.subscribe('isPaused', (val) => {
+            setIsPaused(val);
+        });
+
+        return () => {
+            unsub();
+            window.removeEventListener('syndef-shake', handleShake);
+        };
+    }, []);
+
     useEffect(() => {
         let isMounted = true;
 
@@ -41,6 +57,8 @@ export const GameCanvas = () => {
             if (!isMounted) return;
 
             const app = engine.app;
+            if (!app) return;
+            
             TextureGenerator.getInstance().generate(app);
 
             const pathManager = new PathManager();
@@ -49,17 +67,14 @@ export const GameCanvas = () => {
             const kernel = new Kernel();
             const waveManager = new WaveManager(mapManager, towerManager, pathManager, kernel);
             
-            // --- HIGH-PRIORITY MOUNTING SEQUENCE ---
             app.stage.removeChildren();
-            app.stage.addChild(mapManager.getContainer());        // Layer 0: Map/Grid
-            app.stage.addChild(waveManager.getContainer());      // Layer 1: Enemies
-            app.stage.addChild(kernel.container);               // Layer 2: Objective
-            app.stage.addChild(towerManager.getProjectileContainer()); // Layer 3: FX
-            app.stage.addChild(towerManager.getContainer());     // Layer 4: Turrets (TOP FOR INTERACTION)
+            app.stage.addChild(mapManager.getContainer());       
+            app.stage.addChild(waveManager.getContainer());      
+            app.stage.addChild(kernel.container);               
+            app.stage.addChild(towerManager.getProjectileContainer()); 
+            app.stage.addChild(towerManager.getContainer());     
             
-            // Interaction Shield for entire field
             app.stage.hitArea = new PIXI.Rectangle(0, 0, 1600, 720);
-            
             new InputManager(app, mapManager, towerManager);
             
             systemsRef.current = { pathManager, mapManager, towerManager, waveManager, kernel };
@@ -77,13 +92,45 @@ export const GameCanvas = () => {
                     initializeTopology(saveData.currentWave);
                     towerManager.loadTowers(saveData.towers);
                 } else {
-                    initializeTopology(0);
+                    initializeTopology(1);
                 }
             } else {
                 initializeTopology(StateManager.instance.currentWave);
             }
 
-            app.ticker.add((ticker) => {
+            const masterTicker = (ticker: PIXI.Ticker) => {
+                if (!isMounted) return;
+
+                // 1. SYNC SELECTION
+                if (systemsRef.current) {
+                    const currentSelected = systemsRef.current.towerManager.selectedTower;
+                    if (activeSelectedTower !== currentSelected) {
+                        setActiveSelectedTower(currentSelected);
+                    }
+                }
+
+                // 2. SCREEN SHAKE
+                if (shakeIntensity.current > 0) {
+                    const sx = (Math.random() - 0.5) * shakeIntensity.current;
+                    const sy = (Math.random() - 0.5) * shakeIntensity.current;
+                    if (containerRef.current) {
+                        containerRef.current.style.transform = `translate(${sx}px, ${sy}px)`;
+                    }
+                    shakeIntensity.current *= 0.9; 
+                    if (shakeIntensity.current < 0.1) {
+                        shakeIntensity.current = 0;
+                        if (containerRef.current) containerRef.current.style.transform = '';
+                    }
+                }
+
+                // 3. ENGINE PAUSE
+                if (StateManager.instance.isPaused) {
+                    if (app.ticker.started) app.ticker.stop();
+                    return;
+                }
+                if (!app.ticker.started) app.ticker.start();
+
+                // 4. SYSTEMS UPDATE
                 if (systemsRef.current) {
                     const delta = ticker.deltaTime * StateManager.instance.gameSpeed;
                     const { towerManager, waveManager, kernel } = systemsRef.current;
@@ -91,19 +138,19 @@ export const GameCanvas = () => {
                     towerManager.update(delta, waveManager.enemies);
                     kernel.update(delta);
                     if (isPaused !== StateManager.instance.isPaused) setIsPaused(StateManager.instance.isPaused);
-                    
-                    // SYNCED SELECTION (Every frame for instant response)
-                    if (activeSelectedTower !== towerManager.selectedTower) {
-                        setActiveSelectedTower(towerManager.selectedTower);
-                    }
                 }
-            });
+            };
 
+            app.ticker.add(masterTicker);
             setIsReady(true);
         };
 
         setup();
-        return () => { isMounted = false; };
+        return () => { 
+            isMounted = false; 
+            // Cleanup PIXI to prevent memory leaks on exit
+            Engine.instance.app?.ticker.stop();
+        };
     }, []);
 
     const startWave = () => {
@@ -116,15 +163,22 @@ export const GameCanvas = () => {
 
     return (
         <div className="tactical-theater" style={{ width: '100%', height: '100%', position: 'relative', backgroundColor: '#050505' }}>
-            <div ref={containerRef} id="canvas-container" style={{ width: '100%', height: '100%', display: 'block' }} />
+            <div ref={containerRef} id="canvas-container" style={{ width: '100%', height: '100%', display: 'block', transition: 'transform 0.05s linear' }} />
             
             {isReady && (
                 <>
                     <TacticalHUD onStartWave={startWave} waveManager={systemsRef.current?.waveManager} towerManager={systemsRef.current?.towerManager} />
                     <TutorialOverlay waveManager={systemsRef.current?.waveManager} />
                     {systemsRef.current && <WaveIntelOverlay waveManager={systemsRef.current.waveManager} />}
-                    {activeSelectedTower && systemsRef.current && (
-                        <TurretUpgradeOverlay tower={activeSelectedTower} towerManager={systemsRef.current.towerManager} onClose={() => systemsRef.current?.towerManager.deselectTower()} />
+                    {activeSelectedTower && (
+                        <TurretUpgradeOverlay 
+                            tower={activeSelectedTower} 
+                            towerManager={systemsRef.current!.towerManager} 
+                            onClose={() => {
+                                systemsRef.current?.towerManager.deselectTower();
+                                setActiveSelectedTower(null);
+                            }} 
+                        />
                     )}
                     {isPaused && (
                         <PauseMenu onResume={() => { StateManager.instance.isPaused = false; setIsPaused(false); }} towerManager={systemsRef.current?.towerManager} />

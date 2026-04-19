@@ -9,62 +9,66 @@ export interface EnemyConfig {
     reward: number; 
 }
 
+/**
+ * VISUAL REGISTRY v86.5: Economic Rebalance
+ * REBUILD PAYOUTS: Rewards increased to support full wave rebuilding.
+ */
 export const VISUAL_REGISTRY: Record<EnemyType, EnemyConfig> = {
     [EnemyType.GLIDER]: {
-        hp: 20,
+        hp: 24,
         speed: 1.8,
         color: 0x00ffff,
-        name: "GLIDER",
-        threat: 10,
-        reward: 15 
+        name: "GLIDER_SCRIPT",
+        threat: 15,
+        reward: 12  // Increased from 6
     },
     [EnemyType.STRIDER]: {
-        hp: 50,
+        hp: 55,
         speed: 1.3,
         color: 0x00ff66,
-        name: "STRIDER",
-        threat: 25,
-        reward: 20
+        name: "LOGIC_STRIDER",
+        threat: 35,
+        reward: 25  // Increased from 15
     },
     [EnemyType.BEHEMOTH]: {
-        hp: 250,
+        hp: 280,
         speed: 0.6,
-        color: 0xff3300,
-        name: "BEHEMOTH",
+        color: 0xff00ff,
+        name: "DATA_FORTRESS",
         threat: 100,
-        reward: 75
+        reward: 80  // Increased from 45
     },
     [EnemyType.FRACTAL]: {
-        hp: 80,
+        hp: 90,
         speed: 1.5,
-        color: 0xff00ff,
-        name: "FRACTAL",
-        threat: 40,
-        reward: 35
+        color: 0xffff00,
+        name: "FRACTAL_MALWARE",
+        threat: 50,
+        reward: 40  // Increased from 25
     },
     [EnemyType.PHANTOM]: {
-        hp: 40,
+        hp: 45,
         speed: 2.4,
-        color: 0x888888,
-        name: "PHANTOM",
-        threat: 35,
-        reward: 30
+        color: 0xffffff,
+        name: "PHANTOM_LINK",
+        threat: 80,
+        reward: 60  // Increased from 35
     },
     [EnemyType.WORM]: {
-        hp: 120,
+        hp: 140,
         speed: 1.0,
-        color: 0xffff00,
-        name: "WORM",
+        color: 0x0066ff,
+        name: "SEGMENT_PARASITE",
         threat: 60,
-        reward: 50
+        reward: 50  // Increased from 30
     },
     [EnemyType.BOSS]: {
-        hp: 2500,
+        hp: 3500,
         speed: 0.4,
-        color: 0xffffff,
+        color: 0xff3300,
         name: "KERNEL_CRUSHER",
         threat: 1000,
-        reward: 500
+        reward: 1500 // Significant boss payout
     }
 };
 

@@ -19,10 +19,8 @@ function App() {
       setState(newState);
     });
 
-    // --- UNIVERSAL SCALING LAW ---
     const updateScaling = () => {
         const userScale = StateManager.instance.uiScale;
-        // Law: Height-driven scaling to match 14-row grid height (720px engine frame)
         document.documentElement.style.fontSize = `clamp(10px, ${1.8 * userScale}vh, 26px)`;
     };
 
@@ -33,7 +31,6 @@ function App() {
         setIsPortrait(portrait);
 
         if (!portrait && StateManager.instance.currentState === AppState.ORIENTATION_LOCK) {
-            // INSTANT BYPASS (v56.0)
             if (StateManager.instance.skipCinematics) {
                 StateManager.instance.transitionTo(AppState.MAIN_MENU);
             } else {
@@ -52,7 +49,6 @@ function App() {
     });
     window.addEventListener('keydown', handleKeys);
     
-    // Initial Trigger
     checkOrientation();
     updateScaling();
 
@@ -115,7 +111,13 @@ function App() {
         {state === AppState.MAIN_MENU && <MainMenu />}
         {state === AppState.ARCHIVE && <SystemArchive />}
         {state === AppState.DIAGNOSTICS && <SystemDiagnostics />}
-        {(state === AppState.GAME_PREP || state === AppState.GAME_WAVE || state === AppState.WAVE_COMPLETED || state === AppState.WAVE_PREP) && <GameCanvas />}
+        
+        {/* Authoritative Render Block: Ensures GameCanvas remains active during all tactical phases */}
+        {(state === AppState.GAME_PREP || 
+          state === AppState.GAME_WAVE || 
+          state === AppState.WAVE_COMPLETED || 
+          state === AppState.WAVE_PREP) && <GameCanvas />}
+
         {state === AppState.GAME_OVER && (
             <div style={{ color: 'red', textAlign: 'center', fontFamily: 'monospace', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' }}>
                 <h1>SYSTEM_TERMINATED</h1>

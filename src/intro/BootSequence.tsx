@@ -111,6 +111,7 @@ export const BootSequence: React.FC = () => {
         setShowInitializeGate(false);
         await AudioManager.getInstance().resume();
         
+        // Music ignition removed from here to follow the "Title-Only" rule.
         await addLineAndWait({ text: "SYNTAX_KERNEL_BOOT_V1.0.4", color: "rgba(255,255,255,0.5)", speed: 40 });
         await new Promise(r => setTimeout(r, 400));
         

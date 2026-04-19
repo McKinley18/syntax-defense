@@ -117,11 +117,11 @@ const TurretIcon: React.FC<{ type: TowerType, color: string }> = ({ type, color 
                 <circle cx="20" cy="20" r="6" fill="#111" stroke="#444" strokeWidth="2" />
             </svg>
         );
-        case TowerType.SONIC_IMPULSE: return (
+        case TowerType.ROCKET_BATTERY: return (
             <svg viewBox="0 0 40 40" width="40" height="40">
-                <path d="M20 10 A 15 15 0 0 1 35 25" fill="none" stroke={color} strokeWidth="3" />
-                <path d="M20 15 A 10 10 0 0 1 30 25" fill="none" stroke={color} strokeWidth="2" />
-                <circle cx="20" cy="25" r="4" fill={color} />
+                <rect x="10" y="10" width="20" height="15" fill="#1a1a1a" stroke={color} strokeWidth="2" />
+                <circle cx="15" cy="17" r="2" fill={color} />
+                <circle cx="25" cy="17" r="2" fill={color} />
             </svg>
         );
         case TowerType.STASIS_FIELD: return (
@@ -162,8 +162,8 @@ const DefenseProtocol: React.FC<{ type: TowerType }> = ({ type }) => {
     // TACTICAL SYNERGY DATA
     const synergies: Record<number, string> = {
         [TowerType.PULSE_NODE]: "HIGH_FREQ: Pair with Stasis for early corridor dominance.",
-        [TowerType.SONIC_IMPULSE]: "DISRUPTOR: 2x damage against Strider logic cores.",
-        [TowerType.STASIS_FIELD]: "ANCHOR: Essential for Rail Cannon targeting alignment.",
+        [TowerType.ROCKET_BATTERY]: "BURST: Volley of 6 rockets targeting unique viral signatures.",
+        [TowerType.STASIS_FIELD]: "FREEZE: Impacts physically halt progress for 3.0 seconds.",
         [TowerType.PRISM_BEAM]: "THERMAL: Sustained heat purges WORM parasitic segments.",
         [TowerType.RAIL_CANNON]: "KINETIC: Bypasses BEHEMOTH armor; requires lead distance.",
         [TowerType.VOID_PROJECTOR]: "ULTIMATE: Total erasure of any signature in range."
@@ -359,7 +359,7 @@ export const SystemArchive: React.FC = () => {
                         {currentFile.name === "DEFENSE_PROTOCOLS" && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(20rem, 1fr))', gap: '1.5rem' }}>
                                 <DefenseProtocol type={TowerType.PULSE_NODE} />
-                                <DefenseProtocol type={TowerType.SONIC_IMPULSE} />
+                                <DefenseProtocol type={TowerType.ROCKET_BATTERY} />
                                 <DefenseProtocol type={TowerType.STASIS_FIELD} />
                                 <DefenseProtocol type={TowerType.PRISM_BEAM} />
                                 <DefenseProtocol type={TowerType.RAIL_CANNON} />
@@ -377,7 +377,7 @@ export const SystemArchive: React.FC = () => {
                                 <ThreatVector 
                                     name="STRIDER" type="LOGIC_BOMB" speed="1.3" armor="50" enemyType={EnemyType.STRIDER} 
                                     intel="Balanced tactical unit. Capable of moderate path navigation speeds."
-                                    weak="Vulnerable to high-frequency Sonic Impulse protocols."
+                                    weak="Vulnerable to high-frequency Rocket Battery protocols."
                                 />
                                 <ThreatVector 
                                     name="WORM" type="PARASITE" speed="1.0" armor="120" enemyType={EnemyType.WORM} 
@@ -387,7 +387,7 @@ export const SystemArchive: React.FC = () => {
                                 <ThreatVector 
                                     name="FRACTAL" type="MALWARE" speed="1.5" armor="80" enemyType={EnemyType.FRACTAL} 
                                     intel="Recursive recursive data star. High agility makes it difficult to track."
-                                    weak="Susceptible to Stasis Field movement dampening."
+                                    weak="Susceptible to Stasis Field freeze dampening."
                                 />
                                 <ThreatVector 
                                     name="PHANTOM" type="STEALTH" speed="2.4" armor="40" enemyType={EnemyType.PHANTOM} 
@@ -456,7 +456,7 @@ export const SystemArchive: React.FC = () => {
 
                         {currentFile.name === "TACTICAL_HUD" && (
                             <div style={{ maxWidth: '45rem' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                                <div style={{ gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '2rem' }}>
                                     <div>
                                         <div style={{ color: '#00ff66', fontWeight: 900, marginBottom: '1rem' }}>INTERFACE_SYMBOLS</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

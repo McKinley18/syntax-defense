@@ -64,11 +64,11 @@ const HudTurretIcon: React.FC<{ type: TowerType, color: string, size?: number }>
                 <circle cx="20" cy="20" r="6" fill="#000" stroke="#444" strokeWidth="2" />
             </svg>
         );
-        case TowerType.SONIC_IMPULSE: return (
+        case TowerType.ROCKET_BATTERY: return (
             <svg viewBox="0 0 40 40" width={s} height={s}>
-                <path d="M20 10 A 15 15 0 0 1 35 25" fill="none" stroke={color} strokeWidth="3" />
-                <path d="M20 15 A 10 10 0 0 1 30 25" fill="none" stroke={color} strokeWidth="2" />
-                <circle cx="20" cy="25" r="4" fill={color} />
+                <rect x="10" y="10" width="20" height="15" fill="#111" stroke={color} strokeWidth="2" />
+                <circle cx="15" cy="17" r="2" fill={color} />
+                <circle cx="25" cy="17" r="2" fill={color} />
             </svg>
         );
         case TowerType.STASIS_FIELD: return (
@@ -108,6 +108,7 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
     const [currentWave, setCurrentWave] = useState(StateManager.instance.currentWave);
     const [waveName, setWaveName] = useState(StateManager.instance.waveName);
     const [gameState, setGameState] = useState(StateManager.instance.currentState);
+    const [gameMode, setGameMode] = useState(StateManager.instance.gameMode);
     const [isBreaching, setIsBreaching] = useState(false);
     const [gameSpeed, setGameSpeed] = useState(StateManager.instance.gameSpeed);
     const [selectedTower, setSelectedTower] = useState<Tower | null>(null);
@@ -130,7 +131,8 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
             StateManager.instance.subscribe('integrity', (v) => setIntegrity(v)),
             StateManager.instance.subscribe('state', (v) => setGameState(v)),
             StateManager.instance.subscribe('breach', (v) => setIsBreaching(v)),
-            StateManager.instance.subscribe('waveName', (v) => setWaveName(v))
+            StateManager.instance.subscribe('waveName', (v) => setWaveName(v)),
+            StateManager.instance.subscribe('gameMode', (v) => setGameMode(v))
         ];
 
         const updateRootScaling = () => {
@@ -156,10 +158,9 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
                 setWaveProgress(total > 0 ? (total - active) / total : 0);
                 setPrepCountdown(Math.ceil(waveManager.prepTimer));
 
-                // FISCAL PROJECTION (v52.0)
                 const rewards = waveManager.getRemainingRewards();
                 const bonus = waveManager.getEndWaveBonus();
-                const interest = Math.floor(StateManager.instance.credits * 0.02);
+                const interest = Math.floor(StateManager.instance.credits * (StateManager.instance.gameMode === 'HARDCORE' ? 0.01 : 0.05));
                 setProjectedYield(rewards + bonus + interest);
             }
             if (towerManager) setSelectedTower(towerManager.selectedTower);
@@ -183,7 +184,7 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
     const themeColor = integrity <= 6 ? 'var(--neon-red)' : isPrep ? 'var(--neon-cyan)' : isWave ? '#00ff66' : 'var(--neon-cyan)';
 
     const [hoveredProtocol, setHoveredProtocol] = useState<TowerType | null>(null);
-    const activeInfoType = hoveredProtocol ?? (selectedTower?.type || null);
+    const activeInfoType = hoveredProtocol !== null ? hoveredProtocol : (selectedTower !== null ? selectedTower.type : null);
     const activeInfo = activeInfoType !== null ? TOWER_CONFIGS[activeInfoType] : null;
 
     const getTargetModeLabel = (mode: TargetMode) => {
@@ -209,8 +210,8 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
                     {/* 1. STATUS MODULE */}
                     <div className="module-box" style={{ width: sideSectionWidth, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                            <div style={{ fontSize: '0.65rem', color: themeColor, letterSpacing: '2px', fontWeight: 900 }}>SIMULATION_STATUS [V-83.1]</div>
-                            <div style={{ fontSize: '0.5rem', color: '#666', fontWeight: 900 }}>SEED_{sessionSeed}</div>
+                            <div style={{ fontSize: '0.65rem', color: themeColor, letterSpacing: '2px', fontWeight: 900 }}>SIMULATION_STATUS [V-88.1]</div>
+                            <div style={{ fontSize: '0.5rem', color: gameMode === 'HARDCORE' ? '#ff3300' : '#666', fontWeight: 900 }}>MODE_{gameMode}</div>
                         </div>
                         <div style={{ flex: 1, display: 'flex', gap: '0.6rem' }}>
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -228,7 +229,6 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
                                     style={{ flex: 1, fontSize: '0.8rem', background: (isWave) ? '#151515' : themeColor, color: (isWave) ? '#000' : '#000', fontWeight: 900, border: 'none', cursor: 'pointer' }}>
                                     {isPrep ? 'AUTHORIZE_NOW' : 'AUTHORIZE_WAVE'}
                                 </button>
-                                {/* HIGH-INTENSITY COUNTDOWN (v52.0) */}
                                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', border: `1px solid ${themeColor}`, fontSize: '0.85rem', color: isPrep ? 'var(--neon-cyan)' : '#fff', fontWeight: 900 }}>
                                     {isPrep ? `PREP_CLOCK: ${prepCountdown}s` : `ACTIVE: ${waveName}`}
                                 </div>
@@ -307,7 +307,6 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
                                 <div style={{ textAlign: 'right' }}>
                                     <div style={{ fontSize: '0.75rem', color: '#666', fontWeight: 900 }}>DATA_CREDITS</div>
                                     <div style={{ fontSize: '2.4rem', color: 'var(--neon-cyan)', fontWeight: 900, lineHeight: 1 }}><CreditStream value={credits} /></div>
-                                    {/* HIGH-VISIBILITY PROJECTION (v52.0) */}
                                     <div style={{ fontSize: '0.85rem', color: 'var(--neon-cyan)', fontWeight: 900, marginTop: '0.3rem', borderTop: '1px solid rgba(0,255,255,0.2)', paddingTop: '0.2rem' }}>
                                         YIELD_PROJ: +{projectedYield}c
                                     </div>
@@ -319,7 +318,9 @@ export const TacticalHUD: React.FC<{ onStartWave: () => void, waveManager?: Wave
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '0.4rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 900 }}>INTEGRITY</span><span style={{ fontSize: '1.6rem', color: themeColor, fontWeight: 900 }}>{Math.round((integrity / 20) * 100)}%</span></div>
                                 <div style={{ width: '100%', height: '1rem' }}><SegmentedBar progress={integrity / 20} segments={10} color={themeColor} /></div>
-                                <button onClick={() => StateManager.instance.attemptRepair()} disabled={credits < 250 || integrity >= 20} style={{ height: '1.8rem', background: 'transparent', border: `2px solid ${credits < 250 ? '#222' : '#ff3300'}`, color: credits < 250 ? '#333' : '#ff3300', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 900, marginTop: '0.2rem' }}>[ REPAIR_PATCH ]</button>
+                                <button onClick={() => StateManager.instance.attemptRepair()} disabled={credits < StateManager.instance.getRepairCost() || integrity >= 20} style={{ height: '1.8rem', background: 'transparent', border: `2px solid ${credits < StateManager.instance.getRepairCost() ? '#222' : '#ff3300'}`, color: credits < StateManager.instance.getRepairCost() ? '#333' : '#ff3300', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 900, marginTop: '0.2rem' }}>
+                                    [ REPAIR ({StateManager.instance.getRepairCost()}c) ]
+                                </button>
                             </div>
                         </div>
                     </div>

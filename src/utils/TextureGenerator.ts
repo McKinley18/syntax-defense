@@ -33,7 +33,7 @@ export class TextureGenerator {
 
         // --- 2. UNIQUE CHASSIS ASSEMBLIES ---
         const towerTypes = [
-            TowerType.PULSE_NODE, TowerType.SONIC_IMPULSE, TowerType.STASIS_FIELD,
+            TowerType.PULSE_NODE, TowerType.ROCKET_BATTERY, TowerType.STASIS_FIELD,
             TowerType.PRISM_BEAM, TowerType.RAIL_CANNON, TowerType.VOID_PROJECTOR
         ];
 
@@ -51,14 +51,21 @@ export class TextureGenerator {
                     }
                     g.circle(0, 0, 6).fill(0x111111).stroke({ width: 2, color: 0x444444 });
                     break;
-                case TowerType.SONIC_IMPULSE:
-                    g.arc(0, 0, cs*1.5, -Math.PI*0.8, -Math.PI*0.2).stroke({ width: 4, color });
-                    g.circle(0, -cs*0.5, 4).fill(color);
-                    g.poly([{x:-10, y:0}, {x:10, y:0}, {x:0, y:-10}]).fill(0x222222);
+                case TowerType.ROCKET_BATTERY:
+                    // Quad Rocket Pod
+                    g.rect(-10, -12, 20, 14).fill(0x1a1a1a).stroke({ width: 2, color: 0x444444 });
+                    for(let x of [-6, -2, 2, 6]) {
+                        g.circle(x, -8, 2).fill(color);
+                    }
+                    g.rect(-4, -4, 8, 8).fill(0x222222).stroke({ width: 1, color });
                     break;
                 case TowerType.STASIS_FIELD:
+                    // Crystalline Dish
                     g.circle(0, 0, cs*1.2).stroke({ width: 2, color, alpha: 0.6 });
-                    g.circle(0, 0, cs*0.8).stroke({ width: 3, color });
+                    for(let i=0; i<6; i++) {
+                        const rot = (Math.PI/3) * i;
+                        g.moveTo(0, 0).lineTo(Math.cos(rot)*cs, Math.sin(rot)*cs).stroke({ width: 1.5, color });
+                    }
                     g.circle(0, 0, 5).fill(0xffffff).stroke({ width: 1, color });
                     break;
                 case TowerType.PRISM_BEAM:
@@ -82,7 +89,7 @@ export class TextureGenerator {
             this.towerChassisTextures.set(type, app.renderer.generateTexture(g));
         });
 
-        // --- 3. ENEMY TEXTURES (High Character/Detail) ---
+        // --- 3. ENEMY TEXTURES ---
         const enemyTypes = [
             EnemyType.GLIDER, EnemyType.STRIDER, EnemyType.BEHEMOTH, 
             EnemyType.FRACTAL, EnemyType.PHANTOM, EnemyType.WORM, EnemyType.BOSS
@@ -96,50 +103,37 @@ export class TextureGenerator {
 
             switch(type) {
                 case EnemyType.GLIDER:
-                    // Sleek Triangle Scout
                     eg.poly([{x:0, y:-es*1.4}, {x:es, y:es}, {x:0, y:es*0.4}, {x:-es, y:es}]).fill({ color, alpha: 0.8 }).stroke({ width: 2, color: 0xffffff });
                     break;
-
                 case EnemyType.STRIDER:
-                    // Hexagonal Logic Hub
                     eg.poly([
                         {x:-es, y:-es*0.5}, {x:0, y:-es}, {x:es, y:-es*0.5},
                         {x:es, y:es*0.5}, {x:0, y:es}, {x:-es, y:es*0.5}
                     ]).fill({ color, alpha: 0.8 }).stroke({ width: 2, color: 0xffffff });
                     eg.circle(0, 0, es*0.4).fill(0xffffff);
                     break;
-
                 case EnemyType.BEHEMOTH:
-                    // Heavy Armored Fortress
                     eg.rect(-es, -es, es*2, es*2).fill({ color, alpha: 0.9 }).stroke({ width: 3, color: 0xffffff });
                     eg.rect(-es*0.5, -es*0.5, es, es).stroke({ width: 1, color: 0x000000 });
                     break;
-
                 case EnemyType.FRACTAL:
-                    // Recursive Starburst
                     for(let i=0; i<4; i++) {
                         const rot = (Math.PI/2) * i;
                         eg.rect(Math.cos(rot)*es - 2, Math.sin(rot)*es - 2, 4, 14).fill(color);
                     }
                     eg.poly([{x:-es, y:0}, {x:0, y:-es}, {x:es, y:0}, {x:0, y:es}]).fill(0xffffff);
                     break;
-
                 case EnemyType.PHANTOM:
-                    // Cloaked Ring Signature
                     eg.circle(0, 0, es).stroke({ width: 2, color, alpha: 0.4 });
                     eg.circle(0, 0, es*0.6).stroke({ width: 2, color, alpha: 0.7 });
                     eg.circle(0, 0, 3).fill(0xffffff);
                     break;
-
                 case EnemyType.WORM:
-                    // Segmented Parasite
                     for(let x of [-es, 0, es]) {
                         eg.circle(x, 0, es*0.6).fill(color).stroke({ width: 1, color: 0xffffff });
                     }
                     break;
-
                 case EnemyType.BOSS:
-                    // THE KERNEL CRUSHER
                     const bs = es * 2;
                     eg.poly([
                         {x:-bs, y:-bs*0.5}, {x:-bs*0.5, y:-bs}, {x:bs*0.5, y:-bs}, {x:bs, y:-bs*0.5},
@@ -148,7 +142,6 @@ export class TextureGenerator {
                     eg.circle(0, 0, bs*0.6).fill(0x000000).stroke({ width: 2, color: 0xffffff });
                     eg.circle(0, 0, bs*0.3).fill(0xffffff);
                     break;
-
                 default:
                     eg.circle(0, 0, es).fill(color).stroke({ width: 2, color: 0xffffff, alpha: 0.5 });
             }

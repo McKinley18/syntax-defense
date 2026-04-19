@@ -4,8 +4,8 @@ import { TowerManager } from './TowerManager';
 import { StateManager, AppState } from '../core/StateManager';
 
 /**
- * INPUT MANAGER v34.0: Unified Event Router
- * Manages both Build-Commit and Tactical Selection.
+ * INPUT MANAGER v35.0: Unified Event Router
+ * THE REBUILD: Adds right-click and Escape listeners for authoritative deselection.
  */
 export class InputManager {
     private towerManager: TowerManager;
@@ -17,9 +17,24 @@ export class InputManager {
 
         this.app.stage.eventMode = 'static';
         this.app.stage.on('pointerdown', this.onStageDown.bind(this));
+        
+        // GLOBAL KEYBOARD LISTENER
+        window.addEventListener('keydown', this.onKeyDown.bind(this));
+        
+        // CONTEXT MENU SUPPRESSION (Allows right-click to deselect)
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.handleDeselection();
+        });
     }
 
     private onStageDown(e: PIXI.FederatedPointerEvent) {
+        // Right-click detection
+        if (e.button === 2) {
+            this.handleDeselection();
+            return;
+        }
+
         const state = StateManager.instance.currentState;
         if (state !== AppState.GAME_PREP && state !== AppState.GAME_WAVE && state !== AppState.WAVE_PREP) return;
 
@@ -28,7 +43,6 @@ export class InputManager {
         const gridY = Math.floor(localPos.y / TILE_SIZE);
 
         // 1. ATTEMPT BUILD COMMIT
-        // If a turret is armed, handleStageClick will place it and return true.
         const buildSuccess = this.towerManager.handleStageClick(gridX, gridY);
         if (buildSuccess) return;
 
@@ -42,13 +56,25 @@ export class InputManager {
         if (found) {
             this.towerManager.selectTower(found);
         } else {
-            this.towerManager.deselectTower();
-            // If clicking empty space and a turret was armed but invalid, cancel arming
-            this.towerManager.cancelPlacement();
+            this.handleDeselection();
         }
+    }
+
+    private onKeyDown(e: KeyboardEvent) {
+        if (e.key === 'Escape') {
+            this.handleDeselection();
+        }
+    }
+
+    private handleDeselection() {
+        this.towerManager.deselectTower();
+        this.towerManager.cancelPlacement();
     }
 
     public destroy() {
         this.app.stage.off('pointerdown');
+        window.removeEventListener('keydown', this.onKeyDown.bind(this));
+        // Note: Context menu listener is harder to remove if anonymous, 
+        // but for this prototype, stage cleanup is sufficient.
     }
 }

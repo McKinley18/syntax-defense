@@ -6,41 +6,44 @@ export enum AppState {
     TERMINAL_BOOT,
     STUDIO_SPLASH,
     MAIN_MENU,
-    GAME_PREP,    // Building before wave 1
-    WAVE_PREP,    // 15s timer between waves
-    GAME_WAVE,    // Enemies active
-    WAVE_COMPLETED, // Interstitial after wave cleared
+    GAME_PREP,
+    WAVE_PREP,
+    GAME_WAVE,
+    WAVE_COMPLETED,
     GAME_OVER,
     ARCHIVE,
     DIAGNOSTICS,
     MAP_DEBUG
 }
 
+export type GameMode = 'STANDARD' | 'HARDCORE';
+
 export class StateManager {
     private static _instance: StateManager;
     public currentState: AppState = AppState.ORIENTATION_LOCK;
     public previousState: AppState = AppState.ORIENTATION_LOCK;
+    public gameMode: GameMode = 'STANDARD';
     
-    // ECONOMY & VITALITY
     public credits: number = 600;
     public integrity: number = 20;
     public maxIntegrity: number = 20;
-    public currentWave: number = 0;
+    public currentWave: number = 1;
     public waveName: string = "BOOT_SEQUENCE";
     
-    // STATS
     public totalPurged: number = 0;
     public perfectWaves: number = 0;
     public waveDamageTaken: number = 0;
+
+    public waveCreditsEarned: number = 0;
+    public wavePurgedCount: number = 0;
+    public lastWaveInterest: number = 0;
+    public lastWaveBonus: number = 0;
     
-    // SETTINGS
-    public isPaused: boolean = false;
+    private _isPaused: boolean = false;
     public gameSpeed: number = 1.0;
     public uiScale: number = 1.0;
-    public skipCinematics: boolean = true; // DEV_MODE: TRUE
+    public skipCinematics: boolean = true; 
     
-    // INTERACTION
-    public activeDraggingTurret: any = null;
     public nearKernelAlert: boolean = false;
     public selectedTurretType: number | null = null;
     public hasSeenTutorial: boolean = false;
@@ -48,21 +51,28 @@ export class StateManager {
     private listeners: Map<string, ((value: any) => void)[]> = new Map();
 
     private constructor() {
-        // Force Main Menu for instant dev access
         this.currentState = AppState.MAIN_MENU;
-        
         const saved = localStorage.getItem('syndef_prefs');
         if (saved) {
             const p = JSON.parse(saved);
             this.uiScale = p.uiScale || 1.0;
-            this.skipCinematics = !!p.skipCinematics;
+            this.skipCinematics = p.skipCinematics !== undefined ? p.skipCinematics : true;
             this.hasSeenTutorial = !!p.hasSeenTutorial;
+        } else {
+            this.skipCinematics = true; 
         }
     }
 
     public static get instance(): StateManager {
         if (!StateManager._instance) StateManager._instance = new StateManager();
         return StateManager._instance;
+    }
+
+    public get isPaused(): boolean { return this._isPaused; }
+    public set isPaused(val: boolean) {
+        if (this._isPaused === val) return;
+        this._isPaused = val;
+        this.notify('isPaused', val);
     }
 
     public transitionTo(newState: AppState) {
@@ -89,31 +99,36 @@ export class StateManager {
 
     public addCredits(amount: number) {
         this.credits += amount;
+        if (amount > 0) this.waveCreditsEarned += amount;
         this.notify('credits', this.credits);
     }
 
-    /**
-     * INTEREST BONUS LAW:
-     * +2% bonus for perfect waves.
-     */
-    public applyWaveBonuses() {
+    public applyWaveBonuses(bonusBase: number) {
+        let interest = 0;
         if (this.waveDamageTaken === 0) {
-            const bonus = Math.floor(this.credits * 0.02);
-            this.addCredits(bonus);
+            const rate = this.gameMode === 'HARDCORE' ? 0.01 : 0.05;
+            // INTEREST CAP: Max 1500c interest per wave
+            interest = Math.min(1500, Math.floor(this.credits * rate));
+            this.addCredits(interest);
             this.perfectWaves++;
         }
-        this.waveDamageTaken = 0; // Reset for next wave
+        this.lastWaveInterest = interest;
+        this.lastWaveBonus = bonusBase;
+        this.addCredits(bonusBase);
+        this.waveDamageTaken = 0; 
     }
 
-    /**
-     * INCREMENTAL REPAIR LAW:
-     * +5 HP for 250c.
-     */
+    public getRepairCost(): number {
+        // DYNAMIC COST: 250c base + Wave Scaling
+        return 250 + (this.currentWave * 50);
+    }
+
     public attemptRepair() {
-        const cost = 250;
+        const cost = this.getRepairCost();
         if (this.credits >= cost && this.integrity < this.maxIntegrity) {
-            this.addCredits(-cost);
+            this.credits -= cost;
             this.integrity = Math.min(this.maxIntegrity, this.integrity + 5);
+            this.notify('credits', this.credits);
             this.notify('integrity', this.integrity);
             return true;
         }
@@ -137,10 +152,6 @@ export class StateManager {
         }
     }
 
-    /**
-     * INTRO PERSISTENCE:
-     * Records that the user has witnessed the studio splash.
-     */
     public recordIntroSeen() {
         localStorage.setItem('syndef_intro_seen_v50', 'true');
     }
@@ -158,21 +169,33 @@ export class StateManager {
         this.listeners.get(key)?.forEach(fn => fn(value));
     }
 
-    public resetSession() {
-        this.credits = 600;
+    public resetSession(mode: GameMode = 'STANDARD') {
+        this.gameMode = mode;
+        this.credits = mode === 'HARDCORE' ? 450 : 600;
         this.integrity = 20;
-        this.currentWave = 0;
+        this.currentWave = 1;
         this.totalPurged = 0;
         this.perfectWaves = 0;
         this.waveDamageTaken = 0;
+        this.waveCreditsEarned = 0;
+        this.wavePurgedCount = 0;
         this.isPaused = false;
         this.gameSpeed = 1.0;
         this.notify('credits', this.credits);
         this.notify('integrity', this.integrity);
+        this.notify('state', this.currentState);
+        this.notify('gameMode', this.gameMode);
+    }
+
+    public resetTutorial() {
+        this.hasSeenTutorial = false;
+        localStorage.removeItem('syndef_tutorial_v19');
+        this.notify('hasSeenTutorial', false);
     }
 
     public saveGame(towers: any[] = []) {
         const data = {
+            gameMode: this.gameMode,
             currentWave: this.currentWave,
             credits: this.credits,
             integrity: this.integrity,
@@ -184,9 +207,19 @@ export class StateManager {
 
     public loadGame() {
         const saved = localStorage.getItem('syndef_game_save');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            const data = JSON.parse(saved);
+            this.gameMode = data.gameMode || 'STANDARD';
+            this.currentWave = data.currentWave || 1;
+            this.credits = data.credits || 600;
+            this.integrity = data.integrity || 20;
+            this.notify('credits', this.credits);
+            this.notify('integrity', this.integrity);
+            this.notify('gameMode', this.gameMode);
+            return data;
+        }
         return null;
     }
 
-    public hasSaveData() { return false; }
+    public hasSaveData() { return !!localStorage.getItem('syndef_game_save'); }
 }

@@ -75,6 +75,10 @@ export class NeuralBrain {
         return this.availableNodes.has(`${x},${y}`);
     }
 
+    public occupyNode(x: number, y: number) {
+        this.availableNodes.delete(`${x},${y}`);
+    }
+
     public get themeName(): string {
         return this.currentProfile ? SimulationTheme[this.currentProfile.theme] : "IDLE";
     }

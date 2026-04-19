@@ -4,9 +4,9 @@ import { EnemyType, VISUAL_REGISTRY } from '../VisualRegistry';
 import { TextureGenerator } from '../utils/TextureGenerator';
 
 /**
- * ENEMY v84.0: Visual Puppet (Parametric Rebuild)
+ * ENEMY v85.0: Visual Puppet (STUN-ENABLED)
  * THE REBUILD: No autonomous movement. No coordinate arrays.
- * Position and Rotation are dictated by the Formation Engine (WaveManager).
+ * Supports the new Stasis Field pause effect via stunTimer.
  */
 export class Enemy {
     public container: PIXI.Container;
@@ -14,11 +14,13 @@ export class Enemy {
     public type: EnemyType;
     public hp: number;
     public maxHp: number;
+    public distance: number = 0;
     
     public isDead: boolean = false;
     public isFinished: boolean = false;
+    private stunTimer: number = 0;
     
-    private readonly VIRUS_SIZE = 14; 
+    private readonly VIRUS_SIZE = 18; 
     private healthBar: PIXI.Graphics;
 
     constructor(type: EnemyType, waveMult: number = 1) {
@@ -39,23 +41,25 @@ export class Enemy {
         this.updateHealthBar();
     }
 
-    /**
-     * TACTICAL PROJECTION API
-     * The Formation Engine calls this to "pin" the puppet to the mathematical spine.
-     */
     public project(x: number, y: number, rotation: number, lateralOffset: number) {
-        // Calculate perpendicular offset (Axle math)
-        // Offset is relative to the path rotation
+        if (this.stunTimer > 0) return; // Freeze visual update if stunned
+
         const perpAngle = rotation + Math.PI / 2;
         this.container.x = x + Math.cos(perpAngle) * lateralOffset;
         this.container.y = y + Math.sin(perpAngle) * lateralOffset;
-        
-        // Face the direction of travel (+90 deg offset for our visual orientation)
         this.container.rotation = rotation + Math.PI / 2;
 
-        // Visual "Alive" pulse
         const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.04;
         this.sprite.scale.set((this.VIRUS_SIZE / 24) * pulse);
+    }
+
+    public update(dt: number) {
+        if (this.stunTimer > 0) {
+            this.stunTimer -= dt;
+            this.sprite.tint = 0x0066ff; // Blue tint while frozen
+        } else {
+            this.sprite.tint = 0xffffff;
+        }
     }
 
     public updateHealthBar() {
@@ -70,5 +74,13 @@ export class Enemy {
         this.hp -= amount;
         this.updateHealthBar();
         if (this.hp <= 0) this.isDead = true;
+    }
+
+    public applyStun(duration: number) {
+        this.stunTimer = Math.max(this.stunTimer, duration);
+    }
+
+    public get isStunned(): boolean {
+        return this.stunTimer > 0;
     }
 }

@@ -5,12 +5,12 @@ import { AudioManager } from '../systems/AudioManager';
 import { TextureGenerator } from '../utils/TextureGenerator';
 
 export enum TowerType {
-    PULSE_NODE,      // Fast Single
-    SONIC_IMPULSE,   // AOE Burst
-    STASIS_FIELD,    // Slow Field
-    PRISM_BEAM,      // High Rate Focus
-    RAIL_CANNON,     // Piercing Line
-    VOID_PROJECTOR   // Massive Single
+    PULSE_NODE,      
+    ROCKET_BATTERY,  
+    STASIS_FIELD,    
+    PRISM_BEAM,      
+    RAIL_CANNON,     
+    VOID_PROJECTOR   
 }
 
 export enum TargetMode {
@@ -31,16 +31,17 @@ export interface TowerConfig {
 }
 
 export const TOWER_CONFIGS: Record<TowerType, TowerConfig> = {
-    [TowerType.PULSE_NODE]: { name: "PULSE_NODE", cost: 150, damage: 12, range: 3.5, cooldown: 40, color: 0x00ffff, unlockWave: 0 },
-    [TowerType.SONIC_IMPULSE]: { name: "SONIC_IMPULSE", cost: 250, damage: 8, range: 3.0, cooldown: 70, color: 0x00ff66, unlockWave: 2 },
-    [TowerType.STASIS_FIELD]: { name: "STASIS_FIELD", cost: 400, damage: 2, range: 4.0, cooldown: 90, color: 0x0066ff, unlockWave: 5 },
-    [TowerType.PRISM_BEAM]: { name: "PRISM_BEAM", cost: 650, damage: 45, range: 5.0, cooldown: 25, color: 0xff00ff, unlockWave: 10 },
-    [TowerType.RAIL_CANNON]: { name: "RAIL_CANNON", cost: 1200, damage: 150, range: 9.0, cooldown: 180, color: 0xff3300, unlockWave: 15 },
-    [TowerType.VOID_PROJECTOR]: { name: "VOID_PROJECTOR", cost: 2500, damage: 400, range: 4.5, cooldown: 140, color: 0xffffff, unlockWave: 20 }
+    [TowerType.PULSE_NODE]: { name: "PULSE_NODE", cost: 150, damage: 14, range: 3.5, cooldown: 35, color: 0x00ffff, unlockWave: 0 },
+    [TowerType.ROCKET_BATTERY]: { name: "ROCKET_BATTERY", cost: 350, damage: 45, range: 4.8, cooldown: 110, color: 0xffaa00, unlockWave: 2 },
+    [TowerType.STASIS_FIELD]: { name: "STASIS_FIELD", cost: 400, damage: 0, range: 3.5, cooldown: 85, color: 0x0066ff, unlockWave: 5 },
+    [TowerType.PRISM_BEAM]: { name: "PRISM_BEAM", cost: 700, damage: 60, range: 5.2, cooldown: 20, color: 0xff00ff, unlockWave: 10 },
+    [TowerType.RAIL_CANNON]: { name: "RAIL_CANNON", cost: 1300, damage: 220, range: 9.5, cooldown: 160, color: 0xff3300, unlockWave: 15 },
+    [TowerType.VOID_PROJECTOR]: { name: "VOID_PROJECTOR", cost: 2800, damage: 650, range: 4.5, cooldown: 130, color: 0xffffff, unlockWave: 20 }
 };
 
 /**
- * TOWER v50.0: Multimodal Engagement Engine
+ * TOWER v90.0: Tactical Balance Authority
+ * THE REBUILD: Implements the Exponential Upgrade Law (+300% at T3).
  */
 export class Tower {
     public container: PIXI.Container;
@@ -88,25 +89,33 @@ export class Tower {
     public update(dt: number, enemies: Enemy[], spawnProjectile: (p: Projectile) => void) {
         if (this.cooldownTimer > 0) this.cooldownTimer -= dt;
 
+        if (this.type === TowerType.ROCKET_BATTERY && this.cooldownTimer <= 0) {
+            const targets = this.findMultipleTargets(enemies, 6);
+            if (targets.length > 0) {
+                targets.forEach(t => {
+                    spawnProjectile(new Projectile(this.type, this.container.x, this.container.y, t, this.getEffectiveDamage(), this.config.color, this));
+                });
+                this.cooldownTimer = this.config.cooldown;
+                AudioManager.getInstance().playFireSfx(this.type);
+                this.chassis.rotation = Math.atan2(targets[0].container.y - this.container.y, targets[0].container.x - this.container.x) + Math.PI/2;
+            }
+            return;
+        }
+
         if (this.primaryTarget) {
             if (this.primaryTarget.isDead || this.primaryTarget.isFinished || !this.isInRange(this.primaryTarget)) {
                 this.primaryTarget = null;
             }
         }
 
-        if (!this.primaryTarget) {
-            this.primaryTarget = this.findBestTarget(enemies);
-        }
+        if (!this.primaryTarget) this.primaryTarget = this.findBestTarget(enemies);
 
         if (this.primaryTarget) {
             const targetPos = this.primaryTarget.container.position;
-            const dx = targetPos.x - this.container.x;
-            const dy = targetPos.y - this.container.y;
-            this.chassis.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+            this.chassis.rotation = Math.atan2(targetPos.y - this.container.y, targetPos.x - this.container.x) + Math.PI / 2;
 
             if (this.cooldownTimer <= 0) {
-                const p = new Projectile(this.type, this.container.x, this.container.y, this.primaryTarget, this.getEffectiveDamage(), this.config.color, this);
-                spawnProjectile(p);
+                spawnProjectile(new Projectile(this.type, this.container.x, this.container.y, this.primaryTarget, this.getEffectiveDamage(), this.config.color, this));
                 this.cooldownTimer = this.config.cooldown;
                 AudioManager.getInstance().playFireSfx(this.type);
             }
@@ -123,18 +132,10 @@ export class Tower {
                 const dist = Math.sqrt(Math.pow(e.container.x - this.container.x, 2) + Math.pow(e.container.y - this.container.y, 2));
 
                 switch(this.targetMode) {
-                    case TargetMode.CLOSEST:
-                        score = -dist; 
-                        break;
-                    case TargetMode.FIRST:
-                        score = e.currentCellIndex * 1000 - dist; 
-                        break;
-                    case TargetMode.WEAKEST:
-                        score = -e.hp;
-                        break;
-                    case TargetMode.STRONGEST:
-                        score = e.hp;
-                        break;
+                    case TargetMode.CLOSEST: score = -dist; break;
+                    case TargetMode.FIRST: score = e.distance * 1000 - dist; break;
+                    case TargetMode.WEAKEST: score = -e.hp; break;
+                    case TargetMode.STRONGEST: score = e.hp; break;
                 }
 
                 if (score > bestScore) {
@@ -144,6 +145,10 @@ export class Tower {
             }
         }
         return best;
+    }
+
+    private findMultipleTargets(enemies: Enemy[], count: number): Enemy[] {
+        return enemies.filter(e => this.isInRange(e)).sort((a, b) => b.distance - a.distance).slice(0, count);
     }
 
     public cycleTargetMode() {
@@ -157,10 +162,17 @@ export class Tower {
         return (dx * dx + dy * dy) <= Math.pow(this.config.range * 40, 2);
     }
 
-    public getEffectiveDamage() { return this.config.damage * (1 + (this.tier - 1) * 0.5); }
+    // EXPONENTIAL UPGRADE LAW
+    public getEffectiveDamage() { 
+        const multipliers = [1.0, 2.0, 4.0];
+        return this.config.damage * multipliers[this.tier - 1]; 
+    }
     public getEffectiveRange() { return this.config.range; }
-    public getUpgradeCost() { return Math.round(this.config.cost * 0.8 * this.tier); }
-    public getRefundValue() { return Math.round(this.config.cost * 0.75 + (this.tier - 1) * this.config.cost * 0.4); }
+    public getUpgradeCost() { return Math.round(this.config.cost * 0.6); }
+    public getRefundValue() { 
+        const totalInvested = this.config.cost + (this.tier - 1) * this.getUpgradeCost();
+        return Math.round(totalInvested * 0.75); 
+    }
 
     public upgrade() {
         if (this.tier < 3) {
@@ -169,6 +181,11 @@ export class Tower {
             return true;
         }
         return false;
+    }
+
+    public setTier(val: number) {
+        this.tier = val;
+        this.drawRange();
     }
 
     public recordPurge() { this.killCount++; }
